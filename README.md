@@ -53,7 +53,7 @@ The integration requires the verified extended-response layout; it does not yet 
 
 ## Development
 
-Python 3.14 is needed for the pinned Home Assistant test environment:
+Python 3.14.2 or newer is needed for the pinned Home Assistant test environment:
 
 ```sh
 python3.14 -m venv .venv
@@ -62,6 +62,10 @@ python3.14 -m venv .venv
 .venv/bin/python -m ruff check .
 .venv/bin/python -m ruff format --check .
 ```
+
+Codecov and Sonar receive integration coverage and JUnit reports in a separate advisory job. Fork/Dependabot runs do not receive the upload secrets.
+
+CI uses hash-locked Linux dependencies and checks that the HA test stack, Bluetooth/USB component versions and generated files agree. See [Contributing](CONTRIBUTING.md) for dependency updates and platform-specific setup.
 
 See [hardware results](docs/hardware-results.md), [protocol evidence](docs/protocol.md) and [architecture](docs/architecture.md). Private Bluetooth logs stay outside the project. Test fixtures contain no names, addresses or location identifiers.
 

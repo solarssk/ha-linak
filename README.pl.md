@@ -24,3 +24,7 @@ Wysokość aktualizuje się przy zmianach zgłaszanych przez panel. Co 60 sekund
 Aby usunąć integrację, usuń jej wpis w HA, usuń folder `custom_components/ha_linak` i ponownie uruchom HA. Ta wersja nie zmienia ustawień panelu.
 
 Publiczne repozytorium: [solarssk/ha-linak](https://github.com/solarssk/ha-linak). W HACS dodaj ten adres jako własne repozytorium typu Integracja, pobierz LINAK i uruchom ponownie HA. Projekt nie jest w domyślnym katalogu HACS i nie ma oficjalnej oceny jakości Home Assistanta. Status kontroli znajdziesz w zakładce Actions.
+
+Kontrole CI instalują zależności z plików z hashami i sprawdzają ich zgodność z testowaną wersją HA. Zmiany w narzędziach i pakiecie testowym HA są utrzymywane osobno. Szczegóły dla autorów zmian: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Codecov i Sonar otrzymują raporty pokrycia integracji oraz wyniki testów w osobnym zadaniu CI. PR-y z forków i od Dependabota nie otrzymują sekretów do wysyłania raportów.

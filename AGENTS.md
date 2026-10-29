@@ -14,6 +14,8 @@ Tests, type checks and HA/HACS validation are included beyond the tier baseline.
 - No real BLE scans, hardware movement, credentials or private captures in automated tests.
 - Request timeouts invalidate the BLE session; memory responses have no slot identity.
 - User-visible changes require CHANGELOG.md and relevant README changes.
-- Run pytest, ruff check/format, mypy, repository checks and actionlint before pushing.
+- Run pytest, ruff check/format, mypy, repository/dependency checks, lock freshness and actionlint before pushing. Linux installed-package validation is required in CI; macOS metadata-only checking is limited.
+- Regenerate locks in the same PR as dependency input changes. The HA test plugin owns pytest/HA; generated component pins come from that HA distribution.
+- Keep required workflow names in .github/required-checks.json and live protection consistent.
 - After the initial bootstrap, use scoped branches and pull requests. Do not merge on the user's behalf.
 - Do not publish real hardware movement support before supervised device tests.

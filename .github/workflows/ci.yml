@@ -21,11 +21,21 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install hash-locked build backend (wheels only)
+        run: >-
+          python -m pip install --only-binary :all: --require-hashes -r .github/locks/build.txt
+      - name: Install hash-locked HA test environment
+        run: >-
+          python -m pip install --only-binary :all: --no-binary mock-open,pyric --no-build-isolation --require-hashes -r .github/locks/test.txt
       - run: python -m ruff check .
       - run: python -m ruff format --check .
       - run: python -m mypy custom_components/ha_linak
       - run: python scripts/check_repository.py
+      - run: python scripts/check_dependencies.py
+      - name: Install hash-locked lockfile resolver
+        run: >-
+          python -m pip install --only-binary :all: --require-hashes -r .github/locks/uv.txt
+      - run: python scripts/update_locks.py --check
   tests:
     name: Tests
     runs-on: ubuntu-24.04
@@ -37,8 +47,22 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: python -m pip install -r requirements-dev.txt
-      - run: python -m pytest
+      - name: Install hash-locked build backend (wheels only)
+        run: >-
+          python -m pip install --only-binary :all: --require-hashes -r .github/locks/build.txt
+      - name: Install hash-locked HA test environment
+        run: >-
+          python -m pip install --only-binary :all: --no-binary mock-open,pyric --no-build-isolation --require-hashes -r .github/locks/test.txt
+      - run: python -m pytest --cov --cov-report=xml --junitxml=junit.xml
+      - name: Keep coverage and test reports
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-reports
+          path: |
+            coverage.xml
+            junit.xml
+          retention-days: 7
+          if-no-files-found: error
   hassfest:
     name: Hassfest
     runs-on: ubuntu-latest
@@ -59,6 +83,7 @@ jobs:
       - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa
         with:
           category: integration
+          comment: "false"
   audit:
     name: Dependency audit
     runs-on: ubuntu-24.04
@@ -70,8 +95,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: python -m pip install pip-audit==2.10.1
-      - run: pip-audit -r requirements-audit.txt --no-deps --disable-pip --strict
+      - name: Install hash-locked audit tooling
+        run: >-
+          python -m pip install --only-binary :all: --require-hashes -r .github/locks/audit.txt
+      - name: Audit declared direct runtime and tooling pins
+        run: pip-audit -r .github/audit-direct.txt --no-deps --disable-pip --strict
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest
@@ -159,3 +187,44 @@ jobs:
           advanced-security: false
           annotations: true
 
+
+  coverage-signals:
+    name: Coverage signals (Codecov, SonarCloud)
+    needs: tests
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-reports
+      - name: Upload coverage to Codecov
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          files: coverage.xml
+          disable_search: true
+          fail_ci_if_error: false
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && env.CODECOV_TOKEN != '' }}
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          files: junit.xml
+      - name: SonarCloud scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io

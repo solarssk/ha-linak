@@ -1,0 +1,3 @@
+# Controlled build backend for the source-only mock-open/pyric test dependencies.
+setuptools==84.2.1
+wheel==0.48.0

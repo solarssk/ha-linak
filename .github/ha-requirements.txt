@@ -1,0 +1,11 @@
+# Generated from Home Assistant 2026.10.2 bluetooth/usb manifests.
+# Run python scripts/check_dependencies.py --update after upgrading the HA test plugin.
+aiousbwatcher==1.1.2
+bleak-retry-connector==4.7.1
+bleak==3.0.2
+bluetooth-adapters==2.4.0
+bluetooth-auto-recovery==1.6.4
+bluetooth-data-tools==1.29.24
+dbus-fast==5.0.22
+habluetooth==7.1.2
+serialx==1.11.0

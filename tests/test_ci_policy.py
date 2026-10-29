@@ -61,8 +61,15 @@ def test_each_python_install_uses_a_hash_locked_input():
         if "run" in step
     ]
     installs = [command for command in commands if "pip install" in command]
-    assert len(installs) == 4
+    assert len(installs) == 6
     assert all("--require-hashes -r .github/locks/" in command for command in installs)
+    assert all("--only-binary :all:" in command for command in installs)
+    exceptions = [command for command in installs if "--no-binary" in command]
+    assert len(exceptions) == 2
+    assert all(
+        "--no-binary mock-open --no-build-isolation" in command
+        for command in exceptions
+    )
     assert any("update_locks.py --check" in command for command in commands)
     assert any("check_dependencies.py" in command for command in commands)
 
@@ -125,3 +132,29 @@ def test_installed_component_version_drift_is_rejected(monkeypatch):
     )
     with pytest.raises(ValueError, match="serialx"):
         policy.validate_installed()
+
+
+@pytest.mark.parametrize(
+    "value", ["--output=evil", "0" * 39, "0" * 41, "-" + "1" * 39, "g" * 40]
+)
+def test_git_revision_parser_rejects_non_object_ids(value):
+    from scripts.check_pr_docs import normalize_sha
+
+    with pytest.raises(ValueError):
+        normalize_sha(value)
+
+
+def test_git_revision_parser_normalizes_to_option_free_hex():
+    from scripts.check_pr_docs import normalize_sha
+
+    assert normalize_sha("a" * 40) == "a" * 40
+    assert normalize_sha("0" * 32 + "DEADBEEF") == "0" * 32 + "deadbeef"
+
+
+def test_empty_documentation_section_cannot_borrow_next_section():
+    with pytest.raises(ValueError):
+        validate(
+            "## Documentation impact\n\n## Validation\nTests passed.",
+            "maintainer",
+            ["README.md"],
+        )

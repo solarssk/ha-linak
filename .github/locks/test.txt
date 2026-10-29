@@ -2602,6 +2602,7 @@ packaging==26.3 \
     #   pip-audit
     #   pip-requirements-parser
     #   pytest
+    #   wheel
 paho-mqtt==2.1.0 \
     --hash=sha256:12d6e7511d4137555a3f6ea167ae846af2c7357b10bc6fa4f7c3968fc1723834 \
     --hash=sha256:6db9ba9b34ed5bc6b6e3812718c7e06e2fd7444540df2455d2c51bd58808feee
@@ -3626,6 +3627,10 @@ serialx==1.11.0 \
     --hash=sha256:e1363618d88f04645eb211a197d5d8e74985bb1045d00007b12546f7c9ce36d5 \
     --hash=sha256:e9b67771a1211cdb41716c8fbefe1775e4b3db51dc3495dceb8e46ce13883479
     # via -r .github/ha-requirements.txt
+setuptools==84.2.1 \
+    --hash=sha256:3ff8b3b5492a0aa66960f4419365a86b84e013070d4313e4d4a6894f5d64d6bc \
+    --hash=sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2
+    # via -r requirements-build.txt
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
@@ -3936,6 +3941,10 @@ webrtc-models==0.3.0 \
     # via
     #   hass-nabucasa
     #   homeassistant
+wheel==0.48.0 \
+    --hash=sha256:3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab \
+    --hash=sha256:94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322
+    # via -r requirements-build.txt
 yarl==1.25.1 \
     --hash=sha256:0136d640dfa9b0523853e411430a99f8a91eca85774c6420285a33b755bc6de3 \
     --hash=sha256:03dd38de09bc213e9a8b29761eec33ee1d5318dac0e49d8af36e4d27830e23a7 \

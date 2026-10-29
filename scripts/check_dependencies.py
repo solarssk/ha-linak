@@ -43,22 +43,26 @@ def expected_audit(component_text: str) -> str:
     )
 
 
-def validate_installed() -> None:
-    for value in metadata.requires("pytest-homeassistant-custom-component") or []:
-        req = Requirement(value)
-        if req.name in {"homeassistant", "pytest", "pytest-asyncio"}:
-            if metadata.version(req.name) not in req.specifier:
-                raise ValueError(
-                    f"Installed {req.name} does not match the HA test plugin"
-                )
-    for value in expected_components().splitlines():
-        if not value or value.startswith("#"):
-            continue
+def require_installed(requirements: list[str], scope: str) -> None:
+    for value in requirements:
         req = Requirement(value)
         if metadata.version(req.name) not in req.specifier:
-            raise ValueError(
-                f"Installed {req.name} differs from the HA component manifest"
-            )
+            raise ValueError(f"Installed {req.name} differs from {scope}")
+
+
+def validate_installed() -> None:
+    plugin_requirements = [
+        value
+        for value in metadata.requires("pytest-homeassistant-custom-component") or []
+        if Requirement(value).name in {"homeassistant", "pytest", "pytest-asyncio"}
+    ]
+    require_installed(plugin_requirements, "the HA test plugin")
+    components = [
+        value
+        for value in expected_components().splitlines()
+        if value and not value.startswith("#")
+    ]
+    require_installed(components, "the HA component manifest")
     minimum = json.loads((ROOT / "hacs.json").read_text())["homeassistant"]
     if metadata.version("homeassistant") != minimum:
         raise ValueError(
@@ -67,10 +71,7 @@ def validate_installed() -> None:
     manifest = json.loads(
         (ROOT / "custom_components/ha_linak/manifest.json").read_text()
     )
-    for value in manifest["requirements"]:
-        req = Requirement(value)
-        if metadata.version(req.name) not in req.specifier:
-            raise ValueError(f"Installed {req.name} does not satisfy the integration")
+    require_installed(manifest["requirements"], "the integration manifest")
 
 
 def main() -> None:

@@ -8,6 +8,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 LOCKS = {
     "uv": ".github/requirements-locker.txt",
+    "build": "requirements-build.txt",
     "audit": "requirements-tools.txt",
     "test": "requirements-dev.txt",
 }

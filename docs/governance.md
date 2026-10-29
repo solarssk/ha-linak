@@ -12,6 +12,6 @@ No Codecov/Sonar project or token has been configured. Reports must not claim th
 
 ## Known boundaries
 
-HACS and hassfest wrappers are SHA-pinned, but their upstream container references are mutable. Hash locks cover Python distribution archives; source-only packages such as mock-open still use pip's normal isolated build backend resolution. These controls improve artifact integrity and reproducibility without claiming hermetic builds.
+HACS and hassfest wrappers are SHA-pinned, but their upstream container references are mutable. Hash locks cover Python distribution archives; the source-only mock-open test package is an explicit exception to wheels-only installation. Its archive hash is checked, its build backend is installed from a separate hashed lock, and build isolation/downloads are disabled. All other package installation requires wheels. These controls improve artifact integrity and reproducibility without claiming hermetic builds.
 
 CodeQL, Scorecard and external GitHub App checks are advisory until deliberately made required. HACS validation is not a hardware test. No PR is merged automatically. Old Dependabot branches must be updated only after the CI foundation PR is merged, so they are checked with the new policy.

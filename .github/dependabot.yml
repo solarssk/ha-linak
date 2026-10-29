@@ -16,7 +16,7 @@ updates:
       - ".github/requirements-locker.txt"
     groups:
       tooling:
-        patterns: ["ruff", "mypy", "pip-audit"]
+        patterns: ["ruff", "mypy", "pip-audit", "setuptools", "wheel"]
     ignore:
       - dependency-name: homeassistant
       - dependency-name: pytest-homeassistant-custom-component

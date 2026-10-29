@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 
 
@@ -22,14 +21,19 @@ def validate(body: str, author: str, files: list[str]) -> None:
         and all(name.startswith(dependency_paths) for name in files)
     ):
         return
-    section = re.search(
-        r"^## Documentation impact\s*\n(.*?)(?=^## |\Z)", body, re.MULTILINE | re.DOTALL
-    )
+    section = []
+    in_section = False
+    for line in body.splitlines():
+        if line.strip() == "## Documentation impact":
+            in_section = True
+        elif in_section and line.startswith("## "):
+            break
+        elif in_section:
+            section.append(line)
+    content = "\n".join(section).strip()
     if (
-        not section
-        or not section[1].strip()
-        or section[1].strip()
-        == "State which docs/translations changed, or why none are affected."
+        not content
+        or content == "State which docs/translations changed, or why none are affected."
     ):
         raise ValueError("Fill in the Documentation impact section")
     if any(name.startswith("custom_components/") for name in files):
@@ -39,13 +43,23 @@ def validate(body: str, author: str, files: list[str]) -> None:
             raise ValueError("Integration changes require documentation updates")
 
 
+def normalize_sha(value: str) -> str:
+    if len(value) != 40:
+        raise ValueError("Expected a 40-character Git object ID")
+    number = int(value, 16)
+    if number < 0:
+        raise ValueError("Expected a nonnegative Git object ID")
+    return f"{number:040x}"
+
+
 def main() -> None:
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
     pr = event["pull_request"]
-    base, head = pr["base"]["sha"], pr["head"]["sha"]
+    base, head = normalize_sha(pr["base"]["sha"]), normalize_sha(pr["head"]["sha"])
     # Arguments are never interpreted as shell code. SHAs come from GitHub's event.
     files = subprocess.check_output(
-        ["git", "diff", "--name-only", f"{base}...{head}", "--"], text=True
+        ["git", "diff", "--name-only", "--end-of-options", f"{base}...{head}", "--"],
+        text=True,
     ).splitlines()
     validate(pr.get("body") or "", pr["user"]["login"], files)
     print("Documentation impact declaration matches the change")

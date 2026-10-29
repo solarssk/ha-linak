@@ -1,6 +1,6 @@
 # Contributing
 
-Use Python 3.14.2 or newer in an isolated environment. CI targets Ubuntu 24.04/Linux x86_64. Install its exact environment with `python -m pip install --require-hashes -r .github/locks/test.txt`. On macOS, install `requirements-dev.txt` instead; Linux locks and installed-package checks are validated in CI. Run:
+Use Python 3.14.2 or newer in an isolated environment. CI targets Ubuntu 24.04/Linux x86_64. Install the build backend with `python -m pip install --only-binary :all: --require-hashes -r .github/locks/build.txt`, then the exact environment with `python -m pip install --only-binary :all: --no-binary mock-open --no-build-isolation --require-hashes -r .github/locks/test.txt`. The explicit source exception is required by the HA test plugin; it cannot download unpinned build dependencies. On macOS, install `requirements-dev.txt` instead; Linux locks and installed-package checks are validated in CI. Run:
 
 ```sh
 python -m pytest

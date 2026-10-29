@@ -19,6 +19,10 @@ def keys(value, prefix=""):
 def main():
     manifest = json.loads((COMPONENT / "manifest.json").read_text())
     assert manifest["domain"] == "ha_linak"
+    assert list(manifest) == ["domain", "name"] + sorted(
+        set(manifest) - {"domain", "name"}
+    )
+    assert manifest["requirements"] == ["bleak-retry-connector>=4.7.1"]
     assert manifest["codeowners"] == ["@solarssk"]
     assert manifest["documentation"] == "https://github.com/solarssk/ha-linak"
     assert manifest["issue_tracker"] == manifest["documentation"] + "/issues"

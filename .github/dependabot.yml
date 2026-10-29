@@ -3,9 +3,17 @@ updates:
   - package-ecosystem: pip
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
+    open-pull-requests-limit: 2
+    labels: ["type: chore", "dependencies"]
+    # Generated pins/locks belong to an intentional HA/test-stack upgrade, not separate bumps.
+    exclude-paths:
+      - ".github/locks/**"
+      - ".github/ha-requirements.txt"
+      - ".github/audit-direct.txt"
+      - ".github/requirements-locker.txt"
     groups:
       tooling:
         patterns: ["ruff", "mypy", "pip-audit"]
@@ -18,3 +26,5 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    open-pull-requests-limit: 2
+    labels: ["type: chore", "dependencies"]

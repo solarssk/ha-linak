@@ -1,4 +1,0 @@
-bleak-retry-connector==4.7.1
-ruff==0.17.1
-mypy==2.4.0
-pip-audit==2.10.1

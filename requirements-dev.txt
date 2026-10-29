@@ -1,10 +1,5 @@
-homeassistant==2026.10.2
+# The plugin owns Home Assistant, pytest, pytest-asyncio and its test helpers.
+# Upgrade it with the HA component requirements and compatibility target.
 pytest-homeassistant-custom-component==0.13.373
-pytest==9.0.3
-pytest-asyncio==1.4.0
-bleak-retry-connector==4.7.1
-aiousbwatcher==1.1.2
-serialx==1.11.0
-ruff==0.17.1
-mypy==2.4.0
-pip-audit==2.10.1
+-r requirements-tools.txt
+-r .github/ha-requirements.txt

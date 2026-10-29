@@ -1,6 +1,7 @@
 """Check publishing metadata, translations and version documentation."""
 
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,12 +27,19 @@ def main():
     assert manifest["codeowners"] == ["@solarssk"]
     assert manifest["documentation"] == "https://github.com/solarssk/ha-linak"
     assert manifest["issue_tracker"] == manifest["documentation"] + "/issues"
-    assert manifest["version"] in (ROOT / "CHANGELOG.md").read_text()
+    assert re.search(
+        r"^## " + re.escape(manifest["version"]) + r"(?:\s|$)",
+        (ROOT / "CHANGELOG.md").read_text(),
+        re.MULTILINE,
+    )
     assert (COMPONENT / "brand/icon.png").is_file()
     english = json.loads((COMPONENT / "strings.json").read_text())
     for file in (COMPONENT / "translations").glob("*.json"):
         assert keys(json.loads(file.read_text())) == keys(english), file
     assert len(list((ROOT / "custom_components").iterdir())) == 1
+    checks = json.loads((ROOT / ".github/required-checks.json").read_text())
+    assert len(checks) == len(set(checks))
+    assert "Lint workflows (actionlint, zizmor)" in checks
     print("Repository metadata and translation parity passed")
 
 

@@ -21,11 +21,16 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install hash-locked HA test environment
+        run: python -m pip install --require-hashes -r .github/locks/test.txt
       - run: python -m ruff check .
       - run: python -m ruff format --check .
       - run: python -m mypy custom_components/ha_linak
       - run: python scripts/check_repository.py
+      - run: python scripts/check_dependencies.py
+      - name: Install hash-locked lockfile resolver
+        run: python -m pip install --require-hashes -r .github/locks/uv.txt
+      - run: python scripts/update_locks.py --check
   tests:
     name: Tests
     runs-on: ubuntu-24.04
@@ -37,7 +42,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install hash-locked HA test environment
+        run: python -m pip install --require-hashes -r .github/locks/test.txt
       - run: python -m pytest
   hassfest:
     name: Hassfest
@@ -59,6 +65,7 @@ jobs:
       - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa
         with:
           category: integration
+          comment: "false"
   audit:
     name: Dependency audit
     runs-on: ubuntu-24.04
@@ -70,8 +77,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - run: python -m pip install pip-audit==2.10.1
-      - run: pip-audit -r requirements-audit.txt --no-deps --disable-pip --strict
+      - name: Install hash-locked audit tooling
+        run: python -m pip install --require-hashes -r .github/locks/audit.txt
+      - name: Audit declared direct runtime and tooling pins
+        run: pip-audit -r .github/audit-direct.txt --no-deps --disable-pip --strict
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest

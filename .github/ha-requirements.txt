@@ -1,4 +1,4 @@
-# Generated from Home Assistant 2026.10.2 bluetooth/usb manifests.
+# Generated from Home Assistant 2026.10.4 bluetooth/usb manifests.
 # Run python scripts/check_dependencies.py --update after upgrading the HA test plugin.
 aiousbwatcher==1.1.2
 bleak-retry-connector==4.7.1

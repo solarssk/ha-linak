@@ -21,3 +21,5 @@ Coverage measures shipped integration code, with root-relative paths so Codecov 
 CodeRabbit automatic and incremental reviews are disabled by .coderabbit.yaml after that file is merged into the default branch. Reviews remain available on explicit maintainer request. Documentation checks parse NUL-delimited paths and include deleted rename sources.
 
 To verify source/live protection consistency, the maintainer runs `python scripts/check_github_settings.py` using their existing administrative gh login. PR CI never receives an admin token.
+
+The minimum/tested HA version is 2026.10.4 because HA 2026.10.2 pinned vulnerable uv 0.12.23. The independent lock resolver and the HA-owned uv copy now both use 0.13.5, above the advisory’s first patched version 0.13.4 (GHSA-hq85-5cpj-mr62). Do not override an HA-owned pin independently; upgrade its compatible test plugin and regenerate all locks together.

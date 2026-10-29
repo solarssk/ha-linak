@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Adopter action
+
+- Update Home Assistant to 2026.10.4 or newer before installing this alpha.
+
+- **Safer dependency downloads:** Update the lock generator and HA test stack to remove vulnerable uv certificate stores (GHSA-hq85-5cpj-mr62).
+
 - **Visible test reports:** Codecov and Sonar receive integration coverage and test results separately from required CI checks.
 
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.

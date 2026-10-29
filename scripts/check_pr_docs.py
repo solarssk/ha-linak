@@ -52,15 +52,28 @@ def normalize_sha(value: str) -> str:
     return f"{number:040x}"
 
 
+def changed_files(base: str, head: str, cwd: Path | None = None) -> list[str]:
+    base, head = normalize_sha(base), normalize_sha(head)
+    output = subprocess.check_output(
+        [
+            "git",
+            "diff",
+            "--name-only",
+            "--no-renames",
+            "-z",
+            "--end-of-options",
+            f"{base}...{head}",
+            "--",
+        ],
+        cwd=cwd,
+    )
+    return [os.fsdecode(value) for value in output.split(b"\0") if value]
+
+
 def main() -> None:
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
     pr = event["pull_request"]
-    base, head = normalize_sha(pr["base"]["sha"]), normalize_sha(pr["head"]["sha"])
-    # Arguments are never interpreted as shell code. SHAs come from GitHub's event.
-    files = subprocess.check_output(
-        ["git", "diff", "--name-only", "--end-of-options", f"{base}...{head}", "--"],
-        text=True,
-    ).splitlines()
+    files = changed_files(pr["base"]["sha"], pr["head"]["sha"])
     validate(pr.get("body") or "", pr["user"]["login"], files)
     print("Documentation impact declaration matches the change")
 

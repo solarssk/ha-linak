@@ -47,6 +47,15 @@ def test_required_checks_are_real_jobs_and_workflows_are_least_privileged():
                     if step["uses"].startswith("actions/checkout@"):
                         assert step["with"]["persist-credentials"] is False
     required = set(json.loads((ROOT / ".github/required-checks.json").read_text()))
+    assert required == {
+        "Quality",
+        "Tests",
+        "Hassfest",
+        "Dependency audit",
+        "Secret scan",
+        "Lint workflows (actionlint, zizmor)",
+        "Documentation impact",
+    }
     assert required <= names
     assert "Lint workflows (actionlint, zizmor)" in required
     assert "Documentation impact" in required
@@ -55,13 +64,15 @@ def test_required_checks_are_real_jobs_and_workflows_are_least_privileged():
 def test_each_python_install_uses_a_hash_locked_input():
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     commands = [
-        step["run"]
+        line
         for job in workflow["jobs"].values()
         for step in job["steps"]
         if "run" in step
+        for line in step["run"].splitlines()
     ]
     installs = [command for command in commands if "pip install" in command]
     assert len(installs) == 6
+    assert all(command.count("pip install") == 1 for command in installs)
     assert all("--require-hashes -r .github/locks/" in command for command in installs)
     assert all("--only-binary :all:" in command for command in installs)
     exceptions = [command for command in installs if "--no-binary" in command]
@@ -183,3 +194,89 @@ def test_sonar_classifies_shipped_code_and_tests_and_accepts_relative_reports():
     assert "sonar.python.coverage.reportPaths=coverage.xml" in properties
     assert "sonar.organization=recmedia" in properties
     assert "relative_files = true" in (ROOT / "pyproject.toml").read_text()
+
+
+def test_ci_triggers_cannot_drop_pull_requests_or_main_pushes():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    triggers = workflow.get("on", workflow.get(True))
+    assert {"pull_request", "push", "workflow_dispatch"} <= set(triggers)
+    assert triggers["push"]["branches"] == ["main"]
+    assert triggers["pull_request"] is None
+
+
+def test_coderabbit_only_runs_on_explicit_request():
+    config = yaml.safe_load((ROOT / ".coderabbit.yaml").read_text())
+    assert config["reviews"]["auto_review"]["enabled"] is False
+    assert config["reviews"]["auto_review"]["auto_incremental_review"] is False
+    assert config["reviews"]["review_status"] is False
+
+
+@pytest.mark.parametrize("move_out", [False, True])
+def test_changed_paths_preserve_unicode_newlines_and_deleted_rename_sources(
+    tmp_path, move_out
+):
+    import subprocess
+    from scripts.check_pr_docs import changed_files
+
+    prefix = [
+        "git",
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+    ]
+
+    def git(*args):
+        return (
+            subprocess.check_output(prefix + list(args), cwd=tmp_path).decode().strip()
+        )
+
+    git("init", "-b", "main")
+    name = 'custom_components/ha_linak/żółć\n"panel".py'
+    file = tmp_path / name
+    file.parent.mkdir(parents=True)
+    file.write_text("before\n")
+    git("add", ".")
+    git("commit", "-m", "fixture base")
+    base = git("rev-parse", "HEAD")
+    if move_out:
+        file.rename(tmp_path / "outside.py")
+    else:
+        file.write_text("after\n")
+        documentation = tmp_path / "docs/zażółć.md"
+        documentation.parent.mkdir()
+        documentation.write_text("Updated\n")
+        (tmp_path / "CHANGELOG.md").write_text("Updated\n")
+    git("add", ".")
+    git("commit", "-m", "fixture change")
+    files = changed_files(base, git("rev-parse", "HEAD"), tmp_path)
+    assert name in files
+    if move_out:
+        assert "outside.py" in files
+        with pytest.raises(ValueError, match="CHANGELOG"):
+            validate(
+                "## Documentation impact\nMoved the integration file.",
+                "maintainer",
+                files,
+            )
+    else:
+        assert "docs/zażółć.md" in files
+        validate(
+            "## Documentation impact\nUpdated the panel documentation.",
+            "maintainer",
+            files,
+        )
+
+
+def test_live_settings_guard_rejects_missing_workflow_gate():
+    from scripts.check_github_settings import validate as validate_settings
+
+    with pytest.raises(ValueError, match="Required checks differ"):
+        validate_settings(
+            {"required_status_checks": {"strict": True, "contexts": ["Tests"]}},
+            {"Tests", "Quality"},
+        )

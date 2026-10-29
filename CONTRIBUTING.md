@@ -32,3 +32,7 @@ The locker version is owned by `.github/requirements-locker.txt` and is upgraded
 ## Coverage signals
 
 Tests produce coverage.xml and junit.xml; a separate job uploads them to Codecov/Sonar only on trusted runs with the corresponding repository secrets. Keep Sonar Automatic Analysis disabled. The properties file classifies integration code and tests separately and matches the verified recmedia organization. CI helpers remain covered by CodeQL and regression tests. These external signals are advisory during the alpha.
+
+## Review and repository settings
+
+CodeRabbit reviews run on explicit maintainer request; automatic and incremental reviews are disabled. Run `python scripts/check_github_settings.py` with an existing administrative gh login to compare live main protection with .github/required-checks.json. This is a maintainer check, not a reason to expose admin credentials to CI.

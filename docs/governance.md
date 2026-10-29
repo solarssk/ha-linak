@@ -17,3 +17,7 @@ HACS and hassfest wrappers are SHA-pinned, but their upstream container referenc
 CodeQL, Scorecard and external GitHub App checks are advisory until deliberately made required. HACS validation is not a hardware test. No PR is merged automatically. Old Dependabot branches must be updated only after the CI foundation PR is merged, so they are checked with the new policy.
 
 Coverage measures shipped integration code, with root-relative paths so Codecov and Sonar resolve the same files. Tests and CI helper scripts are not classified as shipped integration code in Sonar. CodeQL still analyzes Python source including CI helpers.
+
+CodeRabbit automatic and incremental reviews are disabled by .coderabbit.yaml after that file is merged into the default branch. Reviews remain available on explicit maintainer request. Documentation checks parse NUL-delimited paths and include deleted rename sources.
+
+To verify source/live protection consistency, the maintainer runs `python scripts/check_github_settings.py` using their existing administrative gh login. PR CI never receives an admin token.

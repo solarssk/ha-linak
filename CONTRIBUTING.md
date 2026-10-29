@@ -28,3 +28,7 @@ After a tools update, install uv from `.github/locks/uv.txt` with `--require-has
 After a HA test-plugin upgrade, install the new plugin and its component requirements, update `hacs.json`, regenerate with `python scripts/check_dependencies.py --update`, and regenerate all locks. Installed checks must pass on Linux. On macOS use `--metadata-only` to regenerate files; that skips installed-platform validation and is not a substitute for Linux CI.
 
 The locker version is owned by `.github/requirements-locker.txt` and is upgraded deliberately together with its lock and audit scope. Generated lock and component files are excluded from independent Dependabot changes. All locks target Python 3.14.2 and Linux glibc 2.39; do not use them as macOS or runtime HA dependency files.
+
+## Coverage signals
+
+Tests produce coverage.xml and junit.xml; a separate job uploads them to Codecov/Sonar only on trusted runs with the corresponding repository secrets. Keep Sonar Automatic Analysis disabled. The properties file classifies integration code and tests separately and matches the verified recmedia organization. CI helpers remain covered by CodeQL and regression tests. These external signals are advisory during the alpha.

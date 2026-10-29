@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Visible test reports:** Codecov and Sonar receive integration coverage and test results separately from required CI checks.
+
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 

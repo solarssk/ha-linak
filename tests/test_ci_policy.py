@@ -158,3 +158,28 @@ def test_empty_documentation_section_cannot_borrow_next_section():
             "maintainer",
             ["README.md"],
         )
+
+
+def test_coverage_uploads_are_isolated_and_advisory():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    job = workflow["jobs"]["coverage-signals"]
+    assert job["needs"] == "tests"
+    assert "dependabot[bot]" in job["if"]
+    assert "head.repo.full_name == github.repository" in job["if"]
+    required = json.loads((ROOT / ".github/required-checks.json").read_text())
+    assert job["name"] not in required
+    for name, value in workflow["jobs"].items():
+        if name != "coverage-signals":
+            assert "secrets." not in str(value)
+    uploads = [step for step in job["steps"] if "secrets." in str(step)]
+    assert len(uploads) == 3
+    assert all("!= ''" in step["if"] for step in uploads)
+
+
+def test_sonar_classifies_shipped_code_and_tests_and_accepts_relative_reports():
+    properties = (ROOT / "sonar-project.properties").read_text()
+    assert "sonar.sources=custom_components/ha_linak" in properties
+    assert "sonar.tests=tests" in properties
+    assert "sonar.python.coverage.reportPaths=coverage.xml" in properties
+    assert "sonar.organization=recmedia" in properties
+    assert "relative_files = true" in (ROOT / "pyproject.toml").read_text()

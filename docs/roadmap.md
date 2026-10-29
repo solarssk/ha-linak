@@ -1,6 +1,6 @@
 # Implementation plan
 
-1. Completed: query capabilities, offset, four memories and reminders on the Mac; implement strict parsing and captured fixtures. Native read-only HA configuration, entities and lifecycle are implemented with simulated-BLE tests on HA 2026.10.2. Real Raspberry Pi/proxy validation remains pending.
+1. Completed: query capabilities, offset, four memories and reminders on the Mac; implement strict parsing and captured fixtures. Native read-only HA configuration, entities and lifecycle are implemented with simulated-BLE tests initially on HA 2026.10.2, now validated on HA 2026.10.4 after the uv security update. Real Raspberry Pi/proxy validation remains pending.
 2. Implement the asynchronous BLE client using Home Assistant's Bluetooth device selection and connection management. Support direct adapters and compatible active ESPHome proxies. No separate daemon or Mac dependency.
 3. Add UI config flow, duplicate prevention, connection validation, retry, unloading and reconnection. Use the domain `ha_linak` to avoid replacing the built-in `idasen_desk` integration. Document connection contention with the built-in integration and phone app.
 4. Expose verified reads first. Keep unknown capabilities out of user-facing controls. Redact diagnostics and mark stale readings unavailable.

@@ -280,3 +280,22 @@ def test_live_settings_guard_rejects_missing_workflow_gate():
             {"required_status_checks": {"strict": True, "contexts": ["Tests"]}},
             {"Tests", "Quality"},
         )
+
+
+def test_all_locked_uv_copies_exclude_the_compromised_ca_bundle():
+    from packaging.version import Version
+
+    bootstrap = (
+        (ROOT / ".github/requirements-locker.txt")
+        .read_text()
+        .strip()
+        .removeprefix("uv==")
+    )
+    assert Version(bootstrap) >= Version("0.13.4")
+    found = {}
+    for file in (ROOT / ".github/locks").glob("*.txt"):
+        for version in re.findall(r"^uv==([^\s\\]+)", file.read_text(), re.MULTILINE):
+            assert Version(version) >= Version("0.13.4"), file
+            found[file.name] = version
+    assert found["uv.txt"] == bootstrap
+    assert found["test.txt"] == bootstrap

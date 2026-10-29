@@ -6,7 +6,7 @@ Własna integracja Home Assistanta przygotowywana do dystrybucji przez HACS. Pie
 
 Ta wersja odczytuje wysokość w centymetrach, korektę wysokości, maksymalnie cztery zapisane pozycje i trzy profile przypomnień. Konfiguracja odbywa się w interfejsie HA. Sterowanie ruchem i zmiana ustawień nie są jeszcze dostępne.
 
-Siedem zapytań potwierdzono na fizycznym DPG1C. Integrację i klienta Python sprawdzono w Home Assistant 2026.10.2 z symulowanym Bluetooth. Test na Malinie i przez ESPHome Bluetooth Proxy pozostaje do wykonania.
+Siedem zapytań potwierdzono na fizycznym DPG1C. Integrację i klienta Python sprawdzono w Home Assistant 2026.10.4 z symulowanym Bluetooth. Test na Malinie i przez ESPHome Bluetooth Proxy pozostaje do wykonania.
 
 ## Instalacja do testów
 

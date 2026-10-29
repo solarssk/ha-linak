@@ -27,6 +27,7 @@ jobs:
       - name: Install hash-locked HA test environment
         run: >-
           python -m pip install --only-binary :all: --no-binary mock-open,pyric --no-build-isolation --require-hashes -r .github/locks/test.txt
+      - run: python -m pip check
       - run: python -m ruff check .
       - run: python -m ruff format --check .
       - run: python -m mypy custom_components/ha_linak

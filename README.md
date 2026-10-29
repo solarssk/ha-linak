@@ -20,7 +20,7 @@ Target-height and stop controls are planned and are not included in this alpha. 
 
 ## Validation status
 
-The seven extended queries were verified on one physical DPG1C using macOS CoreBluetooth. The Python BLE client and integration were tested in **real Home Assistant 2026.10.2 with simulated Bluetooth**, including discovery/configuration, centimeter entities, link loss, recovery, unload and redacted diagnostics. The Raspberry Pi and ESPHome proxy have not yet been tested. Minimum compatibility target is provisionally 2026.10.2; only 2026.10.2 is locally validated.
+The seven extended queries were verified on one physical DPG1C using macOS CoreBluetooth. The Python BLE client and integration were tested in **real Home Assistant 2026.10.4 with simulated Bluetooth**, including discovery/configuration, centimeter entities, link loss, recovery, unload and redacted diagnostics. The Raspberry Pi and ESPHome proxy have not yet been tested. Minimum compatibility target is provisionally 2026.10.4; only 2026.10.4 is locally validated.
 
 This is an early read-only alpha. Use it through HACS as a custom repository; it is not listed in the default catalog. Check the current CI run before installing. No official Home Assistant quality-scale rating is claimed.
 

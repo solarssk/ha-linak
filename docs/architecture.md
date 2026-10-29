@@ -43,7 +43,7 @@ Reuse project organization and release discipline from the local ztm_warsaw refe
 2. Target-height/stop and stored-position controls after supervised hardware validation.
 3. Reminder and offset writes with readback and unrelated-bit preservation.
 
-Repository: solarssk/ha-linak (public). Minimum supported Home Assistant: 2026.10.2, matching the tested release.
+Repository: solarssk/ha-linak (public). Minimum supported Home Assistant: 2026.10.4, matching the tested release.
 
 ## References
 

@@ -67,7 +67,7 @@ def test_each_python_install_uses_a_hash_locked_input():
     exceptions = [command for command in installs if "--no-binary" in command]
     assert len(exceptions) == 2
     assert all(
-        "--no-binary mock-open --no-build-isolation" in command
+        "--no-binary mock-open,pyric --no-build-isolation" in command
         for command in exceptions
     )
     assert any("update_locks.py --check" in command for command in commands)

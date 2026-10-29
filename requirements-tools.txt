@@ -1,5 +1,5 @@
 # Independently maintained tooling; Dependabot may update these together.
-ruff==0.17.1
+ruff==0.17.2
 mypy==2.4.0
 pip-audit==2.10.1
 -r requirements-build.txt

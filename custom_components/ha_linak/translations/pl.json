@@ -1,0 +1,64 @@
+{
+  "title": "LINAK",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Połącz biurko LINAK",
+        "description": "Włącz parowanie Bluetooth na panelu i zamknij inne aplikacje biurka. Ta wersja alfa obsługuje panele DPG z dostępem do rozszerzonych odczytów.",
+        "data": {
+          "address": "Biurko"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie udało się odczytać danych biurka. Sprawdź parowanie, zasięg i inne połączone aplikacje."
+    },
+    "abort": {
+      "already_configured": "To biurko jest już skonfigurowane.",
+      "no_devices_found": "Nie znaleziono zgodnego biurka. Włącz parowanie i sprawdź adapter Bluetooth lub aktywne proxy."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "height": {
+        "name": "Wysokość"
+      },
+      "offset": {
+        "name": "Korekta wysokości"
+      },
+      "reminder_profile": {
+        "name": "Aktywny profil przypomnień"
+      },
+      "memory_1": {
+        "name": "Zapisana wysokość 1"
+      },
+      "memory_2": {
+        "name": "Zapisana wysokość 2"
+      },
+      "memory_3": {
+        "name": "Zapisana wysokość 3"
+      },
+      "memory_4": {
+        "name": "Zapisana wysokość 4"
+      },
+      "reminder_1_sit": {
+        "name": "Profil 1: czas siedzenia"
+      },
+      "reminder_1_stand": {
+        "name": "Profil 1: czas stania"
+      },
+      "reminder_2_sit": {
+        "name": "Profil 2: czas siedzenia"
+      },
+      "reminder_2_stand": {
+        "name": "Profil 2: czas stania"
+      },
+      "reminder_3_sit": {
+        "name": "Profil 3: czas siedzenia"
+      },
+      "reminder_3_stand": {
+        "name": "Profil 3: czas stania"
+      }
+    }
+  }
+}

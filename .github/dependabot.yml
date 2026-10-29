@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      tooling:
+        patterns: ["ruff", "mypy", "pip-audit"]
+    ignore:
+      - dependency-name: homeassistant
+      - dependency-name: pytest-homeassistant-custom-component
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

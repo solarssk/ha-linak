@@ -1,0 +1,64 @@
+{
+  "title": "LINAK",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your LINAK desk",
+        "description": "Put the panel into Bluetooth pairing mode and close other desk apps. This alpha supports DPG panels with extended read access.",
+        "data": {
+          "address": "Desk"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to read the desk. Check pairing, range and other connected apps."
+    },
+    "abort": {
+      "already_configured": "This desk is already configured.",
+      "no_devices_found": "No compatible desks found. Enable pairing and check your Bluetooth adapter or active proxy."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "height": {
+        "name": "Height"
+      },
+      "offset": {
+        "name": "Height offset"
+      },
+      "reminder_profile": {
+        "name": "Active reminder profile"
+      },
+      "memory_1": {
+        "name": "Stored height 1"
+      },
+      "memory_2": {
+        "name": "Stored height 2"
+      },
+      "memory_3": {
+        "name": "Stored height 3"
+      },
+      "memory_4": {
+        "name": "Stored height 4"
+      },
+      "reminder_1_sit": {
+        "name": "Profile 1 sitting time"
+      },
+      "reminder_1_stand": {
+        "name": "Profile 1 standing time"
+      },
+      "reminder_2_sit": {
+        "name": "Profile 2 sitting time"
+      },
+      "reminder_2_stand": {
+        "name": "Profile 2 standing time"
+      },
+      "reminder_3_sit": {
+        "name": "Profile 3 sitting time"
+      },
+      "reminder_3_stand": {
+        "name": "Profile 3 standing time"
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible problem with the integration.
+labels: ["type: bug"]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Integration and Home Assistant versions
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected behavior and reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Panel model and Bluetooth adapter or proxy
+      description: Do not include names, addresses or location identifiers.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs
+      render: text

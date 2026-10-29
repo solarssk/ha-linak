@@ -1,0 +1,12 @@
+{
+  "description": "DPG1C read queries captured on 2026-10-29; no addresses or names. Counter semantics unknown.",
+  "responses": {
+    "80": "0102fc01",
+    "81": "010301901a",
+    "89": "010701b404a45b0000",
+    "8a": "0107019e050bb38900",
+    "8b": "0107012014c35a0000",
+    "8c": "0107014016b2f92f00",
+    "88": "010b3b3705320a2d0feb621100"
+  }
+}

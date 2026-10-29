@@ -4,7 +4,7 @@ pytest==9.0.3
 pytest-asyncio==1.4.0
 bleak-retry-connector==4.7.1
 aiousbwatcher==1.1.2
-serialx==1.11.0
+serialx==1.15.0
 ruff==0.17.1
 mypy==2.4.0
 pip-audit==2.10.1

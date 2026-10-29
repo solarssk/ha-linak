@@ -1,6 +1,6 @@
 homeassistant==2026.10.2
 pytest-homeassistant-custom-component==0.13.373
-pytest==9.0.3
+pytest==9.1.1
 pytest-asyncio==1.4.0
 bleak-retry-connector==4.7.1
 aiousbwatcher==1.1.2

@@ -147,6 +147,8 @@ Skopiuj [`custom_components/ha_linak`](custom_components/ha_linak) do folderu `c
 
 ## 🔌 Konfiguracja
 
+Karta wykrytego biurka pokazuje **LINAK · nazwę biurka**. Wewnętrzna domena integracji pozostaje `ha_linak`.
+
 1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka.
 2. Włącz **tryb parowania Bluetooth** na panelu.
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
@@ -221,3 +223,5 @@ Dokumentacja techniczna jest prowadzona po angielsku.
 Kod: [MIT](LICENSE). Niezależny projekt społecznościowy, niezwiązany z LINAK ani IKEA. Projekt nie ma oficjalnej oceny jakości HA ani akceptacji do domyślnego katalogu HACS.
 
 Dostarczone oficjalne grafiki LINAK służą identyfikacji sprzętu. Nazwy i grafiki pozostają własnością odpowiednich właścicieli i są wyłączone z licencji kodu. Zobacz [pochodzenie grafik](docs/branding.md) i [źródła protokołu](docs/protocol.md).
+
+Szczegóły techniczne: [badania Bluetooth i projekt diagnostyki](docs/bluetooth-research.md) (po angielsku).

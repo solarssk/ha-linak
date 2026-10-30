@@ -36,6 +36,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         if not discovery_info.connectable:
             return self.async_abort(reason="not_connectable")
+        self.context["title_placeholders"] = {"name": discovery_info.name or "LINAK"}
         self._devices[discovery_info.address] = discovery_info
         return await self.async_step_user()
 

@@ -1,6 +1,7 @@
 {
   "title": "LINAK",
   "config": {
+    "flow_title": "LINAK · {name}",
     "step": {
       "user": {
         "title": "Connect your LINAK desk",

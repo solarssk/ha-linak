@@ -1,6 +1,8 @@
 """Read-only asynchronous DPG client; no movement or settings writes."""
 
 import asyncio
+import logging
+from time import monotonic
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -24,6 +26,8 @@ from .protocol import (
     read_request,
 )
 
+
+_LOGGER = logging.getLogger(__name__)
 
 REFRESH_TIMEOUT = 60
 IO_TIMEOUT = 10
@@ -57,6 +61,7 @@ class DeskClient:
         self.device = device
         self.device_callback = device_callback
         self.stage = "idle"
+        self._stage_at = monotonic()
         self.changed = changed
         self.state = DeskState()
         self.client: BleakClient | None = None
@@ -67,6 +72,17 @@ class DeskClient:
         self._ready = False
         self._generation = 0
 
+    def _set_stage(self, stage: str) -> None:
+        now = monotonic()
+        _LOGGER.debug(
+            "BLE stage %s completed after %.3fs; entering %s",
+            self.stage,
+            now - self._stage_at,
+            stage,
+        )
+        self.stage = stage
+        self._stage_at = now
+
     @property
     def connected(self) -> bool:
         return self.client is not None and self.client.is_connected and self._ready
@@ -75,6 +91,12 @@ class DeskClient:
         if client is not self.client:
             return
         self._ready = False
+        if not self._closing:
+            _LOGGER.debug(
+                "BLE link lost during %s after %.3fs",
+                self.stage,
+                monotonic() - self._stage_at,
+            )
         if self._pending is not None and not self._pending.done():
             self._pending.set_exception(ConnectionError("Desk disconnected"))
         if not self._closing:
@@ -128,7 +150,7 @@ class DeskClient:
             self._closing = False
             self._generation += 1
             generation = self._generation
-            self.stage = "connection"
+            self._set_stage("connection")
             self.client = await establish_connection(
                 BleakClientWithServiceCache,
                 self.device,
@@ -137,15 +159,16 @@ class DeskClient:
                 max_attempts=2,
                 ble_device_callback=self.device_callback,
             )
-            self.stage = "notifications"
+            self._set_stage("notify_dpg")
             async with asyncio.timeout(IO_TIMEOUT):
                 await self.client.start_notify(
                     DPG_UUID, lambda _, data: self._notification(generation, data)
                 )
+                self._set_stage("notify_height")
                 await self.client.start_notify(
                     HEIGHT_UUID, lambda _, data: self._position(generation, data)
                 )
-        self.stage = "extended_reads"
+        self._set_stage("extended_reads")
         state = DeskState()
         state.capabilities = decode_capabilities(
             await self._query(ReadCommand.CAPABILITIES, 2)
@@ -158,14 +181,14 @@ class DeskClient:
         for command in list(ReadCommand)[3 : 3 + state.capabilities.memory_slots]:
             state.memories.append(decode_stored_position(await self._query(command, 7)))
         state.reminders = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
-        self.stage = "position_read"
+        self._set_stage("position_read")
         async with asyncio.timeout(IO_TIMEOUT):
             state.position = decode_position(
                 bytes(await self.client.read_gatt_char(HEIGHT_UUID))
             )
         self.state = state
         self._ready = True
-        self.stage = "ready"
+        self._set_stage("ready")
         return state
 
     async def disconnect(self) -> None:

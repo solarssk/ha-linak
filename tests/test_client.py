@@ -105,14 +105,17 @@ async def test_old_connection_notifications_are_ignored():
 
 
 @pytest.mark.parametrize(
-    "phase", ["connection", "notifications", "position_read", "extended_reads"]
+    "phase",
+    ["connection", "notify_dpg", "notify_height", "position_read", "extended_reads"],
 )
 async def test_each_hanging_phase_is_bounded_and_discards_session(phase):
     import asyncio
 
     class HangingBleak(FakeBleak):
         async def start_notify(self, uuid, callback):
-            if phase == "notifications":
+            if (phase == "notify_dpg" and uuid == DPG_UUID) or (
+                phase == "notify_height" and uuid == HEIGHT_UUID
+            ):
                 await asyncio.Future()
             await super().start_notify(uuid, callback)
 
@@ -234,3 +237,28 @@ async def test_unsupported_panel_read_layout_is_rejected_and_disconnected(
         await desk.refresh()
     assert not fake.is_connected
     assert not desk.connected
+
+
+async def test_stage_logs_identify_subscription_and_link_loss_without_identifiers(
+    caplog,
+):
+    import logging
+    from unittest.mock import AsyncMock
+
+    fake = FakeBleak()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Private desk", {}), lambda: None)
+    with (
+        caplog.at_level(logging.DEBUG, logger="custom_components.ha_linak.client"),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            AsyncMock(return_value=fake),
+        ),
+    ):
+        await desk.refresh()
+        desk._disconnected(fake)
+    assert "entering notify_dpg" in caplog.text
+    assert "entering notify_height" in caplog.text
+    assert "BLE link lost during ready after" in caplog.text
+    assert "AA:BB:CC:DD:EE:FF" not in caplog.text
+    assert "Private desk" not in caplog.text
+    await desk.disconnect()

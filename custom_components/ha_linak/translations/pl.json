@@ -4,18 +4,32 @@
     "step": {
       "user": {
         "title": "Połącz biurko LINAK",
-        "description": "Włącz parowanie Bluetooth na panelu i zamknij inne aplikacje biurka. Ta wersja alfa obsługuje panele DPG z dostępem do rozszerzonych odczytów.",
+        "description": "Włącz parowanie Bluetooth na panelu biurka i zamknij aplikację telefonu. Wybierz biurko, aby rozpocząć sprawdzanie połączenia i odczytów.",
         "data": {
           "address": "Biurko"
         }
+      },
+      "connect": {
+        "title": "Sprawdzanie biurka"
+      },
+      "retry": {
+        "title": "Ponów połączenie z biurkiem",
+        "description": "Zbliż biurko do adaptera Bluetooth, włącz parowanie na panelu i zamknij inne aplikacje połączone z biurkiem. Zatwierdź, aby spróbować ponownie."
       }
     },
     "error": {
-      "cannot_connect": "Nie udało się odczytać danych biurka. Sprawdź parowanie, zasięg i inne połączone aplikacje."
+      "cannot_connect": "Nie udało się odczytać danych biurka. Sprawdź parowanie, zasięg i inne połączone aplikacje.",
+      "timeout": "Biurko nie odpowiedziało w wymaganym czasie. Sprawdź parowanie, zasięg Bluetooth i połączenie aplikacji telefonu, a następnie ponów próbę.",
+      "unsupported_device": "Biurko zwróciło nieobsługiwany format danych. Ta wersja wymaga rozszerzonych odczytów DPG1C.",
+      "unknown": "Wystąpił nieoczekiwany błąd konfiguracji. Sprawdź dziennik Home Assistanta dla integracji ha_linak."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
-      "no_devices_found": "Nie znaleziono zgodnego biurka. Włącz parowanie i sprawdź adapter Bluetooth lub aktywne proxy."
+      "no_devices_found": "Nie znaleziono zgodnego biurka. Włącz parowanie i sprawdź adapter Bluetooth lub aktywne proxy.",
+      "not_connectable": "Urządzenie zostało wykryte, ale nie można nawiązać z nim aktywnego połączenia Bluetooth. Sprawdź lokalny adapter lub aktywne proxy."
+    },
+    "progress": {
+      "connect": "Łączenie z biurkiem i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację."
     }
   },
   "entity": {

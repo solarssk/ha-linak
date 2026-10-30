@@ -33,6 +33,17 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
+## 0.1.0a2 — unpublished alpha
+
+- Add native HA progress, translated validation failures and retry for desk onboarding.
+- Bound complete connection/read attempts and individual notification/position operations; release connections after failure or flow cancellation.
+- Select the current connectable device through HA's Bluetooth manager and pass an adapter-update callback to the connector.
+- Test slow/failed setup, progress revisits, retry, cancellation and HA setup-retry behavior. Real Raspberry Pi onboarding remains unverified.
+
+### Adopter action
+
+- Redownload/update the custom integration and restart HA. Cancel an old pending setup before trying again. If it still fails, report the setup-stage warning and HA version with private identifiers removed.
+
 ## 0.1.0a1 — unpublished local alpha
 
 - Add native Home Assistant UI configuration and Bluetooth discovery.

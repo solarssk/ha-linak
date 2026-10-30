@@ -102,3 +102,51 @@ async def test_old_connection_notifications_are_ignored():
     await desk.disconnect()
     callback(None, bytearray.fromhex("00000000"))
     assert desk.state.height_cm == 82.38
+
+
+@pytest.mark.parametrize(
+    "phase", ["connection", "notifications", "position_read", "extended_reads"]
+)
+async def test_each_hanging_phase_is_bounded_and_discards_session(phase):
+    import asyncio
+
+    class HangingBleak(FakeBleak):
+        async def start_notify(self, uuid, callback):
+            if phase == "notifications":
+                await asyncio.Future()
+            await super().start_notify(uuid, callback)
+
+        async def read_gatt_char(self, uuid):
+            if phase == "position_read":
+                await asyncio.Future()
+            return await super().read_gatt_char(uuid)
+
+        async def write_gatt_char(self, uuid, data, response):
+            if phase == "extended_reads":
+                await asyncio.Future()
+            await super().write_gatt_char(uuid, data, response)
+
+    fake = HangingBleak()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+
+    async def connect(*args, **kwargs):
+        if phase == "connection":
+            await asyncio.Future()
+        return fake
+
+    with (
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=connect,
+        ),
+        patch("custom_components.ha_linak.client.REFRESH_TIMEOUT", 0.04),
+        patch("custom_components.ha_linak.client.IO_TIMEOUT", 0.01),
+        patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
+        pytest.raises(TimeoutError),
+    ):
+        await desk.refresh()
+    assert desk.stage == phase
+    assert desk.client is None
+    assert not desk.connected
+    if phase != "connection":
+        assert not fake.is_connected

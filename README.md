@@ -152,6 +152,8 @@ Copy [`custom_components/ha_linak`](custom_components/ha_linak) into the `custom
 3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
 4. Select this custom integration, domain **`ha_linak`**, then choose your desk.
 
+After submitting, HA shows a progress screen. The attempt has a **60-second** limit; releasing the connection can take another **10 seconds**. A failed attempt shows a reason and lets you retry. [First setup and diagnosis →](docs/onboarding.md)
+
 > [!TIP]
 > The panel accepts one Bluetooth connection at a time. If setup fails, check that another app is not connected. A local adapter may also need pairing on the HA host.
 

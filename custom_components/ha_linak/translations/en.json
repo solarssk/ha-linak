@@ -4,18 +4,32 @@
     "step": {
       "user": {
         "title": "Connect your LINAK desk",
-        "description": "Put the panel into Bluetooth pairing mode and close other desk apps. This alpha supports DPG panels with extended read access.",
+        "description": "Enable Bluetooth pairing on the desk panel and close the phone app. Select your desk to check its connection and readings.",
         "data": {
           "address": "Desk"
         }
+      },
+      "connect": {
+        "title": "Checking your desk"
+      },
+      "retry": {
+        "title": "Try connecting again",
+        "description": "Keep the desk within Bluetooth range, enable pairing on the panel and close other connected desk apps. Submit to try again."
       }
     },
     "error": {
-      "cannot_connect": "Unable to read the desk. Check pairing, range and other connected apps."
+      "cannot_connect": "Unable to read the desk. Check pairing, range and other connected apps.",
+      "timeout": "The desk did not respond in time. Check pairing, Bluetooth range and connected phone apps, then try again.",
+      "unsupported_device": "The desk returned an unsupported data format. This alpha requires the DPG1C extended readings.",
+      "unknown": "An unexpected setup error occurred. Check the Home Assistant log for ha_linak."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
-      "no_devices_found": "No compatible desks found. Enable pairing and check your Bluetooth adapter or active proxy."
+      "no_devices_found": "No compatible desks found. Enable pairing and check your Bluetooth adapter or active proxy.",
+      "not_connectable": "The device was discovered, but an active Bluetooth connection is not available. Check your local adapter or active proxy."
+    },
+    "progress": {
+      "connect": "Connecting to your desk and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup."
     }
   },
   "entity": {

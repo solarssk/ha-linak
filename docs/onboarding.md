@@ -13,6 +13,12 @@
 5. Home Assistant then starts the entry, opens the runtime connection and loads
    the sensors. A transient failure here enters HA's setup-retry state.
 
+The entry is titled with the name the desk advertises. When Home Assistant only
+knows the Bluetooth address, which it then reports as the name, the setup flow
+uses the current device name and otherwise `LINAK`. An existing entry whose title
+is only the address is renamed once on the next setup; titles you chose yourself
+are never changed.
+
 Discovery alone does not prove a usable GATT connection. The panel accepts one
 connection at a time; the phone app or another desk integration may hold it.
 Pairing/authentication on the local Bluetooth host can also be necessary. This

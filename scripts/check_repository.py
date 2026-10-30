@@ -37,6 +37,14 @@ def main():
     for file in (COMPONENT / "translations").glob("*.json"):
         assert keys(json.loads(file.read_text())) == keys(english), file
     assert len(list((ROOT / "custom_components").iterdir())) == 1
+    for name in ("README.md", "README.pl.md"):
+        text = (ROOT / name).read_text()
+        assert not re.search(r"<(?:picture|source|table|details|p|h1)\b", text, re.I), (
+            name
+        )
+        for target in re.findall(r"\]\(([^)]+)\)", text):
+            if "://" not in target and not target.startswith("#"):
+                assert (ROOT / target.split("#")[0]).exists(), (name, target)
     checks = json.loads((ROOT / ".github/required-checks.json").read_text())
     assert len(checks) == len(set(checks))
     assert "Lint workflows (actionlint, zizmor)" in checks

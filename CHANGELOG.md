@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Make both READMEs readable in HACS with native Markdown, a theme-neutral logo and short setup steps; retain detailed user guides.
 - Consolidate repository labels into four change types plus dependency and security markers.
 - Require PR type, release milestone and assignee in the existing documentation gate; document the complete agent workflow and handoff checks.
 - Document DPG1C authentication/initialization research and the hardware validation plan; distinguish notification stages and log elapsed stage time without device identifiers.

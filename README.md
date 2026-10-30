@@ -1,227 +1,83 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/linak-logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/linak-logo-light.svg">
-    <img src="docs/assets/linak-logo-light.svg" alt="LINAK — We improve your life" width="360">
-  </picture>
-</p>
+![LINAK](docs/assets/linak-logo.svg)
 
-<h1 align="center">LINAK for Home Assistant</h1>
+# LINAK for Home Assistant
 
-<p align="center">
-  <strong>Your LINAK desk in Home Assistant.<br>Live height in centimeters, saved heights and reminders.</strong><br>
-  Runs directly in Home Assistant. First hardware target: <strong>DPG1C</strong>.
-</p>
+**Your desk height in centimeters, right in Home Assistant.**
+A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
 
-<p align="center">
-  🇬🇧 <strong>English</strong> &nbsp;·&nbsp; 🇵🇱 <a href="README.pl.md">Polski</a>
-</p>
+🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 
-<p align="center">
-  <a href="hacs.json"><img src="https://img.shields.io/badge/Home%20Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Home Assistant 2026.10.4 or newer"></a>
-  <a href="https://www.hacs.xyz/docs/faq/custom_repositories/"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&amp;logoColor=white" alt="HACS custom repository"></a>
-</p>
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](hacs.json)
+[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
+[![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-<p align="center">
-  <a href="https://github.com/solarssk/ha-linak/actions/workflows/ci.yml"><img src="https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://app.codecov.io/gh/solarssk/ha-linak"><img src="https://codecov.io/gh/solarssk/ha-linak/graph/badge.svg" alt="Codecov"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=solarssk_ha-linak"><img src="https://sonarcloud.io/api/project_badges/measure?project=solarssk_ha-linak&amp;metric=alert_status" alt="Sonar quality gate"></a>
-  <a href="https://securityscorecards.dev/viewer/?uri=github.com/solarssk/ha-linak"><img src="https://api.securityscorecards.dev/projects/github.com/solarssk/ha-linak/badge" alt="OpenSSF Scorecard"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="Code license: MIT"></a>
-</p>
+> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. End-to-end Raspberry Pi and proxy validation is still in progress. Movement, Stop and changing panel settings are not available yet.
 
-> [!IMPORTANT]
-> **Read-only alpha.** You can view desk data. Movement, Stop and changing panel settings are still being developed. [What's next →](docs/roadmap.md)
+![Illustration of sensor values, not a Home Assistant screenshot](docs/assets/desk-overview-en.svg)
 
-<details>
-<summary><strong>On this page</strong></summary>
+## 📏 What you can see
 
-- [🪑 Supported panels](#supported-panels)
-- [📊 Home Assistant entities](#entities)
-- [📋 Requirements](#requirements)
-- [📦 Installation](#installation)
-- [🔌 Configuration](#configuration)
-- [🏠 Everyday use](#daily-use)
-- [🧪 Validation status](#validation)
-- [📚 Help and documentation](#help)
-- [📄 License](#license)
+- **A clear height reading:** centimeters above the floor, using the panel's own offset.
+- **Your desk's saved positions:** see the heights already stored on the panel.
+- **Reminder settings in one place:** check the selected profile and configured intervals.
 
-</details>
+Reminder times are settings, not elapsed-time counters. Other panel models are not confirmed. [Full entity reference and hardware results →](docs/guide.md)
 
-<a id="supported-panels"></a>
+## 🏠 Make it part of your dashboard
 
-## 🪑 Supported panels
+Add **Height** to a standard Home Assistant card and see your desk's position without opening the desk app. Changes made with the physical panel arrive through Bluetooth.
 
-The first supported model is **DPG1C**. This version reads desk data.
+Check your saved sitting and standing heights in one place. The stored-height sensors show what is saved on the panel; viewing them does not start a move. Reminder sensors show the panel's configured profiles, rather than sending phone notifications.
 
-| LINAK panel | Available functions | Hardware evidence |
-| --- | --- | --- |
-| **DPG1C** | Height, stored heights, height offset and reminder profiles | Read queries verified on one panel |
+### Sensors in Home Assistant
 
-Compatibility with other panel models is not confirmed. [Read-query results →](docs/hardware-results.md)
+- 📏 **Height** is the main measurement sensor, in centimeters.
+- 🔖 **Stored height 1–4** shows up to four saved positions, in centimeters.
+- 🔔 **Active reminder profile** identifies the selected profile.
+- ⏱️ **Profile 1–3 sitting time** and **standing time** show configured durations, in minutes.
+- 📐 **Height offset** shows the panel's height reference, in centimeters.
 
-<a id="entities"></a>
+All except Height are diagnostic sensors. Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
 
-## 📊 Home Assistant entities
+## 📋 What you need
 
-The integration creates **sensor entities (`sensor`)**. These labels match the English names in HA; your device name may appear before them.
+- **Home Assistant 2026.10.4 or newer**.
+- A **DPG1C** panel within Bluetooth range.
+- A local Bluetooth adapter or compatible active **ESPHome Bluetooth proxy** with pairing support.
 
-<table>
-  <thead>
-    <tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Unit</th><th scope="col">What it shows</th></tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="6">Sensor<br><code>sensor</code></td>
-      <td>📏 <strong>Height</strong></td>
-      <td>cm</td>
-      <td>Current desk height, including the panel offset</td>
-    </tr>
-    <tr>
-      <td>🔖 <strong>Stored height 1–4</strong></td>
-      <td>cm</td>
-      <td>Heights saved on the panel; up to four entities</td>
-    </tr>
-    <tr>
-      <td>🔔 <strong>Active reminder profile</strong></td>
-      <td>—</td>
-      <td>The selected profile number</td>
-    </tr>
-    <tr>
-      <td>⏱️ <strong>Profile 1–3 sitting time</strong></td>
-      <td>min</td>
-      <td>Sitting time configured for each of three profiles</td>
-    </tr>
-    <tr>
-      <td>🚶 <strong>Profile 1–3 standing time</strong></td>
-      <td>min</td>
-      <td>Standing time configured for each of three profiles</td>
-    </tr>
-    <tr>
-      <td>📐 <strong>Height offset</strong></td>
-      <td>cm</td>
-      <td>The height reference stored on the panel</td>
-    </tr>
-  </tbody>
-</table>
+The integration runs directly on your HA host. No Mac or separate bridge is needed.
 
-- **Height** is the main measurement sensor.
-- All other entities have the **Diagnostic** category and show settings read from the panel.
-- Reminder durations are configured values, not elapsed-time counters.
-- Sensors do not move the desk or change its settings.
+## 🚀 Install and connect
 
-<a id="requirements"></a>
+1. In HACS, add `https://github.com/solarssk/ha-linak` as a custom repository of type **Integration**.
+2. Download **LINAK**, then restart Home Assistant.
+3. Close connected desk phone apps and disable any Idasen integration using the same desk.
+4. Enable **Bluetooth pairing** on the desk panel.
+5. Go to **Settings → Devices & services → Add integration**. Search for **LINAK** and select this custom integration (`ha_linak`), then choose your desk. You can also use its discovery card.
 
-## 📋 Requirements
+Setup connects, authenticates and reads the panel. Allow up to **60 seconds**, plus **10 seconds** to release a failed connection. A failed attempt shows a reason and offers a retry.
 
-- **Home Assistant 2026.10.4+**.
-- **HACS** for installation, or a manual copy of the integration.
-- A Bluetooth adapter within reach, or a compatible **active ESPHome Bluetooth proxy**.
-- A free Bluetooth connection on the panel.
+There is no tagged release yet; HACS downloads the default branch. [Manual installation and detailed guide →](docs/guide.md)
 
-Raspberry Pi and proxy validation are covered [separately](#validation).
+## 🛠️ If something goes wrong
 
-<a id="installation"></a>
+Check the displayed error and the `ha_linak` log. For a report, include your HA/integration versions, panel model and whether the connection uses a local adapter or proxy. Remove Bluetooth addresses and desk names before sharing logs.
 
-## 📦 Installation
+[Setup and troubleshooting](docs/onboarding.md) · [Report a bug](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml)
 
-### With HACS
+## 🪑 Compatibility and development
 
-1. Open HACS → **Custom repositories**.
-2. Add this address and choose **Integration**:
+**DPG1C is the initial hardware target.** Seven extended read queries were checked on one physical panel through macOS CoreBluetooth. Setup, sensors, pairing errors and recovery are also tested inside Home Assistant with simulated Bluetooth.
 
-   ```text
-   https://github.com/solarssk/ha-linak
-   ```
+Real Raspberry Pi and ESPHome proxy validation is still ongoing. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
 
-3. Download **LINAK** and restart Home Assistant.
+Next comes reliable height control in **centimeters**, Stop and saved-position controls, after supervised hardware tests. These controls are not included in this alpha. [Follow the roadmap →](docs/roadmap.md)
 
-<details>
-<summary>Prefer manual installation?</summary>
+## 📚 Learn more
 
-Copy [`custom_components/ha_linak`](custom_components/ha_linak) into the `custom_components` folder in your Home Assistant configuration, then restart HA.
+[User guide](docs/guide.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
 
-</details>
+[Protocol research](docs/protocol.md) · [Bluetooth investigation](docs/bluetooth-research.md) · [Quality and governance](docs/governance.md)
 
-<a id="configuration"></a>
-
-## 🔌 Configuration
-
-The discovery card shows **LINAK · your desk name**. The internal integration domain remains `ha_linak`.
-
-1. Close the phone app. Disable any IKEA Idasen Desk integration using the same desk.
-2. Put the panel in **Bluetooth pairing mode**.
-3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
-4. Select this custom integration, domain **`ha_linak`**, then choose your desk.
-
-Version **0.1.0a3** authenticates before reading. Setup distinguishes pairing failures, unsupported proxy pairing and lost connections. This change still needs Raspberry Pi/proxy hardware validation.
-
-After submitting, HA shows a progress screen. The attempt has a **60-second** limit; releasing the connection can take another **10 seconds**. A failed attempt shows a reason and lets you retry. [First setup and diagnosis →](docs/onboarding.md)
-
-> [!TIP]
-> The panel accepts one Bluetooth connection at a time. If setup fails, check that another app is not connected. A local adapter may also need pairing on the HA host.
-
-<details>
-<summary>About this alpha and the built-in LINAK entry</summary>
-
-- This is a HACS custom repository, outside the default catalog.
-- There is no versioned release yet; HACS downloads the default branch. Check [CI status](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml).
-- The built-in LINAK entry leads to IKEA Idasen Desk, a different integration. Choose `ha_linak` for this project.
-
-</details>
-
-<a id="daily-use"></a>
-
-## 🏠 Everyday use
-
-- Find your sensors under **Settings → Devices & services → LINAK**.
-- Add the height sensor to your dashboard with a standard HA card.
-- View the heights saved on your panel. Viewing a saved height does not move the desk.
-- Height updates arrive through Bluetooth. Settings refresh every **60 seconds**.
-- If the connection fails, sensors become unavailable and HA retries while they are loaded.
-
-<details>
-<summary>Remove the integration</summary>
-
-Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then restart HA. This alpha does not change the panel's saved settings.
-
-</details>
-
-<a id="validation"></a>
-
-## 🧪 Validation status
-
-- **Physical DPG1C:** seven read queries verified through macOS CoreBluetooth.
-- **Home Assistant 2026.10.4 with simulated Bluetooth:** setup, sensor, disconnect/recovery and unloading tests.
-- **Raspberry Pi and ESPHome proxy:** real-device integration testing pending.
-
-This describes environment validation, not supported panel models. [Full results →](docs/hardware-results.md)
-
-<details>
-<summary>Measurement and control limitations</summary>
-
-- Unknown speed words and counters are not exposed as verified measurements.
-- Desk height does not indicate occupancy.
-- Movement and Stop remain unavailable. There is no percentage-based cover entity.
-
-</details>
-
-<a id="help"></a>
-
-## 📚 Help and documentation
-
-- **Something isn't working?** [Report a bug](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
-- **Follow development:** [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md).
-- **Want to contribute?** [Contributing](CONTRIBUTING.md) · [Agent instructions](AGENTS.md).
-- **Technical details:** [Protocol](docs/protocol.md) · [Architecture](docs/architecture.md) · [Movement plan](docs/movement.md).
-- **Security:** [Private reporting](SECURITY.md) · [Tier 2 maintenance baseline](docs/governance.md). Diagnostics omit device identifiers.
-
-<a id="license"></a>
-
-## 📄 License
-
-Code: [MIT](LICENSE). Independent community project, not affiliated with LINAK or IKEA. No official HA quality-scale award or HACS default-catalog acceptance is claimed.
-
-The official LINAK artwork supplied for this project identifies the hardware. Names and graphics remain the property of their respective owners and are excluded from the code license. See [asset provenance](docs/branding.md) and [protocol sources](docs/protocol.md).
-
-Technical background: [Bluetooth research and diagnostic design](docs/bluetooth-research.md).
+Independent community project, not affiliated with LINAK or IKEA. Code is MIT licensed; LINAK artwork belongs to its owner. [Branding and sources](docs/branding.md).

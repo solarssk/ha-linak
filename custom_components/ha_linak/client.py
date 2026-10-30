@@ -41,6 +41,9 @@ PAIR_TIMEOUT = 30
 class DeskLinkLost(ConnectionError):
     """The current session disconnected during an operation."""
 
+    def __init__(self) -> None:
+        super().__init__("Desk disconnected")
+
 
 class DeskAuthenticationError(ConnectionError):
     """Bluetooth authentication was rejected or failed."""
@@ -142,30 +145,34 @@ class DeskClient:
             self._ready = False
         self.changed()
 
-    async def _io[T](self, operation: Coroutine[Any, Any, T], timeout: float) -> T:
+    async def _io[T](self, operation: Coroutine[Any, Any, T], budget: float) -> T:
         """Own one operation; distinguish link loss from caller cancellation."""
         if self._link_lost or self.client is None or not self.client.is_connected:
             operation.close()
-            raise DeskLinkLost("Desk disconnected")
+            raise DeskLinkLost()
         task = asyncio.create_task(operation)
         self._operation = task
         try:
-            async with asyncio.timeout(timeout):
+            async with asyncio.timeout(budget):
                 result = await task
             if self._link_lost or not self.client.is_connected:
-                raise DeskLinkLost("Desk disconnected")
+                raise DeskLinkLost()
             return result
         except asyncio.CancelledError:
-            current = asyncio.current_task()
-            if self._link_lost and current is not None and not current.cancelling():
-                raise DeskLinkLost("Desk disconnected") from None
+            self._raise_if_transport_cancelled()
             raise
         except BleakError:
             if self._link_lost:
-                raise DeskLinkLost("Desk disconnected") from None
+                raise DeskLinkLost() from None
             raise
         finally:
             self._operation = None
+
+    def _raise_if_transport_cancelled(self) -> None:
+        """Translate child I/O cancellation only; caller cancellation must propagate."""
+        current = asyncio.current_task()
+        if self._link_lost and current is not None and not current.cancelling():
+            raise DeskLinkLost() from None
 
     async def _pair(self) -> None:
         assert self.client is not None
@@ -217,6 +224,8 @@ class DeskClient:
                     try:
                         await asyncio.shield(settled)
                     except asyncio.CancelledError:
+                        if settled.done():
+                            raise
                         cancelled = True
                 cleanup_error = settled.result()[0]
                 if isinstance(cleanup_error, BaseException):

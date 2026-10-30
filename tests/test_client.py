@@ -291,7 +291,8 @@ async def test_pairing_precedes_notifications_for_local_and_proxy_backends(backe
     ):
         await desk.refresh()
         await desk.refresh()
-    assert fake.paired and desk.connected
+    assert fake.paired
+    assert desk.connected
     await desk.disconnect()
 
 
@@ -347,7 +348,8 @@ async def test_pairing_failures_release_session_before_any_gatt_writes(
     ):
         await desk.refresh()
     assert not fake.is_connected
-    assert not fake.callbacks and not fake.writes
+    assert not fake.callbacks
+    assert not fake.writes
 
 
 @pytest.mark.parametrize(
@@ -393,7 +395,8 @@ async def test_link_loss_interrupts_pending_operation_without_waiting_for_timeou
         with pytest.raises(DeskLinkLost):
             await asyncio.wait_for(task, 1)
     assert cancelled.is_set()
-    assert desk.stage == phase and desk.client is None
+    assert desk.stage == phase
+    assert desk.client is None
     assert desk._operation is None
 
 
@@ -431,7 +434,8 @@ async def test_repeated_cancellation_drains_cleanup_and_preserves_cancellation()
         release.set()
         with pytest.raises(asyncio.CancelledError):
             await task
-    assert not fake.is_connected and desk.client is None
+    assert not fake.is_connected
+    assert desk.client is None
 
 
 @pytest.mark.parametrize(
@@ -462,8 +466,10 @@ async def test_connection_loss_races_never_publish_a_ready_session(mode):
         pytest.raises(DeskLinkLost),
     ):
         await desk.refresh()
-    assert desk.client is None and not desk.connected
-    assert not fake.writes and not fake.callbacks
+    assert desk.client is None
+    assert not desk.connected
+    assert not fake.writes
+    assert not fake.callbacks
 
 
 async def test_cleanup_failure_preserves_original_authentication_error_and_redacts_logs(

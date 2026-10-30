@@ -25,6 +25,22 @@ from .protocol import SERVICE_UUID
 _LOGGER = logging.getLogger(__name__)
 
 
+def _validation_error(error: Exception, stage: str) -> str:
+    if isinstance(error, TimeoutError) and stage == "pairing":
+        return "pairing_timeout"
+    for exception_type, code in (
+        (DeskPairingTimeout, "pairing_timeout"),
+        (DeskAuthenticationError, "authentication_failed"),
+        (DeskPairingUnsupported, "pairing_unsupported"),
+        (DeskLinkLost, "connection_lost"),
+        (TimeoutError, "timeout"),
+        (ValueError, "unsupported_device"),
+    ):
+        if isinstance(error, exception_type):
+            return code
+    return "cannot_connect"
+
+
 class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
@@ -102,20 +118,8 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
             await desk.refresh()
-        except DeskPairingTimeout:
-            error = "pairing_timeout"
-        except DeskAuthenticationError:
-            error = "authentication_failed"
-        except DeskPairingUnsupported:
-            error = "pairing_unsupported"
-        except DeskLinkLost:
-            error = "connection_lost"
-        except TimeoutError:
-            error = "pairing_timeout" if desk and desk.stage == "pairing" else "timeout"
-        except ValueError:
-            error = "unsupported_device"
-        except BleakError, ConnectionError:
-            error = "cannot_connect"
+        except (TimeoutError, ValueError, BleakError, ConnectionError) as err:
+            error = _validation_error(err, desk.stage if desk else "device_lookup")
         except Exception:
             _LOGGER.exception("Unexpected LINAK configuration failure")
             error = "unknown"

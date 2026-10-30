@@ -534,3 +534,33 @@ async def test_setup_keeps_a_title_the_user_chose(hass):
         await hass.async_block_till_done()
         assert entry.title == "Standing desk"
         assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_setup_uses_the_fallback_name_when_no_device_name_is_known(hass):
+    fake = FakeBleak()
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=ADDRESS,
+        unique_id=ADDRESS,
+        data={CONF_ADDRESS: ADDRESS},
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",
+            return_value=BLEDevice(ADDRESS, ADDRESS, {}),
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=connect,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert entry.title == "LINAK"
+        assert entry.runtime_data.name == "LINAK"
+        assert await hass.config_entries.async_unload(entry.entry_id)

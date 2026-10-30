@@ -5,7 +5,7 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
 
 from .coordinator import LinakCoordinator
-from .naming import DEFAULT_NAME, desk_name
+from .naming import desk_name
 
 PLATFORMS = [Platform.SENSOR]
 
@@ -43,6 +43,5 @@ def _repair_title(
     if entry.title.upper() != address.upper() or coordinator.desk is None:
         return
     name = desk_name(address, coordinator.desk.device.name)
-    if name != DEFAULT_NAME:
-        hass.config_entries.async_update_entry(entry, title=name)
-        coordinator.name = name
+    hass.config_entries.async_update_entry(entry, title=name)
+    coordinator.name = name

@@ -203,6 +203,9 @@ class MotionController:
             # Also clear here: Stop must not depend on the action caller resuming.
             if self._task is task:
                 self._task = None
+        # A task cancelled before its first instruction never runs its finally
+        # block. Explicit Stop must still send a packet in that scheduling case.
+        await self._stop()
 
     async def close(self) -> None:
         self._closed = True

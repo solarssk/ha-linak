@@ -206,3 +206,22 @@ async def test_bad_target_sends_no_packets():
     with pytest.raises(ValueError):
         await controller(transport).move_to_cm(200)
     assert transport.writes == []
+
+
+async def test_stop_before_worker_starts_still_sends_stop():
+    transport = Transport()
+    motion = controller(transport)
+    task = asyncio.create_task(motion.move_to_cm(83))
+    await asyncio.sleep(0)  # move_to reserves its child; the child has not run yet.
+    await motion.stop()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert transport.writes == [STOP]
+    assert not motion.moving
+
+
+async def test_malformed_feedback_stops_without_waking():
+    transport = Transport((65535,))
+    with pytest.raises(MotionError, match="limits"):
+        await controller(transport).move_to_cm(83)
+    assert transport.writes == [STOP]

@@ -299,3 +299,59 @@ def test_all_locked_uv_copies_exclude_the_compromised_ca_bundle():
             found[file.name] = version
     assert found["uv.txt"] == bootstrap
     assert found["test.txt"] == bootstrap
+
+
+@pytest.mark.parametrize(
+    "labels,milestone,assignees,valid",
+    [
+        (["type: bug"], {"state": "open"}, [{"login": "maintainer"}], True),
+        (
+            ["type: chore", "dependencies"],
+            {"state": "open"},
+            [{"login": "maintainer"}],
+            True,
+        ),
+        ([], {"state": "open"}, [{"login": "maintainer"}], False),
+        (
+            ["type: bug", "type: docs"],
+            {"state": "open"},
+            [{"login": "maintainer"}],
+            False,
+        ),
+        (["type: invented"], {"state": "open"}, [{"login": "maintainer"}], False),
+        (["type: docs"], None, [{"login": "maintainer"}], False),
+        (["type: docs"], {"state": "closed"}, [{"login": "maintainer"}], False),
+        (["type: docs"], {"state": "open"}, [], False),
+    ],
+)
+def test_pr_handoff_requires_actual_metadata(labels, milestone, assignees, valid):
+    from scripts.check_pr_metadata import validate as validate_metadata
+
+    pr = {
+        "labels": [{"name": name} for name in labels],
+        "milestone": milestone,
+        "assignees": assignees,
+    }
+    if valid:
+        validate_metadata(pr)
+    else:
+        with pytest.raises(ValueError):
+            validate_metadata(pr)
+
+
+def test_metadata_gate_reruns_when_handoff_fields_change():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/docs-impact.yml").read_text())
+    triggers = workflow.get("on", workflow.get(True))
+    assert {
+        "labeled",
+        "unlabeled",
+        "milestoned",
+        "demilestoned",
+        "assigned",
+        "unassigned",
+    } <= set(triggers["pull_request"]["types"])
+    assert workflow["permissions"] == {"contents": "read"}
+    assert any(
+        step.get("run") == "python3 scripts/check_pr_metadata.py"
+        for step in workflow["jobs"]["docs"]["steps"]
+    )

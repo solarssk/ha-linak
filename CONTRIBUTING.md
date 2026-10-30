@@ -36,3 +36,33 @@ Tests produce coverage.xml and junit.xml; a separate job uploads them to Codecov
 ## Review and repository settings
 
 CodeRabbit reviews run on explicit maintainer request; automatic and incremental reviews are disabled. Run `python scripts/check_github_settings.py` with an existing administrative gh login to compare live main protection with .github/required-checks.json. This is a maintainer check, not a reason to expose admin credentials to CI.
+
+## PR metadata and handoff
+
+Before opening a PR, read [AGENTS.md](AGENTS.md), use the PR template and inspect
+GitHub's open release milestones. Every PR needs exactly one supported `type:`
+label (`bug`, `feature`, `chore` or `docs`), its open target release milestone and
+a responsible maintainer assignee. Currently the maintainer is @solarssk. Keep
+priority/area labels optional for this small project. These are real GitHub fields,
+not substitutes in a PR checklist. Dependabot PRs follow the same policy.
+
+Open PRs with those fields supplied together, for example after choosing the
+actual target version from `gh api repos/solarssk/ha-linak/milestones`:
+
+```sh
+gh pr create --base main --title 'chore: describe the change' --body-file /tmp/pr-body.md --label 'type: chore' --milestone '<target-version>' --assignee solarssk
+python scripts/check_pr_metadata.py --pr <number>
+gh pr checks <number>
+```
+
+The required Documentation impact check also validates the type, open milestone
+and assignee. It reruns when these fields change. It has read-only permissions,
+executes on pull_request and never modifies PR metadata. Missing or closed release
+milestones must be resolved by the maintainer rather than fabricated by an agent.
+
+Run `scripts.check_pr_docs.validate` against the final body and actual changed-file
+list before opening a PR; the required `## Documentation impact` section must be
+present. Read back the current head checks after publishing. Report pending checks
+as pending; handoff does not mean merge-ready. Follow failures through their fixed
+head, and verify main after a maintainer merge. See AGENTS.md for the complete
+start-to-handoff sequence.

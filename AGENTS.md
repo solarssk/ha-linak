@@ -52,7 +52,8 @@ The movement research module is unregistered and is not a shipped control featur
 
 Use a scoped branch and Conventional Commit title. Make user-visible changes with
 CHANGELOG.md and relevant README/docs/translation updates in the same PR. Keep
-English and Polish keys aligned. Do not rewrite private hardware captures into
+English and Polish keys aligned. Keep CHANGELOG.md lists compact: consecutive
+bullets have no blank lines between them; separate headings and sections normally. Do not rewrite private hardware captures into
 public examples; use synthetic identifiers.
 
 Run the full validation block in CONTRIBUTING.md after the final patch and before

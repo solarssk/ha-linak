@@ -510,3 +510,71 @@ async def test_cancelling_caller_during_last_explicit_stop_keeps_reservation():
     await motion.stop()
     assert transport.writes == [STOP]
     assert not motion.moving
+
+
+@pytest.mark.parametrize("repeat_cancel", ["none", "pending", "completion"])
+async def test_cancelled_close_waits_for_final_stop_before_disconnect(repeat_cancel):
+    class OrderedClose(DelayedFinalStop):
+        def __init__(self):
+            super().__init__()
+            self.events = []
+
+        async def write_control(self, payload):
+            await super().write_control(payload)
+            assert self.connected
+            self.events.append("stop")
+            current = asyncio.current_task()
+            if (
+                repeat_cancel == "completion"
+                and current.get_coro().__qualname__ == "MotionController._finish_stop"
+            ):
+                current.add_done_callback(lambda _task: close.cancel())
+
+        async def disconnect(self):
+            self.events.append("disconnect")
+            await super().disconnect()
+
+    transport = OrderedClose()
+    motion = controller(transport)
+    move = asyncio.create_task(motion.move_to_cm(83))
+    await transport.stop_started.wait()
+    close = asyncio.create_task(motion.close())
+    await asyncio.sleep(0)
+    close.cancel()
+    await asyncio.sleep(0)
+    try:
+        assert transport.connected
+        assert not close.done()
+        if repeat_cancel == "pending":
+            close.cancel()
+            await asyncio.sleep(0)
+            assert transport.connected
+            assert not close.done()
+        transport.release_stop.set()
+        with pytest.raises(asyncio.CancelledError):
+            await close
+        with pytest.raises(asyncio.CancelledError):
+            await move
+        assert transport.events[-1] == "disconnect"
+        assert transport.events[:-1] == ["stop", "stop"]
+        assert not motion.moving
+    finally:
+        transport.release_stop.set()
+        await asyncio.gather(close, move, return_exceptions=True)
+        await asyncio.gather(motion.stop(), return_exceptions=True)
+
+
+async def test_cancelled_close_respects_stop_deadline_and_discards_failed_session():
+    transport = DelayedFinalStop()
+    motion = controller(transport)
+    move = asyncio.create_task(motion.move_to_cm(83))
+    await transport.stop_started.wait()
+    close = asyncio.create_task(motion.close())
+    await asyncio.sleep(0)
+    close.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await close
+    with pytest.raises(MotionError, match="discarded"):
+        await move
+    assert not transport.connected
+    assert not motion.moving

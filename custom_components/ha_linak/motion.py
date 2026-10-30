@@ -211,11 +211,13 @@ class MotionController:
             # Stop uses its own deadline, outside the movement deadline. Shield it
             # so cancellation of an HA action cannot cancel the Stop packet.
             cleanup = asyncio.create_task(self._finish_move(discard))
+            settled = asyncio.gather(cleanup, return_exceptions=True)
             try:
-                await asyncio.shield(cleanup)
+                await asyncio.shield(settled)
             except asyncio.CancelledError:
                 await cleanup
                 raise
+            cleanup.result()
 
     async def stop(self) -> None:
         # All callers share one reserved operation, including its last Stop write.
@@ -224,7 +226,14 @@ class MotionController:
             if self._task is not None and not self._task.cancelling():
                 self._task.cancel()
             self._stop_task = asyncio.create_task(self._finish_stop())
-        await asyncio.shield(self._stop_task)
+        # Observe late errors even if the caller cancels its shielded await.
+        result = (
+            await asyncio.shield(
+                asyncio.gather(self._stop_task, return_exceptions=True)
+            )
+        )[0]
+        if isinstance(result, BaseException):
+            raise result
 
     async def _finish_stop(self) -> None:
         task = self._task
@@ -241,6 +250,18 @@ class MotionController:
         self._closed = True
         try:
             await self.stop()
+        except asyncio.CancelledError:
+            # stop() shields its reserved operation. Let that bounded operation
+            # settle before disconnecting, including after repeated cancellation.
+            assert self._stop_task is not None
+            settled = asyncio.gather(self._stop_task, return_exceptions=True)
+            while not settled.done():
+                try:
+                    await asyncio.shield(settled)
+                except asyncio.CancelledError:
+                    if settled.done():
+                        raise
+            raise
         finally:
             async with asyncio.timeout(IO_TIMEOUT):
                 await self.transport.disconnect()

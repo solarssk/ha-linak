@@ -74,3 +74,5 @@ Record results without device names, addresses or other private identifiers:
 Only after these results are recorded may movement controls be enabled in a
 mergeable PR. Writing memories, reminders, offset or unrelated panel bits needs
 its own evidence and readback verification.
+
+Cancellation of `close()` waits for the reserved Stop operation to settle before disconnecting and then propagates cancellation. Repeated cancellation cannot bypass that wait; Stop keeps its existing I/O deadlines. Shielded task results are observed even when callers cancel, so a later Stop error is consumed while the controller remains closed.

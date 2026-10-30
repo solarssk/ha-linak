@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Wait for the reserved Stop to settle before disconnecting on close cancellation, including repeated cancellation and Stop timeout. Observe late errors from shielded cleanup tasks.
+
 - Discard the movement controller and BLE transport after a timeout, even when final Stop succeeds. Reserve the controller until a shared explicit Stop fully completes, preventing overlapping targets and late Stop writes.
 
 - Group sensor rows under one merged entity-type cell in both README tables and place icons beside the HA entity labels.

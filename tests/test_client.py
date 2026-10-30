@@ -150,3 +150,87 @@ async def test_each_hanging_phase_is_bounded_and_discards_session(phase):
     assert not desk.connected
     if phase != "connection":
         assert not fake.is_connected
+
+
+async def test_disconnect_during_query_fails_promptly_and_notifies():
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    waiting = asyncio.Event()
+    fake = FakeBleak()
+    changed = []
+    desk = DeskClient(
+        BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: changed.append(True)
+    )
+
+    async def write(*args, **kwargs):
+        waiting.set()
+
+    fake.write_gatt_char = write
+    connect = AsyncMock(return_value=fake)
+    with patch("custom_components.ha_linak.client.establish_connection", connect):
+        task = asyncio.create_task(desk.refresh())
+        await waiting.wait()
+        fake.is_connected = False
+        connect.call_args.kwargs["disconnected_callback"](fake)
+        with pytest.raises(ConnectionError, match="disconnected"):
+            await task
+    assert changed
+    assert desk.client is None
+    assert not desk.connected
+    # A late disconnect callback from the old transport cannot affect a new session.
+    changed.clear()
+    connect.call_args.kwargs["disconnected_callback"](fake)
+    assert not changed
+
+
+async def test_unrelated_notifications_are_ignored_and_bad_position_invalidates_state():
+    from unittest.mock import AsyncMock
+
+    class NoisyBleak(FakeBleak):
+        async def write_gatt_char(self, uuid, data, response):
+            self.callbacks[DPG_UUID](None, bytearray(b"\x01"))
+            self.callbacks[DPG_UUID](None, bytearray(b"\x00\x02"))
+            self.callbacks[DPG_UUID](None, bytearray(b"\x01\xff"))
+            await super().write_gatt_char(uuid, data, response)
+
+    fake = NoisyBleak()
+    changed = []
+    desk = DeskClient(
+        BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: changed.append(True)
+    )
+    with patch(
+        "custom_components.ha_linak.client.establish_connection",
+        AsyncMock(return_value=fake),
+    ):
+        await desk.refresh()
+    assert desk.connected
+    fake.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE["80"]))
+    fake.callbacks[HEIGHT_UUID](None, bytearray(b"\x00"))
+    assert not desk.connected
+    assert changed
+    await desk.disconnect()
+
+
+@pytest.mark.parametrize(
+    "command,payload,reason",
+    [("81", "010300901a", "offset"), ("80", "0102fd01", "slots")],
+)
+async def test_unsupported_panel_read_layout_is_rejected_and_disconnected(
+    command, payload, reason
+):
+    from unittest.mock import AsyncMock
+
+    fake = FakeBleak()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+    with (
+        patch.dict(CAPTURE, {command: payload}),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            AsyncMock(return_value=fake),
+        ),
+        pytest.raises(ValueError, match=reason),
+    ):
+        await desk.refresh()
+    assert not fake.is_connected
+    assert not desk.connected

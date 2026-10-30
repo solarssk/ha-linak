@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Document DPG1C authentication/initialization research and the hardware validation plan; distinguish notification stages and log elapsed stage time without device identifiers.
+
+- Show LINAK and the advertised desk name on Bluetooth discovery cards instead of the internal integration domain.
+
 - Detect cumulative retreat from the best position in the requested direction. Backward movement and jitter no longer reset the progress deadline.
 
 - Preserve the final movement Stop and its reservation through repeated cancellation using the same bounded cleanup-draining path as close().

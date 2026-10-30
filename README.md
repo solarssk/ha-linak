@@ -147,6 +147,8 @@ Copy [`custom_components/ha_linak`](custom_components/ha_linak) into the `custom
 
 ## 🔌 Configuration
 
+The discovery card shows **LINAK · your desk name**. The internal integration domain remains `ha_linak`.
+
 1. Close the phone app. Disable any IKEA Idasen Desk integration using the same desk.
 2. Put the panel in **Bluetooth pairing mode**.
 3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
@@ -219,3 +221,5 @@ This describes environment validation, not supported panel models. [Full results
 Code: [MIT](LICENSE). Independent community project, not affiliated with LINAK or IKEA. No official HA quality-scale award or HACS default-catalog acceptance is claimed.
 
 The official LINAK artwork supplied for this project identifies the hardware. Names and graphics remain the property of their respective owners and are excluded from the code license. See [asset provenance](docs/branding.md) and [protocol sources](docs/protocol.md).
+
+Technical background: [Bluetooth research and diagnostic design](docs/bluetooth-research.md).

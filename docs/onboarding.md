@@ -41,7 +41,7 @@ updated adapter/proxy information. Passive-only discovery is not accepted.
 ## Diagnosis
 
 A failed validation writes a `ha_linak` warning containing a stage and error code:
-`device_lookup`, `connection`, `notifications`, `extended_reads`, `position_read`, or `disconnect`.
+`device_lookup`, `connection`, `notify_dpg`, `notify_height`, `extended_reads`, `position_read`, or `disconnect`.
 Warnings for expected failures omit the desk name, Bluetooth address and raw
 exception message. The UI distinguishes timeout, connection failure, unsupported
 responses and unexpected errors. Unexpected errors retain a traceback for diagnosis.
@@ -62,3 +62,5 @@ cause of a particular Raspberry Pi connection failure without its logs.
 The implementation follows HA's [config flow](https://contributors.home-assistant.io/core/integrations/config-flow/),
 [progress steps](https://contributors.home-assistant.io/core/integrations/flow-steps/#show-progress)
 and [Bluetooth integration guidance](https://contributors.home-assistant.io/core/integrations/bluetooth/).
+
+See [Bluetooth research and diagnostic design](bluetooth-research.md) for the source comparison, known gaps and the next hardware experiment.

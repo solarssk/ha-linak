@@ -431,3 +431,106 @@ async def test_failed_disconnect_after_validation_never_creates_entry(hass):
         assert result["step_id"] == "retry"
         assert result["errors"] == {"base": "cannot_connect"}
         assert not hass.config_entries.async_entries(DOMAIN)
+
+
+def test_desk_name_ignores_the_address_home_assistant_uses_as_a_name():
+    from custom_components.ha_linak.naming import desk_name
+
+    assert desk_name(ADDRESS, ADDRESS.lower(), None, "Desk") == "Desk"
+    assert desk_name(ADDRESS, ADDRESS, "") == "LINAK"
+
+
+async def test_flow_title_uses_the_device_name_when_discovery_only_has_the_address(
+    hass,
+):
+    fake = FakeBleak()
+    info = SimpleNamespace(
+        address=ADDRESS,
+        name=ADDRESS,
+        device=DEVICE,
+        service_uuids=[SERVICE_UUID],
+        connectable=True,
+    )
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    with (
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
+            return_value=[info],
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=connect,
+        ),
+        patch("custom_components.ha_linak.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_ADDRESS: ADDRESS}
+        )
+        result = await finish_progress(hass, result)
+        assert result["type"] == "create_entry"
+        assert result["title"] == "Desk"
+
+
+async def test_setup_replaces_a_title_saved_as_the_address(hass):
+    fake = FakeBleak()
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=ADDRESS,
+        unique_id=ADDRESS,
+        data={CONF_ADDRESS: ADDRESS},
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",
+            return_value=DEVICE,
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=connect,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert entry.title == "Desk"
+        assert entry.runtime_data.name == "Desk"
+        assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_setup_keeps_a_title_the_user_chose(hass):
+    fake = FakeBleak()
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Standing desk",
+        unique_id=ADDRESS,
+        data={CONF_ADDRESS: ADDRESS},
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",
+            return_value=DEVICE,
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=connect,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert entry.title == "Standing desk"
+        assert await hass.config_entries.async_unload(entry.entry_id)

@@ -103,11 +103,14 @@ class MotionController:
         self.limits = limits
         self.offset_raw = offset_raw
         self._task: asyncio.Task[None] | None = None
+        self._stop_task: asyncio.Task[None] | None = None
         self._closed = False
 
     @property
     def moving(self) -> bool:
-        return self._task is not None
+        return self._task is not None or (
+            self._stop_task is not None and not self._stop_task.done()
+        )
 
     async def _control(self, payload: bytes) -> None:
         async with asyncio.timeout(IO_TIMEOUT):
@@ -122,35 +125,47 @@ class MotionController:
             raise MotionError("Position is outside the measured travel limits")
         return position
 
+    async def _discard(self) -> None:
+        self._closed = True
+        try:
+            async with asyncio.timeout(IO_TIMEOUT):
+                await self.transport.disconnect()
+        except Exception:
+            pass
+
     async def _stop(self) -> None:
         try:
             if not self.transport.connected:
                 raise MotionError("Desk disconnected; Stop cannot be delivered")
             await self._control(STOP)
         except Exception as err:
-            self._closed = True
-            try:
-                async with asyncio.timeout(IO_TIMEOUT):
-                    await self.transport.disconnect()
-            except Exception:
-                pass
+            await self._discard()
             raise MotionError("Stop could not be confirmed; session discarded") from err
+
+    async def _finish_move(self, discard: bool) -> None:
+        try:
+            await self._stop()
+        finally:
+            if discard:
+                await self._discard()
 
     async def move_to_cm(self, height_cm: float) -> None:
         target = self.limits.target(height_cm, self.offset_raw)
         if self._closed or not self.transport.connected:
             raise MotionError("Movement requires an open, connected session")
-        if self._task is not None:
+        if self.moving:
             raise MotionError("Another movement is active; stop it first")
         # No await between the busy check and reservation.
         task = self._task = asyncio.create_task(self._move(target))
         try:
             await task
         finally:
-            if self._task is task:
-                self._task = None
+            # Only the movement caller releases this reservation. Explicit Stop
+            # keeps its separate reservation until its entire operation finishes.
+            self._task = None
 
     async def _move(self, target: int) -> None:
+        discard = False
         try:
             async with asyncio.timeout(MOVE_TIMEOUT):
                 position = await self._read()
@@ -186,10 +201,16 @@ class MotionController:
                         previous = position
                     elif loop.time() - progress_at >= STALL_TIMEOUT:
                         raise MotionError("Desk stopped making progress")
+        except TimeoutError:
+            # A timed-out GATT operation may still have reached the device.
+            # Never accept another target on this ambiguous session.
+            self._closed = True
+            discard = True
+            raise
         finally:
             # Stop uses its own deadline, outside the movement deadline. Shield it
             # so cancellation of an HA action cannot cancel the Stop packet.
-            cleanup = asyncio.create_task(self._stop())
+            cleanup = asyncio.create_task(self._finish_move(discard))
             try:
                 await asyncio.shield(cleanup)
             except asyncio.CancelledError:
@@ -197,26 +218,23 @@ class MotionController:
                 raise
 
     async def stop(self) -> None:
+        # All callers share one reserved operation, including its last Stop write.
+        # Cancelling a caller must neither release ownership nor cancel that write.
+        if self._stop_task is None or self._stop_task.done():
+            if self._task is not None and not self._task.cancelling():
+                self._task.cancel()
+            self._stop_task = asyncio.create_task(self._finish_stop())
+        await asyncio.shield(self._stop_task)
+
+    async def _finish_stop(self) -> None:
         task = self._task
-        if task is None:
-            await self._stop()
-            return
-        if not task.cancelling():
-            task.cancel()
-        try:
-            await asyncio.shield(task)
-        except asyncio.CancelledError:
-            # Cancellation of the child is the requested Stop result. Cancellation
-            # of this caller must propagate, without interrupting the child's Stop.
-            caller = asyncio.current_task()
-            if caller is not None and caller.cancelling():
-                raise
-        finally:
-            # Also clear here: Stop must not depend on the action caller resuming.
-            if self._task is task and task.done():
-                self._task = None
-        # A task cancelled before its first instruction never runs its finally
-        # block. Explicit Stop must still send a packet in that scheduling case.
+        if task is not None:
+            result = (await asyncio.gather(task, return_exceptions=True))[0]
+            if isinstance(result, BaseException) and not isinstance(
+                result, asyncio.CancelledError
+            ):
+                raise result
+        # Also needed when cancellation prevented the worker from ever starting.
         await self._stop()
 
     async def close(self) -> None:

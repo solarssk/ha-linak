@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Discard the movement controller and BLE transport after a timeout, even when final Stop succeeds. Reserve the controller until a shared explicit Stop fully completes, preventing overlapping targets and late Stop writes.
+
 - Group sensor rows under one merged entity-type cell in both README tables and place icons beside the HA entity labels.
 
 - Separate supported panels, HA sensor entities, requirements and environment validation in both READMEs; match entity labels to HA translations and add section icons and quality badges.

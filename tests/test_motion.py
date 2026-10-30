@@ -367,7 +367,8 @@ async def test_cancelling_stop_caller_does_not_cancel_worker_cleanup():
     transport.release_stop.set()
     with pytest.raises(asyncio.CancelledError):
         await move
-    assert transport.writes == [STOP]
+    await motion.stop()  # join the reserved Stop after its original caller cancelled
+    assert transport.writes == [STOP, STOP]
     assert not motion.moving
 
 
@@ -403,4 +404,109 @@ async def test_stop_at_worker_completion_releases_ownership_before_caller_resume
     assert not motion.moving
     # Completion has released ownership; another explicit target is accepted.
     await motion.move_to_cm(83)
+    assert not motion.moving
+
+
+@pytest.mark.parametrize("operation", ["target", "read"])
+async def test_io_timeout_discards_session_even_when_final_stop_succeeds(operation):
+    class HangingIO(Transport):
+        async def read_position(self):
+            if operation == "read":
+                await asyncio.Future()
+            return await super().read_position()
+
+    transport = HangingIO()
+    transport.hang_target = operation == "target"
+    motion = controller(transport)
+    with pytest.raises(TimeoutError):
+        await motion.move_to_cm(83)
+    assert transport.writes[-1] == STOP
+    assert not transport.connected
+    with pytest.raises(MotionError, match="open"):
+        await motion.move_to_cm(83)
+
+
+async def test_pending_explicit_stop_blocks_new_targets_and_concurrent_stops():
+    class DelayedThirdStop(Transport):
+        def __init__(self):
+            super().__init__()
+            self.hang_target = True
+            self.stop_count = 0
+            self.final_stop_started = asyncio.Event()
+            self.release_final_stop = asyncio.Event()
+
+        async def write_control(self, payload):
+            if payload == STOP:
+                self.stop_count += 1
+                if self.stop_count == 3:
+                    self.final_stop_started.set()
+                    await self.release_final_stop.wait()
+            await super().write_control(payload)
+
+    transport = DelayedThirdStop()
+    motion = controller(transport)
+    move = asyncio.create_task(motion.move_to_cm(83))
+    await transport.target_written.wait()
+    stop = asyncio.create_task(motion.stop())
+    await transport.final_stop_started.wait()
+    try:
+        with pytest.raises(asyncio.CancelledError):
+            await move
+        assert motion.moving
+        with pytest.raises(MotionError, match="active"):
+            await motion.move_to_cm(84)
+        another_stop = asyncio.create_task(motion.stop())
+        await asyncio.sleep(0)
+        assert not another_stop.done()
+        transport.release_final_stop.set()
+        await asyncio.gather(stop, another_stop)
+        assert not motion.moving
+        writes = list(transport.writes)
+        await asyncio.sleep(0.01)
+        assert transport.writes == writes
+    finally:
+        transport.release_final_stop.set()
+        await asyncio.gather(stop, return_exceptions=True)
+
+
+async def test_worker_stop_failure_is_reported_to_explicit_stop_caller():
+    transport = Transport()
+    transport.hang_target = True
+    motion = controller(transport)
+    move = asyncio.create_task(motion.move_to_cm(83))
+    await transport.target_written.wait()
+    transport.fail_stop = True
+    with pytest.raises(MotionError, match="discarded"):
+        await motion.stop()
+    with pytest.raises(MotionError, match="discarded"):
+        await move
+    assert not transport.connected
+    assert not motion.moving
+
+
+async def test_cancelling_caller_during_last_explicit_stop_keeps_reservation():
+    class FinalStop(Transport):
+        def __init__(self):
+            super().__init__()
+            self.started = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def write_control(self, payload):
+            self.started.set()
+            await self.release.wait()
+            await super().write_control(payload)
+
+    transport = FinalStop()
+    motion = controller(transport)
+    caller = asyncio.create_task(motion.stop())
+    await transport.started.wait()
+    caller.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await caller
+    assert motion.moving
+    with pytest.raises(MotionError, match="active"):
+        await motion.move_to_cm(83)
+    transport.release.set()
+    await motion.stop()
+    assert transport.writes == [STOP]
     assert not motion.moving

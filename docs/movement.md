@@ -50,7 +50,9 @@ Centimeter conversion subtracts the explicitly supplied panel offset. Travel lim
 must be supplied from measurements, never guessed from four stored positions or
 from the protocol's 16-bit capacity. Non-finite heights and out-of-range targets
 are rejected before any write. Concurrent targets are rejected, not queued.
-No error reconnects and resumes movement. Stop failure attempts disconnection.
+No error reconnects and resumes movement. An I/O or total movement timeout permanently closes the controller, attempts Stop and then discards the transport, even if Stop succeeds. Disconnect failure does not make the controller reusable. A fresh, separately validated session is required. Stop failure also attempts disconnection.
+
+Explicit Stop callers share a single shielded operation. Its reservation lasts until every Stop write completes, including after cancellation of a caller; a new movement is rejected during that interval. Only the movement caller clears the worker reservation.
 Loss of radio means delivery of Stop cannot be guaranteed.
 
 ## Supervised hardware sequence

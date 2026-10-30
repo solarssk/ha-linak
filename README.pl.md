@@ -66,14 +66,44 @@ Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów
 
 Integracja tworzy **encje czujników (`sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
 
-| Encja | Nazwa w HA | Jednostka | Co pokazuje |
-| --- | --- | --- | --- |
-| 📏 Czujnik | **Wysokość** | cm | Aktualną wysokość biurka, z korektą panelu |
-| 🔖 Czujniki | **Zapisana wysokość 1–4** | cm | Wysokości zapamiętane na panelu; do czterech encji |
-| 🔔 Czujnik | **Aktywny profil przypomnień** | — | Numer wybranego profilu |
-| ⏱️ Czujniki | **Profil 1–3: czas siedzenia** | min | Czas siedzenia ustawiony w każdym z trzech profili |
-| 🚶 Czujniki | **Profil 1–3: czas stania** | min | Czas stania ustawiony w każdym z trzech profili |
-| 📐 Czujnik | **Korekta wysokości** | cm | Punkt odniesienia wysokości zapisany na panelu |
+<table>
+  <thead>
+    <tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Jednostka</th><th scope="col">Co pokazuje</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="6">Czujnik<br><code>sensor</code></td>
+      <td>📏 <strong>Wysokość</strong></td>
+      <td>cm</td>
+      <td>Aktualną wysokość biurka, z korektą panelu</td>
+    </tr>
+    <tr>
+      <td>🔖 <strong>Zapisana wysokość 1–4</strong></td>
+      <td>cm</td>
+      <td>Wysokości zapamiętane na panelu; do czterech encji</td>
+    </tr>
+    <tr>
+      <td>🔔 <strong>Aktywny profil przypomnień</strong></td>
+      <td>—</td>
+      <td>Numer wybranego profilu</td>
+    </tr>
+    <tr>
+      <td>⏱️ <strong>Profil 1–3: czas siedzenia</strong></td>
+      <td>min</td>
+      <td>Czas siedzenia ustawiony w każdym z trzech profili</td>
+    </tr>
+    <tr>
+      <td>🚶 <strong>Profil 1–3: czas stania</strong></td>
+      <td>min</td>
+      <td>Czas stania ustawiony w każdym z trzech profili</td>
+    </tr>
+    <tr>
+      <td>📐 <strong>Korekta wysokości</strong></td>
+      <td>cm</td>
+      <td>Punkt odniesienia wysokości zapisany na panelu</td>
+    </tr>
+  </tbody>
+</table>
 
 - **Wysokość** jest głównym czujnikiem pomiarowym.
 - Pozostałe encje mają kategorię **Diagnostyka** i pokazują ustawienia odczytane z panelu.

@@ -66,14 +66,44 @@ Compatibility with other panel models is not confirmed. [Read-query results →]
 
 The integration creates **sensor entities (`sensor`)**. These labels match the English names in HA; your device name may appear before them.
 
-| Entity | Name in HA | Unit | What it shows |
-| --- | --- | --- | --- |
-| 📏 Sensor | **Height** | cm | Current desk height, including the panel offset |
-| 🔖 Sensors | **Stored height 1–4** | cm | Heights saved on the panel; up to four entities |
-| 🔔 Sensor | **Active reminder profile** | — | The selected profile number |
-| ⏱️ Sensors | **Profile 1–3 sitting time** | min | Sitting time configured for each of three profiles |
-| 🚶 Sensors | **Profile 1–3 standing time** | min | Standing time configured for each of three profiles |
-| 📐 Sensor | **Height offset** | cm | The height reference stored on the panel |
+<table>
+  <thead>
+    <tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Unit</th><th scope="col">What it shows</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="6">Sensor<br><code>sensor</code></td>
+      <td>📏 <strong>Height</strong></td>
+      <td>cm</td>
+      <td>Current desk height, including the panel offset</td>
+    </tr>
+    <tr>
+      <td>🔖 <strong>Stored height 1–4</strong></td>
+      <td>cm</td>
+      <td>Heights saved on the panel; up to four entities</td>
+    </tr>
+    <tr>
+      <td>🔔 <strong>Active reminder profile</strong></td>
+      <td>—</td>
+      <td>The selected profile number</td>
+    </tr>
+    <tr>
+      <td>⏱️ <strong>Profile 1–3 sitting time</strong></td>
+      <td>min</td>
+      <td>Sitting time configured for each of three profiles</td>
+    </tr>
+    <tr>
+      <td>🚶 <strong>Profile 1–3 standing time</strong></td>
+      <td>min</td>
+      <td>Standing time configured for each of three profiles</td>
+    </tr>
+    <tr>
+      <td>📐 <strong>Height offset</strong></td>
+      <td>cm</td>
+      <td>The height reference stored on the panel</td>
+    </tr>
+  </tbody>
+</table>
 
 - **Height** is the main measurement sensor.
 - All other entities have the **Diagnostic** category and show settings read from the panel.

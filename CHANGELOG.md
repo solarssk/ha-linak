@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Group sensor rows under one merged entity-type cell in both README tables and place icons beside the HA entity labels.
+
 - Separate supported panels, HA sensor entities, requirements and environment validation in both READMEs; match entity labels to HA translations and add section icons and quality badges.
 
 - Extract the supplied official Illustrator logos as theme-aware SVGs; simplify both READMEs for hobbyist users with language flags, centered HA/HACS badges and a collapsible contents list.

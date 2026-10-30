@@ -8,6 +8,8 @@ Ta wersja odczytuje wysokość w centymetrach, korektę wysokości, maksymalnie 
 
 Siedem zapytań potwierdzono na fizycznym DPG1C. Integrację i klienta Python sprawdzono w Home Assistant 2026.10.4 z symulowanym Bluetooth. Test na Malinie i przez ESPHome Bluetooth Proxy pozostaje do wykonania.
 
+Warstwa badawcza sterowania ma testy symulowane, ale nie jest podłączona do żadnej akcji ani encji HA. Wysokość docelowa w cm, Stop i jazda do zapisanych pozycji wymagają jeszcze nadzorowanego testu na biurku. Szczegóły: [plan sterowania](docs/movement.md). Projekt przyjmuje wymagania Tier 2 z playbooka. Dostarczone ikona i logo LINAK służą identyfikacji sprzętu; integracja pozostaje niezależnym projektem społecznościowym.
+
 ## Instalacja do testów
 
 1. Skopiuj folder `custom_components/ha_linak` do folderu `custom_components` w konfiguracji Home Assistanta.

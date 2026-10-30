@@ -1,10 +1,11 @@
-# LINAK for Home Assistant
+# ha-linak
+
+Native Home Assistant custom integration, intended for HACS distribution. The first supported hardware target is LINAK DPG1C. Home Assistant owns the Bluetooth connection; no Mac, MQTT broker, daemon or custom dashboard card is required at runtime.
 
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![HACS: custom](https://img.shields.io/badge/HACS-custom-orange.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 
 [Polski](README.pl.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-Native Home Assistant custom integration, intended for HACS distribution. The first supported hardware target is LINAK DPG1C. Home Assistant owns the Bluetooth connection; no Mac, MQTT broker, daemon or custom dashboard card is required at runtime.
 
 ## Local alpha 0.1.0a1
 
@@ -16,7 +17,7 @@ Entities:
 - Height offset and up to four stored heights.
 - Active reminder profile and sitting/standing durations for three profiles.
 
-Target-height and stop controls are planned and are not included in this alpha. There is no percentage-based cover entity.
+A [movement research module](docs/movement.md) is implemented and tested with simulated transport, but is not connected to any HA action or entity. Target-height, Stop and stored-position drive controls remain unavailable until supervised hardware validation. There is no percentage-based cover entity.
 
 ## Validation status
 
@@ -51,24 +52,17 @@ Position updates arrive through BLE notifications. Every 60 seconds, the integra
 
 The integration requires the verified extended-response layout; it does not yet offer a basic-height fallback for other LINAK models. Unknown speed words and counters are preserved internally without assuming their meaning. Desk height is not occupancy detection.
 
-## Development
+## Development and security
 
-Python 3.14.2 or newer is needed for the pinned Home Assistant test environment:
-
-```sh
-python3.14 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest
-.venv/bin/python -m ruff check .
-.venv/bin/python -m ruff format --check .
-```
-
-Codecov and Sonar receive integration coverage and JUnit reports in a separate advisory job. Fork/Dependabot runs do not receive the upload secrets.
-
-CI uses hash-locked Linux dependencies and checks that the HA test stack, Bluetooth/USB component versions and generated files agree. See [Contributing](CONTRIBUTING.md) for dependency updates and platform-specific setup.
+See [Contributing](CONTRIBUTING.md) for setup, tests and dependency updates, and
+[AGENTS.md](AGENTS.md) for implementation rules. The project adopts the playbook's
+[Tier 2 baseline](docs/governance.md). CI includes tests, type checks, CodeQL,
+workflow lint, dependency and secret scans; main requires passing checks and
+signed commits. Private identifiers are excluded from diagnostics. Report
+vulnerabilities through [Security](SECURITY.md).
 
 See [hardware results](docs/hardware-results.md), [protocol evidence](docs/protocol.md) and [architecture](docs/architecture.md). Private Bluetooth logs stay outside the project. Test fixtures contain no names, addresses or location identifiers.
 
 ## License and acknowledgements
 
-MIT. Independent community project, not affiliated with LINAK or IKEA. See [protocol sources](docs/protocol.md) for the reverse-engineering references. The project icon is original artwork, not a manufacturer logo.
+MIT. Independent community project, not affiliated with LINAK or IKEA. See [protocol sources](docs/protocol.md) for the reverse-engineering references. The supplied manufacturer icon and logo identify LINAK hardware. They are excluded from the MIT code license; see [brand asset provenance](docs/branding.md).

@@ -1,6 +1,6 @@
 # Repository governance and validation
 
-This personal hardware-research alpha follows Tier 1 of the [solarssk playbook](https://github.com/solarssk/playbook), with extra real-HA tests, type checking and packaging validation. Reassess before external installations depend on it or hardware movement is shipped. No official Home Assistant quality-scale award, HACS default-catalog acceptance, or earned OpenSSF rating is claimed.
+This public HACS package adopts Tier 2 of the [solarssk playbook](https://github.com/solarssk/playbook/blob/main/docs/tiers.md) before enabling physical hardware control. The currently installed alpha remains read-only. No official Home Assistant quality-scale award, HACS default-catalog acceptance, or earned OpenSSF rating is claimed.
 
 CodeQL uses GitHub default setup. OpenSSF Scorecard runs in report-only mode; its result is not a certification.
 
@@ -23,3 +23,9 @@ CodeRabbit automatic and incremental reviews are disabled by .coderabbit.yaml af
 To verify source/live protection consistency, the maintainer runs `python scripts/check_github_settings.py` using their existing administrative gh login. PR CI never receives an admin token.
 
 The minimum/tested HA version is 2026.10.4 because HA 2026.10.2 pinned vulnerable uv 0.12.23. The independent lock resolver and the HA-owned uv copy now both use 0.13.5, above the advisory’s first patched version 0.13.4 (GHSA-hq85-5cpj-mr62). Do not override an HA-owned pin independently; upgrade its compatible test plugin and regenerate all locks together.
+
+## Tier 2 assessment
+
+Tests, type checks, CodeQL default setup (Python, weekly), workflow lint, dependency audit, secret scanning, signed protected main, documentation-impact checks, contribution/PR templates and report-only Scorecard are already configured. Live branch protection and CodeQL settings were checked during this assessment. Standard `type:` labels and the 0.1.0 milestone exist. The maintainer remains the merger; review count zero is deliberate for a solo-maintained repository.
+
+No container image is published, so container scanning and image SBOM requirements do not apply. There is no released version yet: do not display a latest-release badge or claim a release exists. Before the first external release, publish a versioned GitHub Release with installation/upgrade actions and associate its work with the milestone. The reusable playbook verification workflow is optional; this repository checks its own HA-specific gates and settings.

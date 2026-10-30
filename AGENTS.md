@@ -1,12 +1,12 @@
 # Agent instructions
 
 This is a native Home Assistant custom integration for LINAK desks, installed through HACS.
-The initial DPG1C alpha reads data only. Keep BLE transport and protocol independent of entities.
+The installed DPG1C alpha reads data only. The unregistered movement research module is not a runtime feature. Keep BLE transport and protocol independent of entities.
 
 ## Repository standard
 
 Follow https://github.com/solarssk/playbook.
-Tier: 1 (personal hardware research alpha; reassess before supporting external installations or shipping movement controls).
+Tier: 2 (public HACS package intended to control physical hardware; the maintenance baseline is adopted before enabling movement).
 Tests, type checks and HA/HACS validation are included beyond the tier baseline. No Home Assistant quality-scale award or OpenSSF rating is claimed.
 
 - Code, commits and repository documentation are English; user-facing translations include Polish.

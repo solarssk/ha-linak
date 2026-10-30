@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. Installed HA behavior remains read-only pending supervised hardware validation.
+- Adopt the playbook Tier 2 maintenance baseline and document the native-control contract.
+- Package the supplied LINAK icon and logo as local HA brand images, with provenance and trademark notices.
+
 ### Adopter action
 
 - Update Home Assistant to 2026.10.4 or newer before installing this alpha.

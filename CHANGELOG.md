@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Require PR type, release milestone and assignee in the existing documentation gate; document the complete agent workflow and handoff checks.
+
 - Document DPG1C authentication/initialization research and the hardware validation plan; distinguish notification stages and log elapsed stage time without device identifiers.
 
 - Show LINAK and the advertised desk name on Bluetooth discovery cards instead of the internal integration domain.

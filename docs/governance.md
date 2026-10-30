@@ -29,3 +29,24 @@ The minimum/tested HA version is 2026.10.4 because HA 2026.10.2 pinned vulnerabl
 Tests, type checks, CodeQL default setup (Python, weekly), workflow lint, dependency audit, secret scanning, signed protected main, documentation-impact checks, contribution/PR templates and report-only Scorecard are already configured. Live branch protection and CodeQL settings were checked during this assessment. Standard `type:` labels and the 0.1.0 milestone exist. The maintainer remains the merger; review count zero is deliberate for a solo-maintained repository.
 
 No container image is published, so container scanning and image SBOM requirements do not apply. There is no released version yet: do not display a latest-release badge or claim a release exists. Before the first external release, publish a versioned GitHub Release with installation/upgrade actions and associate its work with the milestone. The reusable playbook verification workflow is optional; this repository checks its own HA-specific gates and settings.
+
+## Agent workflow and PR metadata
+
+AGENTS.md is the single instruction source and CLAUDE.md imports it. It provides
+task startup, a read-first map, validation and explicit PR handoff requirements.
+CONTRIBUTING.md owns the runnable local checks; the PR template makes the handoff
+visible to reviewers. Do not duplicate these rules into independent tool files.
+
+Every PR requires one supported type label, an open target release milestone and
+a maintainer assignee. This is the repository's explicit policy, using playbook
+label conventions; it is not a universal Tier 2 requirement. Area/priority labels
+remain optional. Query the active milestone on GitHub instead of keeping a version
+in agent instructions.
+
+The existing required Documentation impact job runs check_pr_metadata.py in
+addition to check_pr_docs.py, with unchanged read-only permissions and check name.
+Metadata edits trigger a new run. No admin token, automatic metadata mutation or
+pull_request_target checkout is introduced. The metadata validator accepts an event
+payload in CI and can read a live PR through --pr for maintainer handoff verification.
+Its passing result is a snapshot; agents must still verify live fields/current head
+before handoff. The maintainer remains the only merger.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extract the supplied official Illustrator logos as theme-aware SVGs; simplify both READMEs for hobbyist users with language flags, centered HA/HACS badges and a collapsible contents list.
+
 - Redesign the English and Polish READMEs with LINAK branding, matching navigation, feature tables and one shared installation/configuration path per language.
 
 - Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. Installed HA behavior remains read-only pending supervised hardware validation.

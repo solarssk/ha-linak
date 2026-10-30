@@ -24,6 +24,8 @@
 
 <p align="center">
   <a href="https://github.com/solarssk/ha-linak/actions/workflows/ci.yml"><img src="https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://app.codecov.io/gh/solarssk/ha-linak"><img src="https://codecov.io/gh/solarssk/ha-linak/graph/badge.svg" alt="Codecov"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=solarssk_ha-linak"><img src="https://sonarcloud.io/api/project_badges/measure?project=solarssk_ha-linak&amp;metric=alert_status" alt="Sonar quality gate"></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/solarssk/ha-linak"><img src="https://api.securityscorecards.dev/projects/github.com/solarssk/ha-linak/badge" alt="OpenSSF Scorecard"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="Licencja kodu: MIT"></a>
 </p>
@@ -34,31 +36,66 @@
 <details>
 <summary><strong>Spis treści</strong></summary>
 
-- [Co zobaczysz w HA](#co-zobaczysz-w-ha)
-- [Instalacja i połączenie](#instalacja-i-połączenie)
-- [Na co dzień](#na-co-dzień)
-- [Sprawdzony sprzęt](#sprawdzony-sprzęt)
-- [Pomoc i informacje o projekcie](#pomoc-i-informacje-o-projekcie)
-- [Licencja](#licencja)
+- [🪑 Obsługiwane panele](#supported-panels)
+- [📊 Encje w Home Assistant](#entities)
+- [📋 Wymagania](#requirements)
+- [📦 Instalacja](#installation)
+- [🔌 Konfiguracja](#configuration)
+- [🏠 Na co dzień](#daily-use)
+- [🧪 Stan testów](#validation)
+- [📚 Pomoc i dokumentacja](#help)
+- [📄 Licencja](#license)
 
 </details>
 
-## Co zobaczysz w HA
+<a id="supported-panels"></a>
 
-| Czujnik | W Home Assistant |
-| --- | --- |
-| Wysokość biurka | Aktualna wysokość w **cm**, z korektą zgłaszaną przez panel |
-| Zapisane wysokości | Maksymalnie **cztery pozycje**, w cm |
-| Przypomnienia | Aktywny profil oraz czas siedzenia i stania dla **trzech profili** |
-| Korekta wysokości | Punkt odniesienia wysokości panelu, w cm |
+## 🪑 Obsługiwane panele
 
-## Instalacja i połączenie
+Pierwszym obsługiwanym modelem jest **DPG1C**. Zakres tej wersji obejmuje odczyt danych.
 
-**Potrzebujesz:** Home Assistanta **2026.10.4+**, HACS i Bluetooth w zasięgu biurka.
+| Panel LINAK | Dostępne funkcje | Potwierdzenie na sprzęcie |
+| --- | --- | --- |
+| **DPG1C** | Wysokość, zapisane wysokości, korekta wysokości i profile przypomnień | Zapytania odczytu sprawdzone na jednym panelu |
 
-Połączenie może zapewnić lokalny adapter lub zgodne **aktywne proxy Bluetooth ESPHome**. Działanie na Malinie i przez proxy wymaga jeszcze testu na rzeczywistym sprzęcie.
+Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów →](docs/hardware-results.md)
 
-### 1. Pobierz przez HACS
+<a id="entities"></a>
+
+## 📊 Encje w Home Assistant
+
+Integracja tworzy **encje czujników (`sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+
+| Encja | Nazwa w HA | Jednostka | Co pokazuje |
+| --- | --- | --- | --- |
+| 📏 Czujnik | **Wysokość** | cm | Aktualną wysokość biurka, z korektą panelu |
+| 🔖 Czujniki | **Zapisana wysokość 1–4** | cm | Wysokości zapamiętane na panelu; do czterech encji |
+| 🔔 Czujnik | **Aktywny profil przypomnień** | — | Numer wybranego profilu |
+| ⏱️ Czujniki | **Profil 1–3: czas siedzenia** | min | Czas siedzenia ustawiony w każdym z trzech profili |
+| 🚶 Czujniki | **Profil 1–3: czas stania** | min | Czas stania ustawiony w każdym z trzech profili |
+| 📐 Czujnik | **Korekta wysokości** | cm | Punkt odniesienia wysokości zapisany na panelu |
+
+- **Wysokość** jest głównym czujnikiem pomiarowym.
+- Pozostałe encje mają kategorię **Diagnostyka** i pokazują ustawienia odczytane z panelu.
+- Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
+- Czujniki nie sterują ruchem ani nie zmieniają ustawień.
+
+<a id="requirements"></a>
+
+## 📋 Wymagania
+
+- **Home Assistant 2026.10.4+**.
+- **HACS** do instalacji lub ręczne skopiowanie integracji.
+- Adapter Bluetooth w zasięgu biurka lub zgodne **aktywne proxy Bluetooth ESPHome**.
+- Wolne połączenie Bluetooth na panelu.
+
+Stan testów na Malinie i przez proxy opisujemy [osobno](#validation).
+
+<a id="installation"></a>
+
+## 📦 Instalacja
+
+### Przez HACS
 
 1. Otwórz HACS → **Własne repozytoria / Custom repositories**.
 2. Dodaj ten adres i wybierz **Integracja / Integration**:
@@ -76,7 +113,9 @@ Skopiuj [`custom_components/ha_linak`](custom_components/ha_linak) do folderu `c
 
 </details>
 
-### 2. Połącz biurko
+<a id="configuration"></a>
+
+## 🔌 Konfiguracja
 
 1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka.
 2. Włącz **tryb parowania Bluetooth** na panelu.
@@ -95,7 +134,9 @@ Skopiuj [`custom_components/ha_linak`](custom_components/ha_linak) do folderu `c
 
 </details>
 
-## Na co dzień
+<a id="daily-use"></a>
+
+## 🏠 Na co dzień
 
 - Znajdziesz czujniki w **Ustawienia → Urządzenia i usługi → LINAK**.
 - Dodaj wysokość biurka do pulpitu za pomocą standardowej karty HA.
@@ -110,18 +151,28 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 </details>
 
-## Sprawdzony sprzęt
+<a id="validation"></a>
 
-| Środowisko | Stan |
-| --- | --- |
-| Jeden fizyczny **DPG1C** | Siedem zapytań odczytu sprawdzonych przez macOS CoreBluetooth |
-| **HA 2026.10.4**, symulowany Bluetooth | Testy konfiguracji, czujników, rozłączenia, odzyskiwania i wyładowania integracji |
-| Malina / proxy ESPHome | Test na rzeczywistym sprzęcie do wykonania |
-| Inne panele LINAK | Zgodność niepotwierdzona |
+## 🧪 Stan testów
 
-Szczegóły: [wyniki sprzętowe](docs/hardware-results.md). Nie ma encji rolety z wysokością w procentach. Nieznane pola prędkości i liczniki nie są udostępniane jako potwierdzone pomiary; wysokość nie oznacza wykrywania obecności.
+- **Fizyczny DPG1C:** siedem zapytań odczytu sprawdzonych przez macOS CoreBluetooth.
+- **Home Assistant 2026.10.4 z symulowanym Bluetooth:** testy konfiguracji, czujników, utraty i odzyskania połączenia oraz wyładowania integracji.
+- **Malina i proxy ESPHome:** test działania integracji na rzeczywistym sprzęcie do wykonania.
 
-## Pomoc i informacje o projekcie
+To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](docs/hardware-results.md)
+
+<details>
+<summary>Ograniczenia pomiarów i sterowania</summary>
+
+- Nieznane pola prędkości i liczniki nie są udostępniane jako potwierdzone pomiary.
+- Wysokość biurka nie oznacza wykrywania obecności.
+- Ruch i Stop pozostają niedostępne. Nie ma encji rolety pokazującej wysokość w procentach.
+
+</details>
+
+<a id="help"></a>
+
+## 📚 Pomoc i dokumentacja
 
 - **Coś nie działa?** [Zgłoś błąd](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
 - **Śledź rozwój:** [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md).
@@ -131,7 +182,9 @@ Szczegóły: [wyniki sprzętowe](docs/hardware-results.md). Nie ma encji rolety 
 
 Dokumentacja techniczna jest prowadzona po angielsku.
 
-## Licencja
+<a id="license"></a>
+
+## 📄 Licencja
 
 Kod: [MIT](LICENSE). Niezależny projekt społecznościowy, niezwiązany z LINAK ani IKEA. Projekt nie ma oficjalnej oceny jakości HA ani akceptacji do domyślnego katalogu HACS.
 

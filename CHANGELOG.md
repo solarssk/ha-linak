@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Separate supported panels, HA sensor entities, requirements and environment validation in both READMEs; match entity labels to HA translations and add section icons and quality badges.
+
 - Extract the supplied official Illustrator logos as theme-aware SVGs; simplify both READMEs for hobbyist users with language flags, centered HA/HACS badges and a collapsible contents list.
 
 - Redesign the English and Polish READMEs with LINAK branding, matching navigation, feature tables and one shared installation/configuration path per language.

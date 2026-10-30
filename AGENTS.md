@@ -77,6 +77,8 @@ Set these actual GitHub fields when opening the PR, not just checkboxes in its b
 
 - Exactly one of `type: bug`, `type: feature`, `type: chore`, `type: docs`, based on
   the primary change. Add `dependencies` or `security` only when applicable.
+  These six labels are the complete taxonomy. Do not recreate GitHub defaults,
+  language/ecosystem labels or temporary blocking labels without a concrete need.
 - The open milestone for the release receiving the change. Reuse the existing
   target; do not invent or close a milestone to satisfy a check. If release intent
   is ambiguous, resolve it before handing off.

@@ -50,3 +50,23 @@ pull_request_target checkout is introduced. The metadata validator accepts an ev
 payload in CI and can read a live PR through --pr for maintainer handoff verification.
 Its passing result is a snapshot; agents must still verify live fields/current head
 before handoff. The maintainer remains the only merger.
+
+
+## Label taxonomy
+
+Keep one compact taxonomy, with exactly one type per PR:
+
+| Label | Use |
+| --- | --- |
+| `type: bug` | Fix incorrect behavior |
+| `type: feature` | Add user-facing behavior |
+| `type: chore` | Maintain tooling, CI or dependencies |
+| `type: docs` | Change documentation or translations |
+| `dependencies` | Supplement the type for dependency updates |
+| `security` | Supplement the type for security corrections |
+
+Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem
+labels or one-off blocking labels. Dependabot already supplies type: chore and
+dependencies explicitly. Before retiring a label, inspect all its issue/PR
+associations and migrate any useful classification first. Removing an obsolete
+status label also removes it from historical items; that must be deliberate.

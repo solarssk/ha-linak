@@ -45,7 +45,7 @@ The original [DPG1C discussion #32](https://github.com/rhyst/linak-controller/is
 
 Follow [HA Bluetooth guidance](https://contributors.home-assistant.io/core/integrations/bluetooth/): HA owns scanning and adapter selection; use connectable BLEDevice objects, fresh clients and bleak-retry-connector. Add bluetooth_adapters as the startup dependency when implementing the handshake change so remote adapters are available before connection. Do not pin a user's installation to hci0 or shell out to bluetoothctl as the normal transport.
 
-[Deprecation-free Bleak APIs](https://bleak.readthedocs.io/en/latest/api/client.html) distinguish pairing from connection. macOS can initiate authentication automatically for protected characteristics; that successful test does not validate Linux bonding behavior. The missing explicit authentication phase in our current client is a plausible gap. It remains unproven as the cause until tested on the Pi. Proxy pairing behavior must be checked against the HA-pinned backend as well.
+[Deprecation-free Bleak APIs](https://bleak.readthedocs.io/en/latest/api/client.html) distinguish pairing from connection. macOS can initiate authentication automatically for protected characteristics; that successful test does not validate Linux bonding behavior. The missing explicit authentication phase in 0.1.0a2 is a plausible gap. It remains unproven as the cause until tested on the Pi. Proxy pairing behavior must be checked against the HA-pinned backend as well.
 
 Keep protocol decoding, transport lifecycle and HA entities separate. Preserve centimeters and the panel's offset rather than Idasen's fixed minimum-height assumption. Never publish stale data as current after a lost session. Serialize DPG queries: memory responses do not contain a slot identifier, so a timed-out session must be discarded.
 
@@ -71,3 +71,18 @@ Diagnostics must not dump BLEDevice.details, raw exception messages, advertised 
 6. Publish the read-only fix after simulated failure tests, required local checks, Linux HA/HACS CI and a successful Pi test. Keep supervised movement validation separate.
 
 Required regression cases include disconnect during each subscription, authentication timeout/rejection, late notifications from discarded clients, repeated cancellation, updated adapter selection, missing properties and private-error redaction. Simulated tests establish software behavior, not hardware compatibility.
+
+## Implemented follow-up (0.1.0a3)
+
+The client now explicitly pairs before subscribing, except on the public
+CoreBluetooth backend IDs where authentication is OS-managed. Pairing is bounded
+and failures are classified. HA's bluetooth_adapters dependency replaces the
+Bluetooth-only startup dependency. Pending I/O is cancelled on the current
+transport's disconnect callback; caller cancellation and transport cleanup remain
+separate. Simulated tests cover the changes. This implements the software part of
+step 2 above, without GATT-property preflight or application settings writes;
+hardware validation and any manufacturer-specific initialization remain open.
+
+The [ESPHome backend pair implementation](https://github.com/bluetooth-devices/bleak-esphome/blob/main/src/bleak_esphome/backend/client.py)
+checks proxy pairing support and can raise NotImplementedError. That receives a
+specific setup error; the integration does not disable adapter routing globally.

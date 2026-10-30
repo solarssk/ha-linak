@@ -22,7 +22,11 @@
       "cannot_connect": "Unable to read the desk. Check pairing, range and other connected apps.",
       "timeout": "The desk did not respond in time. Check pairing, Bluetooth range and connected phone apps, then try again.",
       "unsupported_device": "The desk returned an unsupported data format. This alpha requires the DPG1C extended readings.",
-      "unknown": "An unexpected setup error occurred. Check the Home Assistant log for ha_linak."
+      "unknown": "An unexpected setup error occurred. Check the Home Assistant log for ha_linak.",
+      "pairing_timeout": "Bluetooth pairing did not finish in time. Enable pairing on the panel and try again.",
+      "authentication_failed": "Bluetooth authentication failed. Enable pairing on the panel and close connected desk apps, then try again.",
+      "pairing_unsupported": "The selected Bluetooth adapter or proxy does not support explicit pairing. Use a compatible adapter or updated proxy.",
+      "connection_lost": "The Bluetooth connection was lost while checking the desk. Enable pairing on the panel and try again."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -30,7 +34,7 @@
       "not_connectable": "The device was discovered, but an active Bluetooth connection is not available. Check your local adapter or active proxy."
     },
     "progress": {
-      "connect": "Connecting to your desk and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup."
+      "connect": "Connecting to your desk, authenticating Bluetooth and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup."
     }
   },
   "entity": {

@@ -6,7 +6,7 @@
 2. In Home Assistant, select the discovered custom LINAK integration (`ha_linak`),
    or select a desk through Add integration.
 3. Submit the selection. The form immediately changes to Home Assistant's native
-   progress screen while the integration connects and reads the panel.
+   progress screen while the integration connects, authenticates and reads the panel.
 4. Successful validation releases the validation connection and creates the entry.
    A failed attempt shows a translated reason and a retry form, without creating
    an entry. Re-enable pairing before retrying if needed.
@@ -20,7 +20,7 @@ integration does not reset the panel or change a Bluetooth user-ID setting.
 
 ## Waiting and cancellation
 
-A complete connection/read attempt has a 60-second budget. Notification setup
+A complete connection/read attempt has a 60-second budget. Explicit pairing has a 30-second limit within the same total budget. Each notification subscription
 and the final position read have 10-second limits; each extended query has an
 8-second limit. Failed sessions are invalidated and disconnected before retry.
 Releasing a connection has a separate 10-second limit, so cleanup can extend a
@@ -41,7 +41,7 @@ updated adapter/proxy information. Passive-only discovery is not accepted.
 ## Diagnosis
 
 A failed validation writes a `ha_linak` warning containing a stage and error code:
-`device_lookup`, `connection`, `notify_dpg`, `notify_height`, `extended_reads`, `position_read`, or `disconnect`.
+`device_lookup`, `connection`, `pairing`, `notify_dpg`, `notify_height`, `extended_reads`, `position_read`, or `disconnect`.
 Warnings for expected failures omit the desk name, Bluetooth address and raw
 exception message. The UI distinguishes timeout, connection failure, unsupported
 responses and unexpected errors. Unexpected errors retain a traceback for diagnosis.
@@ -64,3 +64,24 @@ The implementation follows HA's [config flow](https://contributors.home-assistan
 and [Bluetooth integration guidance](https://contributors.home-assistant.io/core/integrations/bluetooth/).
 
 See [Bluetooth research and diagnostic design](bluetooth-research.md) for the source comparison, known gaps and the next hardware experiment.
+
+## Authentication sequence in 0.1.0a3
+
+After GATT connection, the selected backend's pair method runs before either
+subscription. Local BlueZ and compatible active proxies use explicit pairing;
+CoreBluetooth performs authentication automatically and its unsupported explicit
+pair method is not called. Pairing may establish or reuse a Bluetooth bond. It
+does not write the DPG user-ID setting, reset the panel or send movement/wakeup
+commands. Unsupported proxy pairing produces a specific error, not a silent bypass.
+The bluetooth_adapters dependency lets HA initialize remote adapters before setup.
+
+A link-loss callback cancels the currently owned pairing, subscription, query or
+position operation. Setup reports connection_lost instead of waiting for its
+operation timeout. External cancellation remains cancellation, and bounded cleanup
+is drained even when the flow is cancelled repeatedly. No session is reused after
+failure. Authentication failure, pairing_timeout and pairing_unsupported have
+separate translated UI errors. The full-attempt budget can expire before a phase's
+individual limit; its stage is retained in logs.
+
+These paths are tested with simulated local/proxy/CoreBluetooth backends. A
+successful Raspberry Pi or ESPHome hardware onboarding is not yet established.

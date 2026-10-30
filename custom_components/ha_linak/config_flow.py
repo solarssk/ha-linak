@@ -12,11 +12,33 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers import selector
 
-from .client import DeskClient
+from .client import (
+    DeskClient,
+    DeskLinkLost,
+    DeskAuthenticationError,
+    DeskPairingUnsupported,
+    DeskPairingTimeout,
+)
 from .const import DOMAIN
 from .protocol import SERVICE_UUID
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _validation_error(error: Exception, stage: str) -> str:
+    if isinstance(error, TimeoutError) and stage == "pairing":
+        return "pairing_timeout"
+    for exception_type, code in (
+        (DeskPairingTimeout, "pairing_timeout"),
+        (DeskAuthenticationError, "authentication_failed"),
+        (DeskPairingUnsupported, "pairing_unsupported"),
+        (DeskLinkLost, "connection_lost"),
+        (TimeoutError, "timeout"),
+        (ValueError, "unsupported_device"),
+    ):
+        if isinstance(error, exception_type):
+            return code
+    return "cannot_connect"
 
 
 class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -96,12 +118,8 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
             await desk.refresh()
-        except TimeoutError:
-            error = "timeout"
-        except ValueError:
-            error = "unsupported_device"
-        except BleakError, ConnectionError:
-            error = "cannot_connect"
+        except (TimeoutError, ValueError, BleakError, ConnectionError) as err:
+            error = _validation_error(err, desk.stage if desk else "device_lookup")
         except Exception:
             _LOGGER.exception("Unexpected LINAK configuration failure")
             error = "unknown"

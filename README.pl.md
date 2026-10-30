@@ -152,6 +152,8 @@ Skopiuj [`custom_components/ha_linak`](custom_components/ha_linak) do folderu `c
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
+Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a zwolnienie połączenia może potrwać kolejne **10 sekund**. Błąd pokazuje przyczynę i pozwala ponowić próbę. [Pierwsza konfiguracja i diagnostyka →](docs/onboarding.md)
+
 > [!TIP]
 > Panel przyjmuje jedno połączenie Bluetooth naraz. Jeśli konfiguracja się nie udaje, sprawdź, czy nie jest połączona inna aplikacja. Lokalny adapter może też wymagać parowania na hoście HA.
 

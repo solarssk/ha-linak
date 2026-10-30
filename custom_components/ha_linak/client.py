@@ -25,6 +25,11 @@ from .protocol import (
 )
 
 
+REFRESH_TIMEOUT = 60
+IO_TIMEOUT = 10
+QUERY_TIMEOUT = 8
+
+
 @dataclass
 class DeskState:
     position: PositionSample | None = None
@@ -43,8 +48,15 @@ class DeskState:
 class DeskClient:
     """One serialized query channel, discarded after any ambiguous failure."""
 
-    def __init__(self, device: BLEDevice, changed: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        device: BLEDevice,
+        changed: Callable[[], None],
+        device_callback: Callable[[], BLEDevice] | None = None,
+    ) -> None:
         self.device = device
+        self.device_callback = device_callback
+        self.stage = "idle"
         self.changed = changed
         self.state = DeskState()
         self.client: BleakClient | None = None
@@ -90,7 +102,7 @@ class DeskClient:
         self._pending = asyncio.get_running_loop().create_future()
         self._response_type = response_type
         try:
-            async with asyncio.timeout(8):
+            async with asyncio.timeout(QUERY_TIMEOUT):
                 await self.client.write_gatt_char(
                     DPG_UUID, read_request(command), response=True
                 )
@@ -104,57 +116,57 @@ class DeskClient:
     async def refresh(self) -> DeskState:
         async with self._lock:
             try:
-                if (
-                    self.client is None
-                    or not self.client.is_connected
-                    or not self._ready
-                ):
-                    await self.disconnect()
-                    self._closing = False
-                    self._generation += 1
-                    generation = self._generation
-                    self.client = await establish_connection(
-                        BleakClientWithServiceCache,
-                        self.device,
-                        "LINAK desk",
-                        disconnected_callback=self._disconnected,
-                        max_attempts=2,
-                    )
-                    await self.client.start_notify(
-                        DPG_UUID, lambda _, data: self._notification(generation, data)
-                    )
-                    await self.client.start_notify(
-                        HEIGHT_UUID, lambda _, data: self._position(generation, data)
-                    )
-                state = DeskState()
-                state.capabilities = decode_capabilities(
-                    await self._query(ReadCommand.CAPABILITIES, 2)
-                )
-                state.offset_raw = decode_offset(
-                    await self._query(ReadCommand.OFFSET, 3)
-                )
-                if state.offset_raw is None:
-                    raise ValueError("Desk has no valid height offset")
-                if state.capabilities.memory_slots > 4:
-                    raise ValueError("Unsupported number of memory slots")
-                for command in list(ReadCommand)[
-                    3 : 3 + state.capabilities.memory_slots
-                ]:
-                    state.memories.append(
-                        decode_stored_position(await self._query(command, 7))
-                    )
-                state.reminders = decode_reminders(
-                    await self._query(ReadCommand.REMINDERS, 11)
-                )
-                state.position = decode_position(
-                    bytes(await self.client.read_gatt_char(HEIGHT_UUID))
-                )
-                self.state = state
-                self._ready = True
-                return state
+                async with asyncio.timeout(REFRESH_TIMEOUT):
+                    return await self._refresh()
             except BaseException:
                 await self.disconnect()
                 raise
+
+    async def _refresh(self) -> DeskState:
+        if self.client is None or not self.client.is_connected or not self._ready:
+            await self.disconnect()
+            self._closing = False
+            self._generation += 1
+            generation = self._generation
+            self.stage = "connection"
+            self.client = await establish_connection(
+                BleakClientWithServiceCache,
+                self.device,
+                "LINAK desk",
+                disconnected_callback=self._disconnected,
+                max_attempts=2,
+                ble_device_callback=self.device_callback,
+            )
+            self.stage = "notifications"
+            async with asyncio.timeout(IO_TIMEOUT):
+                await self.client.start_notify(
+                    DPG_UUID, lambda _, data: self._notification(generation, data)
+                )
+                await self.client.start_notify(
+                    HEIGHT_UUID, lambda _, data: self._position(generation, data)
+                )
+        self.stage = "extended_reads"
+        state = DeskState()
+        state.capabilities = decode_capabilities(
+            await self._query(ReadCommand.CAPABILITIES, 2)
+        )
+        state.offset_raw = decode_offset(await self._query(ReadCommand.OFFSET, 3))
+        if state.offset_raw is None:
+            raise ValueError("Desk has no valid height offset")
+        if state.capabilities.memory_slots > 4:
+            raise ValueError("Unsupported number of memory slots")
+        for command in list(ReadCommand)[3 : 3 + state.capabilities.memory_slots]:
+            state.memories.append(decode_stored_position(await self._query(command, 7)))
+        state.reminders = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
+        self.stage = "position_read"
+        async with asyncio.timeout(IO_TIMEOUT):
+            state.position = decode_position(
+                bytes(await self.client.read_gatt_char(HEIGHT_UUID))
+            )
+        self.state = state
+        self._ready = True
+        self.stage = "ready"
+        return state
 
     async def disconnect(self) -> None:
         self._closing = True
@@ -164,5 +176,5 @@ class DeskClient:
         if self._pending is not None and not self._pending.done():
             self._pending.cancel()
         if client is not None and client.is_connected:
-            async with asyncio.timeout(10):
+            async with asyncio.timeout(IO_TIMEOUT):
                 await client.disconnect()

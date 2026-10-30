@@ -1,7 +1,11 @@
 """Configure a LINAK desk using Home Assistant Bluetooth discovery."""
 
+import asyncio
+import logging
 from typing import Any
+
 import probatio as vol
+from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
@@ -12,44 +16,41 @@ from .client import DeskClient
 from .const import DOMAIN
 from .protocol import SERVICE_UUID
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
         self._devices: dict[str, bluetooth.BluetoothServiceInfoBleak] = {}
+        self._address: str | None = None
+        self._name = "LINAK"
+        self._validation_task: asyncio.Task[str | None] | None = None
+        self._error: str | None = None
 
     async def async_step_bluetooth(
         self, discovery_info: bluetooth.BluetoothServiceInfoBleak
     ) -> ConfigFlowResult:
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
+        if not discovery_info.connectable:
+            return self.async_abort(reason="not_connectable")
         self._devices[discovery_info.address] = discovery_info
         return await self.async_step_user()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        errors = {}
         if user_input is not None:
             address = user_input[CONF_ADDRESS]
-            info = self._devices.get(address)
-            if info is None:
-                errors["base"] = "cannot_connect"
-            else:
-                await self.async_set_unique_id(address)
-                self._abort_if_unique_id_configured()
-                desk = DeskClient(info.device, lambda: None)
-                try:
-                    await desk.refresh()
-                except BleakError, ConnectionError, TimeoutError, ValueError:
-                    errors["base"] = "cannot_connect"
-                else:
-                    return self.async_create_entry(
-                        title=info.name or "LINAK", data={CONF_ADDRESS: address}
-                    )
-                finally:
-                    await desk.disconnect()
+            if address not in self._devices:
+                return self.async_abort(reason="no_devices_found")
+            await self.async_set_unique_id(address, raise_on_progress=False)
+            self._abort_if_unique_id_configured()
+            self._address = address
+            self._name = self._devices[address].name or "LINAK"
+            return await self.async_step_connect()
         for info in bluetooth.async_discovered_service_info(
             self.hass, connectable=True
         ):
@@ -77,5 +78,83 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 }
             ),
-            errors=errors,
+        )
+
+    def _device(self) -> BLEDevice:
+        assert self._address is not None
+        device = bluetooth.async_ble_device_from_address(
+            self.hass, self._address, connectable=True
+        )
+        if device is None:
+            raise ConnectionError("Desk is not reachable through Bluetooth")
+        return device
+
+    async def _validate(self) -> str | None:
+        desk: DeskClient | None = None
+        error = None
+        try:
+            desk = DeskClient(self._device(), lambda: None, self._device)
+            await desk.refresh()
+        except TimeoutError:
+            error = "timeout"
+        except ValueError:
+            error = "unsupported_device"
+        except BleakError, ConnectionError:
+            error = "cannot_connect"
+        except Exception:
+            _LOGGER.exception("Unexpected LINAK configuration failure")
+            error = "unknown"
+        finally:
+            stage = desk.stage if desk else "device_lookup"
+            if desk is not None:
+                try:
+                    await desk.disconnect()
+                except BleakError, ConnectionError, TimeoutError:
+                    if error is None:
+                        stage = "disconnect"
+                        error = "cannot_connect"
+        if error:
+            _LOGGER.warning(
+                "LINAK setup failed during %s: %s",
+                stage,
+                error,
+            )
+        return error
+
+    async def async_step_connect(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if self._validation_task is None:
+            self._validation_task = self.hass.async_create_task(
+                self._validate(), eager_start=False
+            )
+        if not self._validation_task.done():
+            return self.async_show_progress(
+                step_id="connect",
+                progress_action="connect",
+                progress_task=self._validation_task,
+            )
+        self._error = self._validation_task.result()
+        return self.async_show_progress_done(
+            next_step_id="retry" if self._error else "finish"
+        )
+
+    async def async_step_retry(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            self._validation_task = None
+            return await self.async_step_connect()
+        return self.async_show_form(
+            step_id="retry",
+            data_schema=vol.Schema({}),
+            errors={"base": self._error or "cannot_connect"},
+        )
+
+    async def async_step_finish(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=self._name, data={CONF_ADDRESS: self._address}
         )

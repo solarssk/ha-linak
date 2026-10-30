@@ -4,6 +4,7 @@ from datetime import timedelta
 import logging
 
 from bleak.exc import BleakError
+from bleak.backends.device import BLEDevice
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
@@ -36,6 +37,14 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 UpdateFailed("Desk disconnected or invalid position")
             )
 
+    def _device(self) -> BLEDevice:
+        device = bluetooth.async_ble_device_from_address(
+            self.hass, self.address, connectable=True
+        )
+        if device is None:
+            raise ConnectionError("Desk is not reachable through Bluetooth")
+        return device
+
     async def _async_update_data(self) -> DeskState:
         device = bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True
@@ -45,7 +54,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 await self.desk.disconnect()
             raise UpdateFailed("Desk is not reachable through Bluetooth")
         if self.desk is None:
-            self.desk = DeskClient(device, self._changed)
+            self.desk = DeskClient(device, self._changed, self._device)
         else:
             self.desk.device = device
         try:

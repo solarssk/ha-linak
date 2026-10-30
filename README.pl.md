@@ -22,7 +22,7 @@ Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
 - **Twoje zapisane pozycje:** podgląd wysokości zapamiętanych na biurku.
 - **Ustawienia przypomnień w jednym miejscu:** wybrany profil i ustawione odstępy czasu.
 
-Czasy przypomnień są ustawieniami, a nie licznikiem spędzonego czasu. Inne modele paneli nie mają potwierdzonej zgodności. [Pełna lista encji i wyniki testów →](docs/guide.pl.md)
+Czasy przypomnień są ustawieniami, a nie licznikiem spędzonego czasu. Inne modele paneli nie mają potwierdzonej zgodności. [Pełna lista encji i wyniki testów →](.github/README.pl.md)
 
 ## 🏠 Biurko jako część Twojego pulpitu
 
@@ -58,7 +58,7 @@ Integracja działa bezpośrednio na urządzeniu z HA. Nie wymaga Maca ani osobne
 
 Konfiguracja łączy się, uwierzytelnia i odczytuje panel. Poczekaj do **60 sekund**, a po błędzie do kolejnych **10 sekund** na zwolnienie połączenia. Nieudana próba pokaże przyczynę i pozwoli spróbować ponownie.
 
-Nie ma jeszcze wydania oznaczonego tagiem; HACS pobiera główną gałąź. [Instalacja ręczna i szczegółowy przewodnik →](docs/guide.pl.md)
+Nie ma jeszcze wydania oznaczonego tagiem; HACS pobiera główną gałąź. [Instalacja ręczna i szczegółowy przewodnik →](.github/README.pl.md)
 
 ## 🛠️ Gdy coś nie działa
 
@@ -76,7 +76,7 @@ Kolejny etap to stabilne sterowanie wysokością w **centymetrach**, Stop i wyb�
 
 ## 📚 Więcej informacji
 
-[Przewodnik użytkownika](docs/guide.pl.md) · [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md) · [Współpraca](CONTRIBUTING.md)
+[Przewodnik użytkownika](.github/README.pl.md) · [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md) · [Współpraca](CONTRIBUTING.md)
 
 [Badania protokołu](docs/protocol.md) · [Badania Bluetooth](docs/bluetooth-research.md) · [Jakość i utrzymanie](docs/governance.md)
 

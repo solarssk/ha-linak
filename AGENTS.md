@@ -56,10 +56,13 @@ English and Polish keys aligned. Keep CHANGELOG.md lists compact: consecutive
 bullets have no blank lines between them; separate headings and sections normally. Do not rewrite private hardware captures into
 public examples; use synthetic identifiers.
 
-Root READMEs are shared with HACS: use native Markdown, Markdown image/link paths
-and short lists. Keep picture/source, merged HTML tables and collapsible technical
-references in the detailed docs guides. Verify HACS renderer behavior from current
-source; info.md/render_readme guidance from HACS 1.x is not a HACS 2.x solution.
+Keep the two presentation surfaces separate. GitHub's repository landing page
+uses .github/README.md and .github/README.pl.md: preserve their accepted centered
+header, theme-aware logos, badges and entity tables. HACS reads root README.md;
+its English/Polish product descriptions use native Markdown and portable images.
+Do not simplify or relocate the GitHub presentation to fix HACS. Read
+docs/hacs-presentation.md and verify both discovery paths before changing them.
+info.md/render_readme guidance from HACS 1.x is not a HACS 2.x solution.
 
 Run the full validation block in CONTRIBUTING.md after the final patch and before
 pushing. Use Python 3.14.2 or newer in an isolated environment. Linux installed-package

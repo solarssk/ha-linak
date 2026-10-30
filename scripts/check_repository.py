@@ -45,6 +45,20 @@ def main():
         for target in re.findall(r"\]\(([^)]+)\)", text):
             if "://" not in target and not target.startswith("#"):
                 assert (ROOT / target.split("#")[0]).exists(), (name, target)
+    for name in ("README.md", "README.pl.md"):
+        github_readme = ROOT / ".github" / name
+        text = github_readme.read_text()
+        assert "<picture>" in text, github_readme
+        assert 'align="center"' in text, github_readme
+        assert 'rowspan="6"' in text, github_readme
+        targets = re.findall(r'\]\(([^)]+)\)|(?:href|src|srcset)="([^"]+)"', text)
+        for target in targets:
+            value = next(value for value in target if value)
+            if "://" not in value and not value.startswith("#"):
+                assert (github_readme.parent / value.split("#")[0]).exists(), (
+                    name,
+                    value,
+                )
     checks = json.loads((ROOT / ".github/required-checks.json").read_text())
     assert len(checks) == len(set(checks))
     assert "Lint workflows (actionlint, zizmor)" in checks

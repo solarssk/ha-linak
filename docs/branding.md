@@ -24,20 +24,20 @@ acceptance or a Home Assistant quality-scale award.
 The maintainer additionally supplied `LINAK logo A_2colour.ai` and
 `LINAK logo A_neg.ai`, identified as official LINAK artwork. Both contain
 PDF-compatible vector paths, including the original tagline. Poppler exported
-those paths to the two SVGs in `docs/assets/`; the detailed user guides use a `picture` element
+those paths to the two SVGs in `docs/assets/`; the GitHub-facing READMEs in `.github/` use a `picture` element
 with dark/light sources and a light fallback. The same source drawing, colors
 and lettering are preserved. The negative version's surrounding dark rectangle
 was removed and the page bounds were cropped to the artwork, producing a
 transparent background. Both exports share a view box to avoid layout shifts.
 They contain paths only, without scripts, external resources or embedded fonts.
 
-The detailed guides retain the theme-aware SVG pair. The local HA PNG
+The GitHub-facing READMEs retain the theme-aware SVG pair. The local HA PNG
 assets retain the provenance documented above. GitHub theme selection follows its
 [supported picture markup](https://github.blog/changelog/2022-08-15-specify-theme-context-for-images-in-markdown-ga/).
 
-## Shared GitHub and HACS header
+## HACS header
 
-The root READMEs use a Markdown image pointing to linak-logo.svg. It reuses the
+The root HACS READMEs use a Markdown image pointing to linak-logo.svg. It reuses the
 light SVG's original paths with a white rounded background and padding, at a
 320-pixel intrinsic width. No artwork colors or lettering change. This neutral
 background keeps the official lettering readable in both HA themes without

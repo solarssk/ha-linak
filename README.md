@@ -22,7 +22,7 @@ A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
 - **Your desk's saved positions:** see the heights already stored on the panel.
 - **Reminder settings in one place:** check the selected profile and configured intervals.
 
-Reminder times are settings, not elapsed-time counters. Other panel models are not confirmed. [Full entity reference and hardware results →](docs/guide.md)
+Reminder times are settings, not elapsed-time counters. Other panel models are not confirmed. [Full entity reference and hardware results →](.github/README.md)
 
 ## 🏠 Make it part of your dashboard
 
@@ -58,7 +58,7 @@ The integration runs directly on your HA host. No Mac or separate bridge is need
 
 Setup connects, authenticates and reads the panel. Allow up to **60 seconds**, plus **10 seconds** to release a failed connection. A failed attempt shows a reason and offers a retry.
 
-There is no tagged release yet; HACS downloads the default branch. [Manual installation and detailed guide →](docs/guide.md)
+There is no tagged release yet; HACS downloads the default branch. [Manual installation and detailed guide →](.github/README.md)
 
 ## 🛠️ If something goes wrong
 
@@ -76,7 +76,7 @@ Next comes reliable height control in **centimeters**, Stop and saved-position c
 
 ## 📚 Learn more
 
-[User guide](docs/guide.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
+[User guide](.github/README.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
 
 [Protocol research](docs/protocol.md) · [Bluetooth investigation](docs/bluetooth-research.md) · [Quality and governance](docs/governance.md)
 

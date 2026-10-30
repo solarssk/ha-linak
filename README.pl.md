@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-<h1 align="center">ha-linak</h1>
+<h1 align="center">LINAK dla Home Assistant</h1>
 
 <p align="center">
   <strong>Twoje biurko LINAK w Home Assistant.<br>Aktualna wysokość w centymetrach, zapisane wysokości i przypomnienia.</strong><br>

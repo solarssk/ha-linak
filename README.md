@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-<h1 align="center">ha-linak</h1>
+<h1 align="center">LINAK for Home Assistant</h1>
 
 <p align="center">
   <strong>Your LINAK desk in Home Assistant.<br>Live height in centimeters, saved heights and reminders.</strong><br>

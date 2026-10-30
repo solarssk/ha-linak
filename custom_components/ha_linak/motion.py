@@ -168,7 +168,14 @@ class MotionController:
                         raise MotionError("Desk disconnected; movement will not resume")
                     async with asyncio.timeout(IO_TIMEOUT):
                         await self.transport.write_target(payload)
-                    await asyncio.sleep(COMMAND_INTERVAL)
+                    # Target writes require a timed keepalive, rather than an
+                    # event emitted by the desk. Schedule that deadline explicitly.
+                    tick = asyncio.Event()
+                    timer = loop.call_later(COMMAND_INTERVAL, tick.set)
+                    try:
+                        await tick.wait()
+                    finally:
+                        timer.cancel()
                     position = await self._read()
                     if (position - previous) * direction < -TOLERANCE_RAW:
                         raise MotionError("Desk moved away from the requested target")
@@ -194,14 +201,19 @@ class MotionController:
         if task is None:
             await self._stop()
             return
-        task.cancel()
+        if not task.cancelling():
+            task.cancel()
         try:
-            await task
+            await asyncio.shield(task)
         except asyncio.CancelledError:
-            pass
+            # Cancellation of the child is the requested Stop result. Cancellation
+            # of this caller must propagate, without interrupting the child's Stop.
+            caller = asyncio.current_task()
+            if caller is not None and caller.cancelling():
+                raise
         finally:
             # Also clear here: Stop must not depend on the action caller resuming.
-            if self._task is task:
+            if self._task is task and task.done():
                 self._task = None
         # A task cancelled before its first instruction never runs its finally
         # block. Explicit Stop must still send a packet in that scheduling case.

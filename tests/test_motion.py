@@ -100,16 +100,18 @@ async def test_already_at_height_does_not_wake_or_target():
 )
 async def test_feedback_abort_always_stops(positions, reason):
     transport = Transport(positions)
+    motion = controller(transport)
     with pytest.raises(MotionError, match=reason):
-        await controller(transport).move_to_cm(83)
+        await motion.move_to_cm(83)
     assert transport.writes[-1] == STOP
 
 
 async def test_timeout_always_stops():
     transport = Transport()
     transport.hang_target = True
+    motion = controller(transport)
     with pytest.raises(TimeoutError):
-        await controller(transport).move_to_cm(83)
+        await motion.move_to_cm(83)
     assert transport.writes[-1] == STOP
 
 
@@ -164,8 +166,9 @@ async def test_link_loss_never_reconnects_or_resumes():
 async def test_stop_failure_discards_session():
     transport = Transport()
     transport.fail_stop = True
+    motion = controller(transport)
     with pytest.raises(MotionError, match="discarded"):
-        await controller(transport).move_to_cm(83)
+        await motion.move_to_cm(83)
     assert not transport.connected
 
 
@@ -181,11 +184,12 @@ def test_movement_is_not_imported_by_runtime():
 
 async def test_total_movement_deadline_stops_even_with_slow_progress():
     transport = Transport(tuple(range(1400, 1500)))
+    motion = controller(transport)
     with (
         patch("custom_components.ha_linak.motion.MOVE_TIMEOUT", 0.01),
         pytest.raises(TimeoutError),
     ):
-        await controller(transport).move_to_cm(83)
+        await motion.move_to_cm(83)
     assert transport.writes[-1] == STOP
 
 
@@ -203,8 +207,9 @@ async def test_downward_target_uses_same_feedback_and_stop_path():
 
 async def test_bad_target_sends_no_packets():
     transport = Transport()
+    motion = controller(transport)
     with pytest.raises(ValueError):
-        await controller(transport).move_to_cm(200)
+        await motion.move_to_cm(200)
     assert transport.writes == []
 
 
@@ -222,6 +227,20 @@ async def test_stop_before_worker_starts_still_sends_stop():
 
 async def test_malformed_feedback_stops_without_waking():
     transport = Transport((65535,))
+    motion = controller(transport)
     with pytest.raises(MotionError, match="limits"):
-        await controller(transport).move_to_cm(83)
+        await motion.move_to_cm(83)
     assert transport.writes == [STOP]
+
+
+async def test_concurrent_stop_requests_do_not_cancel_cleanup():
+    transport = Transport()
+    transport.hang_target = True
+    motion = controller(transport)
+    task = asyncio.create_task(motion.move_to_cm(83))
+    await transport.target_written.wait()
+    await asyncio.gather(motion.stop(), motion.stop())
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert transport.writes[-1] == STOP
+    assert not motion.moving

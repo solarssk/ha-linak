@@ -2,7 +2,7 @@
 
 Native Home Assistant custom integration, intended for HACS distribution. The first supported hardware target is LINAK DPG1C. Home Assistant owns the Bluetooth connection; no Mac, MQTT broker, daemon or custom dashboard card is required at runtime.
 
-[![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![HACS: custom](https://img.shields.io/badge/HACS-custom-orange.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/solarssk/ha-linak/badge)](https://securityscorecards.dev/viewer/?uri=github.com/solarssk/ha-linak) [![HACS: custom](https://img.shields.io/badge/HACS-custom-orange.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 
 [Polski](README.pl.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 

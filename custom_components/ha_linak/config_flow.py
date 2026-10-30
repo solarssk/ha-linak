@@ -12,7 +12,13 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers import selector
 
-from .client import DeskClient
+from .client import (
+    DeskClient,
+    DeskLinkLost,
+    DeskAuthenticationError,
+    DeskPairingUnsupported,
+    DeskPairingTimeout,
+)
 from .const import DOMAIN
 from .protocol import SERVICE_UUID
 
@@ -96,8 +102,16 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
             await desk.refresh()
+        except DeskPairingTimeout:
+            error = "pairing_timeout"
+        except DeskAuthenticationError:
+            error = "authentication_failed"
+        except DeskPairingUnsupported:
+            error = "pairing_unsupported"
+        except DeskLinkLost:
+            error = "connection_lost"
         except TimeoutError:
-            error = "timeout"
+            error = "pairing_timeout" if desk and desk.stage == "pairing" else "timeout"
         except ValueError:
             error = "unsupported_device"
         except BleakError, ConnectionError:

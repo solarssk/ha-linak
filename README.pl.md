@@ -154,6 +154,8 @@ Karta wykrytego biurka pokazuje **LINAK · nazwę biurka**. Wewnętrzna domena i
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
+Wersja **0.1.0a3** uwierzytelnia połączenie przed odczytami. Konfiguracja rozróżnia błąd parowania, brak jego obsługi w proxy i zerwanie połączenia. Ta zmiana wymaga jeszcze testu na Malinie i proxy.
+
 Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a zwolnienie połączenia może potrwać kolejne **10 sekund**. Błąd pokazuje przyczynę i pozwala ponowić próbę. [Pierwsza konfiguracja i diagnostyka →](docs/onboarding.md)
 
 > [!TIP]

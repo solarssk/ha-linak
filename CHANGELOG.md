@@ -26,6 +26,17 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
+## 0.1.0a3 — unpublished alpha
+
+- Pair through the selected Bluetooth backend before subscribing; let CoreBluetooth manage authentication automatically.
+- Distinguish authentication failure, pairing timeout, unsupported pairing and lost connections in English and Polish setup errors.
+- Interrupt pending BLE operations on link loss and drain transport cleanup through repeated cancellation.
+- Wait for HA-managed local/proxy adapters before setup. No panel user-ID writes or movement are enabled.
+
+### Adopter action
+
+- Redownload the integration and restart HA, then retry with pairing enabled on the panel. Raspberry Pi and proxy validation of this change is still required.
+
 ## 0.1.0a2 — unpublished alpha
 
 - Add native HA progress, translated validation failures and retry for desk onboarding.

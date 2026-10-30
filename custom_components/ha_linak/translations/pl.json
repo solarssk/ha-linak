@@ -22,7 +22,11 @@
       "cannot_connect": "Nie udało się odczytać danych biurka. Sprawdź parowanie, zasięg i inne połączone aplikacje.",
       "timeout": "Biurko nie odpowiedziało w wymaganym czasie. Sprawdź parowanie, zasięg Bluetooth i połączenie aplikacji telefonu, a następnie ponów próbę.",
       "unsupported_device": "Biurko zwróciło nieobsługiwany format danych. Ta wersja wymaga rozszerzonych odczytów DPG1C.",
-      "unknown": "Wystąpił nieoczekiwany błąd konfiguracji. Sprawdź dziennik Home Assistanta dla integracji ha_linak."
+      "unknown": "Wystąpił nieoczekiwany błąd konfiguracji. Sprawdź dziennik Home Assistanta dla integracji ha_linak.",
+      "pairing_timeout": "Parowanie Bluetooth nie zakończyło się w wyznaczonym czasie. Włącz parowanie na panelu i spróbuj ponownie.",
+      "authentication_failed": "Uwierzytelnianie Bluetooth nie powiodło się. Włącz parowanie na panelu, zamknij połączone aplikacje biurka i spróbuj ponownie.",
+      "pairing_unsupported": "Wybrany adapter lub proxy Bluetooth nie obsługuje jawnego parowania. Użyj zgodnego adaptera lub zaktualizowanego proxy.",
+      "connection_lost": "Połączenie Bluetooth zostało zerwane podczas sprawdzania biurka. Włącz parowanie na panelu i spróbuj ponownie."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
@@ -30,7 +34,7 @@
       "not_connectable": "Urządzenie zostało wykryte, ale nie można nawiązać z nim aktywnego połączenia Bluetooth. Sprawdź lokalny adapter lub aktywne proxy."
     },
     "progress": {
-      "connect": "Łączenie z biurkiem i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację."
+      "connect": "Łączenie z biurkiem, uwierzytelnianie Bluetooth i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację."
     }
   },
   "entity": {

@@ -154,6 +154,8 @@ The discovery card shows **LINAK · your desk name**. The internal integration d
 3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
 4. Select this custom integration, domain **`ha_linak`**, then choose your desk.
 
+Version **0.1.0a3** authenticates before reading. Setup distinguishes pairing failures, unsupported proxy pairing and lost connections. This change still needs Raspberry Pi/proxy hardware validation.
+
 After submitting, HA shows a progress screen. The attempt has a **60-second** limit; releasing the connection can take another **10 seconds**. A failed attempt shows a reason and lets you retry. [First setup and diagnosis →](docs/onboarding.md)
 
 > [!TIP]

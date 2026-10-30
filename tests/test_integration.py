@@ -8,6 +8,12 @@ from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_ADDRESS
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.ha_linak.client import (
+    DeskAuthenticationError,
+    DeskPairingTimeout,
+    DeskPairingUnsupported,
+    DeskLinkLost,
+)
 from custom_components.ha_linak.const import DOMAIN
 from custom_components.ha_linak.protocol import SERVICE_UUID
 from test_client import FakeBleak
@@ -192,6 +198,10 @@ async def test_diagnostics_do_not_contain_device_identifiers(hass):
         (TimeoutError, "timeout"),
         (ValueError, "unsupported_device"),
         (RuntimeError, "unknown"),
+        (DeskAuthenticationError, "authentication_failed"),
+        (DeskPairingTimeout, "pairing_timeout"),
+        (DeskPairingUnsupported, "pairing_unsupported"),
+        (DeskLinkLost, "connection_lost"),
     ],
 )
 async def test_validation_errors_show_retry_and_allow_a_new_attempt(
@@ -279,6 +289,7 @@ async def test_progress_revisit_does_not_start_second_connection_and_abort_clean
         assert again["type"] == "progress"
         connect.assert_awaited_once()
         hass.config_entries.flow.async_abort(result["flow_id"])
+        await asyncio.wait_for(fake.disconnected.wait(), timeout=1)
         await hass.async_block_till_done()
         assert not fake.is_connected
         assert not hass.config_entries.async_entries(DOMAIN)

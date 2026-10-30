@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Detect cumulative retreat from the best position in the requested direction. Backward movement and jitter no longer reset the progress deadline.
+
 - Preserve the final movement Stop and its reservation through repeated cancellation using the same bounded cleanup-draining path as close().
 
 - Wait for the reserved Stop to settle before disconnecting on close cancellation, including repeated cancellation and Stop timeout. Observe late errors from shielded cleanup tasks.

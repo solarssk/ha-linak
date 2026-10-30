@@ -190,7 +190,7 @@ class MotionController:
                 await self._control(WAKE)
                 loop = asyncio.get_running_loop()
                 progress_at = loop.time()
-                previous = position
+                best_position = position
                 payload = struct.pack("<H", target)
                 while abs(target - position) > TOLERANCE_RAW:
                     if not self.transport.connected:
@@ -206,13 +206,13 @@ class MotionController:
                     finally:
                         timer.cancel()
                     position = await self._read()
-                    if (position - previous) * direction < -TOLERANCE_RAW:
+                    if (position - best_position) * direction < -TOLERANCE_RAW:
                         raise MotionError("Desk moved away from the requested target")
                     if (target - position) * direction < -TOLERANCE_RAW:
                         raise MotionError("Desk passed the requested target")
-                    if abs(position - previous) >= 1:
+                    if (position - best_position) * direction > 0:
                         progress_at = loop.time()
-                        previous = position
+                        best_position = position
                     elif loop.time() - progress_at >= STALL_TIMEOUT:
                         raise MotionError("Desk stopped making progress")
         except TimeoutError:

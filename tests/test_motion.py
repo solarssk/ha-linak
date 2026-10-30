@@ -612,3 +612,51 @@ async def test_repeated_move_cancellation_keeps_stop_and_reservation_alive(
     finally:
         transport.release_stop.set()
         await asyncio.gather(move, return_exceptions=True)
+
+
+@pytest.mark.parametrize(
+    "positions,expected_targets",
+    [
+        ((1400, 1395, 1390, 1385), 3),
+        ((1600, 1605, 1610, 1615), 3),
+        ((1400, 1420, 1415, 1410, 1405), 4),
+        ((1600, 1580, 1585, 1590, 1595), 4),
+    ],
+)
+async def test_cumulative_retreat_from_best_position_aborts(
+    positions, expected_targets
+):
+    transport = Transport(positions)
+    motion = controller(transport)
+    with pytest.raises(MotionError, match="away"):
+        await motion.move_to_cm(83)
+    assert transport.writes[-1] == STOP
+    assert transport.writes.count(struct.pack("<H", 1500)) == expected_targets
+    assert not motion.moving
+
+
+async def test_backward_jitter_does_not_reset_progress_deadline():
+    transport = Transport((1400, 1395, 1400, 1395, 1400))
+    motion = controller(transport)
+    with (
+        patch("custom_components.ha_linak.motion.STALL_TIMEOUT", 0),
+        pytest.raises(MotionError, match="progress"),
+    ):
+        await motion.move_to_cm(83)
+    assert transport.writes == [STOP, WAKE, struct.pack("<H", 1500), STOP]
+
+
+@pytest.mark.parametrize(
+    "positions",
+    [
+        (1400, 1408, 1403, 1410, 1405, 1450, 1445, 1500),
+        (1600, 1592, 1597, 1590, 1595, 1550, 1555, 1500),
+    ],
+)
+async def test_small_feedback_retreat_with_forward_progress_is_tolerated(positions):
+    transport = Transport(positions)
+    motion = controller(transport)
+    await motion.move_to_cm(83)
+    assert transport.writes[-1] == STOP
+    assert transport.last == 1500
+    assert not motion.moving

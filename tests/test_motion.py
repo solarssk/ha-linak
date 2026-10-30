@@ -578,3 +578,37 @@ async def test_cancelled_close_respects_stop_deadline_and_discards_failed_sessio
         await move
     assert not transport.connected
     assert not motion.moving
+
+
+@pytest.mark.parametrize("stop_succeeds", [True, False])
+async def test_repeated_move_cancellation_keeps_stop_and_reservation_alive(
+    stop_succeeds,
+):
+    transport = DelayedFinalStop()
+    motion = controller(transport)
+    move = asyncio.create_task(motion.move_to_cm(83))
+    await transport.stop_started.wait()
+    try:
+        move.cancel()
+        await asyncio.sleep(0)
+        move.cancel()
+        await asyncio.sleep(0)
+        assert motion.moving
+        assert not move.done()
+        with pytest.raises(MotionError, match="active"):
+            await motion.move_to_cm(84)
+        if stop_succeeds:
+            transport.release_stop.set()
+            with pytest.raises(asyncio.CancelledError):
+                await move
+            assert transport.writes == [STOP]
+        else:
+            with pytest.raises(MotionError, match="discarded"):
+                await move
+            assert not transport.connected
+            with pytest.raises(MotionError, match="open"):
+                await motion.move_to_cm(83)
+        assert not motion.moving
+    finally:
+        transport.release_stop.set()
+        await asyncio.gather(move, return_exceptions=True)

@@ -76,3 +76,5 @@ mergeable PR. Writing memories, reminders, offset or unrelated panel bits needs
 its own evidence and readback verification.
 
 Cancellation of `close()` waits for the reserved Stop operation to settle before disconnecting and then propagates cancellation. Repeated cancellation cannot bypass that wait; Stop keeps its existing I/O deadlines. Shielded task results are observed even when callers cancel, so a later Stop error is consumed while the controller remains closed.
+
+Movement completion and close cancellation share the same shielded cleanup-draining path. Repeated cancellation of the movement caller cannot cancel its final Stop or release ownership before cleanup settles. A successful Stop propagates cancellation afterward; a Stop timeout still closes and discards the session.

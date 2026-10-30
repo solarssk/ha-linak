@@ -25,6 +25,20 @@ STALL_TIMEOUT = 2.0
 TOLERANCE_RAW = 10  # 1 mm; not a promise of the desk's positioning accuracy.
 
 
+async def _drain_cleanup(settled: asyncio.Future) -> None:
+    """Defer repeated cancellation until an already bounded cleanup settles.
+
+    Called only while handling cancellation; the caller re-raises it afterward.
+    The gather future observes failures without cancelling the underlying work.
+    """
+    while not settled.done():
+        try:
+            await asyncio.shield(settled)
+        except asyncio.CancelledError:
+            if settled.done():
+                raise
+
+
 class MotionError(Exception):
     """Movement could not complete; never retry automatically."""
 
@@ -215,7 +229,8 @@ class MotionController:
             try:
                 await asyncio.shield(settled)
             except asyncio.CancelledError:
-                await cleanup
+                await _drain_cleanup(settled)
+                cleanup.result()
                 raise
             cleanup.result()
 
@@ -255,12 +270,7 @@ class MotionController:
             # settle before disconnecting, including after repeated cancellation.
             assert self._stop_task is not None
             settled = asyncio.gather(self._stop_task, return_exceptions=True)
-            while not settled.done():
-                try:
-                    await asyncio.shield(settled)
-                except asyncio.CancelledError:
-                    if settled.done():
-                        raise
+            await _drain_cleanup(settled)
             raise
         finally:
             async with asyncio.timeout(IO_TIMEOUT):

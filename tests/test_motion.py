@@ -244,3 +244,163 @@ async def test_concurrent_stop_requests_do_not_cancel_cleanup():
         await task
     assert transport.writes[-1] == STOP
     assert not motion.moving
+
+
+async def test_bleak_adapter_uses_expected_characteristics_and_write_mode():
+    from unittest.mock import AsyncMock, Mock
+
+    from custom_components.ha_linak.motion import (
+        BleakMotionTransport,
+        CONTROL_UUID,
+        TARGET_UUID,
+    )
+    from custom_components.ha_linak.protocol import HEIGHT_UUID
+
+    client = Mock()
+    client.is_connected = True
+    client.read_gatt_char = AsyncMock(return_value=bytearray.fromhex("9e050000"))
+    client.write_gatt_char = AsyncMock()
+    client.disconnect = AsyncMock()
+    adapter = BleakMotionTransport(client)
+    assert adapter.connected
+    assert await adapter.read_position() == PositionSample(1438, 0)
+    client.read_gatt_char.assert_awaited_once_with(HEIGHT_UUID)
+    await adapter.write_control(STOP)
+    client.write_gatt_char.assert_awaited_with(CONTROL_UUID, STOP, response=False)
+    target = struct.pack("<H", 1500)
+    await adapter.write_target(target)
+    client.write_gatt_char.assert_awaited_with(TARGET_UUID, target, response=False)
+    await adapter.disconnect()
+    client.disconnect.assert_awaited_once()
+    client.is_connected = False
+    assert not adapter.connected
+
+
+async def test_disconnect_between_command_acceptance_and_first_read():
+    transport = Transport()
+    motion = controller(transport)
+    task = asyncio.create_task(motion.move_to_cm(83))
+    await asyncio.sleep(0)  # reserve the worker before its first read
+    transport.connected = False
+    with pytest.raises(MotionError, match="discarded"):
+        await task
+    assert transport.writes == []
+    assert not motion.moving
+
+
+async def test_disconnect_after_wake_sends_no_target():
+    class DisconnectOnWake(Transport):
+        async def write_control(self, payload):
+            await super().write_control(payload)
+            if payload == WAKE:
+                self.connected = False
+
+    transport = DisconnectOnWake()
+    motion = controller(transport)
+    with pytest.raises(MotionError, match="discarded"):
+        await motion.move_to_cm(83)
+    assert transport.writes == [STOP, WAKE]
+    assert not motion.moving
+
+
+async def test_stop_and_disconnect_failure_keeps_controller_closed():
+    class FailedDisconnect(Transport):
+        async def disconnect(self):
+            raise ConnectionError("disconnect failed")
+
+    transport = FailedDisconnect()
+    transport.fail_stop = True
+    motion = controller(transport)
+    with pytest.raises(MotionError, match="discarded"):
+        await motion.stop()
+    # Even if disconnect fails and BLE still reports connected, no new target
+    # may be accepted on a session whose Stop failed.
+    assert transport.connected
+    with pytest.raises(MotionError, match="open"):
+        await motion.move_to_cm(83)
+    assert transport.writes == [STOP]
+
+
+class DelayedFinalStop(Transport):
+    def __init__(self):
+        super().__init__((1500,))
+        self.stop_started = asyncio.Event()
+        self.release_stop = asyncio.Event()
+
+    async def write_control(self, payload):
+        assert payload == STOP
+        self.stop_started.set()
+        await self.release_stop.wait()
+        await super().write_control(payload)
+
+
+async def test_cancellation_during_final_stop_preserves_stop_delivery():
+    transport = DelayedFinalStop()
+    motion = controller(transport)
+    task = asyncio.create_task(motion.move_to_cm(83))
+    await transport.stop_started.wait()
+    task.cancel()
+    # Worker is cancelled while awaiting its shielded cleanup. The Stop itself
+    # must stay alive and finish before the movement caller observes cancellation.
+    await asyncio.sleep(0)
+    assert not task.done()
+    transport.release_stop.set()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert transport.writes == [STOP]
+    assert not motion.moving
+
+
+async def test_cancelling_stop_caller_does_not_cancel_worker_cleanup():
+    transport = DelayedFinalStop()
+    motion = controller(transport)
+    move = asyncio.create_task(motion.move_to_cm(83))
+    await transport.stop_started.wait()
+    stop = asyncio.create_task(motion.stop())
+    await asyncio.sleep(0)  # Stop cancels the worker and waits for its cleanup
+    stop.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await stop
+    assert motion.moving  # reservation remains until cleanup completes
+    with pytest.raises(MotionError, match="active"):
+        await motion.move_to_cm(84)
+    transport.release_stop.set()
+    with pytest.raises(asyncio.CancelledError):
+        await move
+    assert transport.writes == [STOP]
+    assert not motion.moving
+
+
+async def test_stop_at_worker_completion_releases_ownership_before_caller_resumes():
+    # Python supports eagerly started tasks. A completion callback can finish a
+    # Stop before the original movement caller resumes from its worker await.
+    transport = DelayedFinalStop()
+    motion = controller(transport)
+    loop = asyncio.get_running_loop()
+    old_factory = loop.get_task_factory()
+    stops = []
+
+    def worker_done(_task):
+        stops.append(asyncio.create_task(motion.stop(), eager_start=True))
+
+    def task_factory(loop, coro, **kwargs):
+        task = asyncio.Task(coro, loop=loop, **kwargs)
+        if coro.__qualname__ == "MotionController._move":
+            task.add_done_callback(worker_done)
+        return task
+
+    loop.set_task_factory(task_factory)
+    try:
+        move = asyncio.create_task(motion.move_to_cm(83))
+        await transport.stop_started.wait()
+        transport.release_stop.set()
+        await move
+        await asyncio.gather(*stops)
+    finally:
+        loop.set_task_factory(old_factory)
+    assert len(stops) == 1
+    assert transport.writes == [STOP, STOP]
+    assert not motion.moving
+    # Completion has released ownership; another explicit target is accepted.
+    await motion.move_to_cm(83)
+    assert not motion.moving

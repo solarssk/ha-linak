@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Preserve the GitHub presentation in .github/README files and provide separate HACS product descriptions with portable Markdown and artwork.
 - Consolidate repository labels into four change types plus dependency and security markers.
 - Require PR type, release milestone and assignee in the existing documentation gate; document the complete agent workflow and handoff checks.
 - Document DPG1C authentication/initialization research and the hardware validation plan; distinguish notification stages and log elapsed stage time without device identifiers.

@@ -46,7 +46,7 @@ The movement research module is unregistered and is not a shipped control featur
 | Movement research | docs/movement.md and the read-only boundary above |
 | Dependencies, tests or workflows | CONTRIBUTING.md, actual .github/workflows files, .github/required-checks.json |
 | Governance or GitHub settings | docs/governance.md, playbook governance, scripts/check_github_settings.py |
-| Branding or README images | docs/branding.md |
+| Branding or README images | docs/branding.md, docs/hacs-presentation.md |
 
 ## Implementation and local validation
 
@@ -55,6 +55,14 @@ CHANGELOG.md and relevant README/docs/translation updates in the same PR. Keep
 English and Polish keys aligned. Keep CHANGELOG.md lists compact: consecutive
 bullets have no blank lines between them; separate headings and sections normally. Do not rewrite private hardware captures into
 public examples; use synthetic identifiers.
+
+Keep the two presentation surfaces separate. GitHub's repository landing page
+uses .github/README.md and .github/README.pl.md: preserve their accepted centered
+header, theme-aware logos, badges and entity tables. HACS reads root README.md;
+its English/Polish product descriptions use native Markdown and portable images.
+Do not simplify or relocate the GitHub presentation to fix HACS. Read
+docs/hacs-presentation.md and verify both discovery paths before changing them.
+info.md/render_readme guidance from HACS 1.x is not a HACS 2.x solution.
 
 Run the full validation block in CONTRIBUTING.md after the final patch and before
 pushing. Use Python 3.14.2 or newer in an isolated environment. Linux installed-package

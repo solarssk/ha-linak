@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="260" viewBox="0 0 760 260" role="img" aria-label="Biurko w Twoim pulpicie. Przykładowe wartości czujników.">
+<rect width="760" height="260" rx="18" fill="#edf5fc"/>
+<g font-family="Arial, sans-serif" fill="#16324a">
+<text x="28" y="40" font-size="24" font-weight="700">Biurko w Twoim pulpicie</text>
+<text x="28" y="66" font-size="15" fill="#47617a">Przykładowe wartości czujników</text>
+<rect x="28" y="94" width="282" height="132" rx="12" fill="#fff"/>
+<text x="48" y="124" font-size="17">Wysokość</text>
+<text x="48" y="177" font-size="46" font-weight="700">82.4<tspan font-size="23" font-weight="400"> cm</tspan></text>
+<rect x="48" y="193" width="112" height="20" rx="10" fill="#e5f4ff"/>
+<text x="59" y="208" font-size="12" fill="#1260a0">Tylko odczyt</text>
+<rect x="326" y="94" width="406" height="132" rx="12" fill="#fff"/>
+<text x="348" y="124" font-size="17">Zapisane wysokości</text>
+<rect x="348" y="142" width="140" height="58" rx="10" fill="#f0f5fa"/>
+<rect x="504" y="142" width="140" height="58" rx="10" fill="#f0f5fa"/>
+<text x="368" y="179" font-size="24" font-weight="700">80<tspan font-size="17" font-weight="400"> cm</tspan></text>
+<text x="524" y="179" font-size="24" font-weight="700">120<tspan font-size="17" font-weight="400"> cm</tspan></text>
+<g fill="none" stroke="#1260a0" stroke-width="3" stroke-linecap="round"><path d="M673 151h36m-32 0v44m28-44v44m-34 0h12m16 0h12"/></g>
+</g></svg>

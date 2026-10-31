@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Record manufacturer settings/variant evidence, pinned community protocol candidates, protected offset calibration and post-install configuration requirements for the next control milestones.
 - Standardize Markdown prose and list-item paragraphs on single source lines; document the authoring convention while preserving structural markup and rendered content.
 
 - Use a readable desk name instead of the Bluetooth address when Home Assistant has no advertised name, and replace an existing address-only entry title on the next setup.

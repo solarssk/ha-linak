@@ -2,8 +2,7 @@
 
 # LINAK dla Home Assistant
 
-**Wysokość biurka w centymetrach, bezpośrednio w Home Assistant.**
-Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
+**Wysokość biurka w centymetrach, bezpośrednio w Home Assistant.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
 
 🇬🇧 [English](README.md) · 🇵🇱 **Polski**
 

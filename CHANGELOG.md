@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Standardize Markdown prose and list-item paragraphs on single source lines; document the authoring convention while preserving structural markup and rendered content.
+
 - Use a readable desk name instead of the Bluetooth address when Home Assistant has no advertised name, and replace an existing address-only entry title on the next setup.
 - Preserve the GitHub presentation in .github/README files and provide separate HACS product descriptions with portable Markdown and artwork.
 - Consolidate repository labels into four change types plus dependency and security markers.

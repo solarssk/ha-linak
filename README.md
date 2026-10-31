@@ -2,8 +2,7 @@
 
 # LINAK for Home Assistant
 
-**Your desk height in centimeters, right in Home Assistant.**
-A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
+**Your desk height in centimeters, right in Home Assistant.** A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
 
 🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 

@@ -32,24 +32,11 @@ No container image is published, so container scanning and image SBOM requiremen
 
 ## Agent workflow and PR metadata
 
-AGENTS.md is the single instruction source and CLAUDE.md imports it. It provides
-task startup, a read-first map, validation and explicit PR handoff requirements.
-CONTRIBUTING.md owns the runnable local checks; the PR template makes the handoff
-visible to reviewers. Do not duplicate these rules into independent tool files.
+AGENTS.md is the single instruction source and CLAUDE.md imports it. It provides task startup, a read-first map, validation and explicit PR handoff requirements. CONTRIBUTING.md owns the runnable local checks; the PR template makes the handoff visible to reviewers. Do not duplicate these rules into independent tool files.
 
-Every PR requires one supported type label, an open target release milestone and
-a maintainer assignee. This is the repository's explicit policy, using playbook
-label conventions; it is not a universal Tier 2 requirement. Area/priority labels
-remain optional. Query the active milestone on GitHub instead of keeping a version
-in agent instructions.
+Every PR requires one supported type label, an open target release milestone and a maintainer assignee. This is the repository's explicit policy, using playbook label conventions; it is not a universal Tier 2 requirement. Area/priority labels remain optional. Query the active milestone on GitHub instead of keeping a version in agent instructions.
 
-The existing required Documentation impact job runs check_pr_metadata.py in
-addition to check_pr_docs.py, with unchanged read-only permissions and check name.
-Metadata edits trigger a new run. No admin token, automatic metadata mutation or
-pull_request_target checkout is introduced. The metadata validator accepts an event
-payload in CI and can read a live PR through --pr for maintainer handoff verification.
-Its passing result is a snapshot; agents must still verify live fields/current head
-before handoff. The maintainer remains the only merger.
+The existing required Documentation impact job runs check_pr_metadata.py in addition to check_pr_docs.py, with unchanged read-only permissions and check name. Metadata edits trigger a new run. No admin token, automatic metadata mutation or pull_request_target checkout is introduced. The metadata validator accepts an event payload in CI and can read a live PR through --pr for maintainer handoff verification. Its passing result is a snapshot; agents must still verify live fields/current head before handoff. The maintainer remains the only merger.
 
 
 ## Label taxonomy
@@ -65,8 +52,4 @@ Keep one compact taxonomy, with exactly one type per PR:
 | `dependencies` | Supplement the type for dependency updates |
 | `security` | Supplement the type for security corrections |
 
-Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem
-labels or one-off blocking labels. Dependabot already supplies type: chore and
-dependencies explicitly. Before retiring a label, inspect all its issue/PR
-associations and migrate any useful classification first. Removing an obsolete
-status label also removes it from historical items; that must be deliberate.
+Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem labels or one-off blocking labels. Dependabot already supplies type: chore and dependencies explicitly. Before retiring a label, inspect all its issue/PR associations and migrate any useful classification first. Removing an obsolete status label also removes it from historical items; that must be deliberate.

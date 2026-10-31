@@ -3,10 +3,17 @@
 from homeassistant.components.number import NumberEntity, NumberMode, NumberDeviceClass
 from homeassistant.const import UnitOfLength
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 from .entity import LinakEntity
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+# HA requires this coroutine hook even when constructing entities needs no I/O.
+async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
+    _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     coordinator = entry.runtime_data
     if coordinator.controls is not None:
         async_add_entities([LinakTargetHeight(coordinator)])

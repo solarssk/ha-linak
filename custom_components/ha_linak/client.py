@@ -360,17 +360,18 @@ class DeskClient:
             self._stop_task is not None and not self._stop_task.done()
         )
 
-    def _check_control_properties(self, target: bool = False) -> None:
-        if not self.connected:
+    def _check_control_properties(self, target: bool = False) -> BleakClient:
+        client = self.client
+        if client is None or not self.connected:
             raise MotionError("An existing ready connection is required")
-        assert self.client is not None
         required = [(CONTROL_UUID, "write-without-response")]
         if target:
             required += [(TARGET_UUID, "write-without-response"), (HEIGHT_UUID, "read")]
         for uuid, operation in required:
-            characteristic = self.client.services.get_characteristic(uuid)
+            characteristic = client.services.get_characteristic(uuid)
             if characteristic is None or operation not in characteristic.properties:
                 raise MotionError("The required Bluetooth operation is unavailable")
+        return client
 
     async def move_to_cm(self, height_cm: float, settings: ControlSettings) -> None:
         await self._start_move(height_cm, settings)
@@ -400,10 +401,8 @@ class DeskClient:
             self.last_control_result = "completed"
         except asyncio.CancelledError:
             self.last_control_result = "interrupted"
-            current = asyncio.current_task()
-            if current is not None and current.cancelling():
-                raise
-            raise MotionError("Movement was interrupted by Stop") from None
+            self._raise_if_child_interrupted()
+            raise
         except Exception:
             self.last_control_result = "failed"
             raise
@@ -414,6 +413,12 @@ class DeskClient:
             finally:
                 self._motion_task = None
                 self.changed()
+
+    def _raise_if_child_interrupted(self) -> None:
+        """Translate only worker cancellation; preserve HA caller cancellation."""
+        current = asyncio.current_task()
+        if current is not None and not current.cancelling():
+            raise MotionError("Movement was interrupted by Stop") from None
 
     async def _move(
         self,
@@ -487,11 +492,10 @@ class DeskClient:
                 self.last_control_result = "stop_sent"
                 return
         try:
-            self._check_control_properties()
-            assert self.client is not None
+            client = self._check_control_properties()
             self._set_stage("stop")
             async with asyncio.timeout(MOTION_IO_TIMEOUT):
-                await self.client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+                await client.write_gatt_char(CONTROL_UUID, STOP, response=False)
             self.last_control_result = "stop_sent"
             self._set_stage("ready")
         except Exception as err:

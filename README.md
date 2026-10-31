@@ -38,7 +38,17 @@ Check your saved sitting and standing heights in one place. The stored-height se
 - ⏱️ **Profile 1–3 sitting time** and **standing time** show configured durations, in minutes.
 - 📐 **Height offset** shows the panel's height reference, in centimeters.
 
-All except Height are diagnostic sensors. Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
+Height, stored heights and reminder profiles are regular desk sensors. Height offset is a diagnostic parameter. Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
+
+### Connection diagnostics
+
+- 🔗 **Connection** (`binary_sensor`): whether the desk has a ready session and valid readings. It shows disconnected when the session is lost.
+- 📶 **Bluetooth signal strength** (`sensor`, dBm): the latest advertisement received by HA, not a measurement of the active link.
+- 🛠️ **Bluetooth backend** (`sensor`): for example local BlueZ or an ESPHome proxy, without the adapter name.
+
+RSSI and backend sensors are disabled by default. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities. This enables diagnostic readings in HA without changing desk settings.
+
+The device information contains its name and Bluetooth address. Downloaded diagnostics omit names, MACs and adapter identifiers. These entities appear after successful integration setup; they do not replace first-setup error messages.
 
 ## 📋 What you need
 

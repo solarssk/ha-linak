@@ -17,6 +17,8 @@ DPG1C is the initial supported device. Keep protocol parsing independent of HA e
 | Stored-height sensors | Device-stored positions with offset, read-only initially |
 | Reminder configuration | Read-only initially; later select/number entities for verified settings |
 | Offset | Read-only diagnostic/configuration initially; do not expose a write control before verification |
+| Connection binary sensor | Diagnostic ready-session state; off after link loss, independent of coordinator read availability |
+| Signal strength / backend sensors | Optional, default-disabled diagnostics from HA's advertisement cache / active client's public backend category |
 
 Actual and target height are separate states. Never publish the requested destination as measured height. Do not restore and execute a target after restart/reload/reconnect. Do not queue delayed movement across disconnection. Keep a single movement task; stop/cancel takes precedence. Do not infer occupancy from height.
 
@@ -51,3 +53,17 @@ Repository: solarssk/ha-linak (public). Minimum supported Home Assistant: 2026.1
 - https://contributors.home-assistant.io/core/entities/number/
 - https://contributors.home-assistant.io/core/integrations/bluetooth/
 - https://www.hacs.xyz/docs/publish/integration/
+
+## Entity categories and identity
+
+Height, stored heights and reminder profiles are regular sensor entities. Offset
+remains diagnostic because it is a technical height-reference parameter. Backend
+and signal-strength sensors are diagnostic and disabled by default; Connection is
+a diagnostic binary_sensor enabled by default. No configuration switch or setting
+write is implied. Existing product sensor IDs are preserved.
+
+DeviceInfo uses the existing domain/address identifier and also a Bluetooth
+connection identifier. Names and the address are local device metadata rather
+than extra entities. Downloaded diagnostics contain only allowlisted transport
+categories and RSSI, without raw advertisement or client objects. See
+[diagnostics](diagnostics.md) for freshness and lifecycle limits.

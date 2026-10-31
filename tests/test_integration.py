@@ -185,7 +185,11 @@ async def test_diagnostics_do_not_contain_device_identifiers(hass):
         domain=DOMAIN, title="Private location", data={CONF_ADDRESS: ADDRESS}
     )
     entry.runtime_data = SimpleNamespace(
-        desk=None, last_update_success=False, data=DeskState()
+        desk=None,
+        last_update_success=False,
+        data=DeskState(),
+        signal_strength=None,
+        bluetooth_backend=None,
     )
     result = await async_get_config_entry_diagnostics(hass, entry)
     serialized = json.dumps(result)

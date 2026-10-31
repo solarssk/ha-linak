@@ -28,6 +28,16 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
+## 0.1.0a5 — unpublished alpha
+
+- Show stored heights and reminder profiles as regular desk sensors; retain height offset as a diagnostic parameter without changing existing entity IDs.
+- Add a diagnostic connection binary sensor and optional, default-disabled Bluetooth signal-strength and backend sensors using HA-managed data only.
+- Add the Bluetooth address to local device information; keep downloaded diagnostics free of names, addresses and adapter identifiers.
+
+### Adopter action
+
+- Redownload and restart HA. Enable optional Bluetooth sensors in the entity registry when needed; no new pairing, bond reset or desk setting write is required. Automatic first pairing from 0.1.0a4 still needs hardware validation.
+
 ## 0.1.0a4 — unpublished alpha
 
 - Provide a temporary, device-restricted BlueZ agent for local Just Works pairing, using the same application connection for registration and pairing. Reuse existing bonds; retain backend pairing for proxies.

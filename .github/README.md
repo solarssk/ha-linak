@@ -64,7 +64,7 @@ Compatibility with other panel models is not confirmed. [Read-query results →]
 
 ## 📊 Home Assistant entities
 
-The integration creates **sensor entities (`sensor`)**. These labels match the English names in HA; your device name may appear before them.
+The integration creates **sensor entities (`sensor`) and a diagnostic binary sensor (`binary_sensor`)**. These labels match the English names in HA; your device name may appear before them.
 
 <table>
   <thead>
@@ -72,7 +72,7 @@ The integration creates **sensor entities (`sensor`)**. These labels match the E
   </thead>
   <tbody>
     <tr>
-      <td rowspan="6">Sensor<br><code>sensor</code></td>
+      <td rowspan="5">Sensor<br><code>sensor</code></td>
       <td>📏 <strong>Height</strong></td>
       <td>cm</td>
       <td>Current desk height, including the panel offset</td>
@@ -97,18 +97,27 @@ The integration creates **sensor entities (`sensor`)**. These labels match the E
       <td>min</td>
       <td>Standing time configured for each of three profiles</td>
     </tr>
-    <tr>
-      <td>📐 <strong>Height offset</strong></td>
-      <td>cm</td>
-      <td>The height reference stored on the panel</td>
-    </tr>
   </tbody>
 </table>
 
 - **Height** is the main measurement sensor.
-- All other entities have the **Diagnostic** category and show settings read from the panel.
+- Stored heights and reminder profiles are regular desk sensors, without the Diagnostic category.
 - Reminder durations are configured values, not elapsed-time counters.
 - Sensors do not move the desk or change its settings.
+
+### Diagnostics
+
+<table>
+  <thead><tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3">Sensor<br><code>sensor</code></td><td>📐 <strong>Height offset</strong></td><td>Enabled</td><td>The height reference stored on the panel, in cm</td></tr>
+    <tr><td>📶 <strong>Bluetooth signal strength</strong></td><td>Disabled</td><td>Latest advertisement received by HA, in dBm; not the active link's RSSI</td></tr>
+    <tr><td>🛠️ <strong>Bluetooth backend</strong></td><td>Disabled</td><td>Active connection category, such as BlueZ or ESPHome</td></tr>
+    <tr><td>Binary sensor<br><code>binary_sensor</code></td><td>🔗 <strong>Connection</strong></td><td>Enabled</td><td>A ready desk session; disconnected after link loss</td></tr>
+  </tbody>
+</table>
+
+Enable optional entities under **Settings → Devices & services → Entities**, showing disabled LINAK entities. They are not desk-setting switches. Name and MAC are device information, without separate sensors; downloaded diagnostics omit these identifiers. [Interpreting diagnostics →](../docs/diagnostics.md)
 
 <a id="requirements"></a>
 

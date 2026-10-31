@@ -3,6 +3,7 @@
 from datetime import timedelta
 import logging
 
+from bleak.backends import BleakBackend
 from bleak.exc import BleakError
 from bleak.backends.device import BLEDevice
 from homeassistant.components import bluetooth
@@ -17,6 +18,13 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LinakCoordinator(DataUpdateCoordinator[DeskState]):
+    BACKENDS = tuple(
+        sorted(
+            {backend.value for backend in BleakBackend}
+            | {"bleak_esphome", "bluez_mgmt"}
+        )
+    )
+
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(
             hass,
@@ -27,6 +35,36 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         )
         self.address = entry.data[CONF_ADDRESS]
         self.desk: DeskClient | None = None
+
+    @property
+    def signal_strength(self) -> int | None:
+        """Latest connectable advertisement, not the active GATT link's RSSI."""
+        if not bluetooth.async_address_present(
+            self.hass, self.address, connectable=True
+        ):
+            return None
+        info = bluetooth.async_last_service_info(
+            self.hass, self.address, connectable=True
+        )
+        if info is None or info.rssi == 127:
+            return None
+        return info.rssi
+
+    @property
+    def bluetooth_backend(self) -> str | None:
+        """Return only a known backend category, never its name or details."""
+        if (
+            self.desk is None
+            or self.desk.client is None
+            or not self.desk.client.is_connected
+        ):
+            return None
+        backend = self.desk.client.backend_id
+        return (
+            str(backend.value if isinstance(backend, BleakBackend) else backend)
+            if backend in self.BACKENDS
+            else None
+        )
 
     @callback
     def _changed(self) -> None:

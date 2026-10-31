@@ -8,7 +8,7 @@ The next PR may connect native entities only after supervised hardware tests. Ne
 
 ## Executable supervised test
 
-Use the [research runner and result checklist](movement-test.md) ([Polish](movement-test.pl.md)) to collect the missing evidence on a dedicated connection. It is not registered with HA and does not bypass this gate.
+Use the [research runner and result checklist](movement-test.md) to collect the missing evidence on a dedicated connection. It is not registered with HA and does not bypass this gate.
 
 ## Native interface contract
 

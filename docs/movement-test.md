@@ -1,7 +1,5 @@
 # Supervised movement test
 
-[🇵🇱 Polish instructions](movement-test.pl.md)
-
 This branch adds an executable research runner, not HA control entities. HACS remains read-only. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the existing motion controller on one dedicated connection, does not change user ID, memories, reminders or offset, and never reconnects/replays a target. A successful software result is not evidence of physical Stop.
 
 ## Prepare

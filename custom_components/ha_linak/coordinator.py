@@ -60,11 +60,11 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         ):
             return None
         backend = self.desk.client.backend_id
-        return (
-            str(backend.value if isinstance(backend, BleakBackend) else backend)
-            if backend in self.BACKENDS
-            else None
-        )
+        if backend not in self.BACKENDS:
+            return None
+        if isinstance(backend, BleakBackend):
+            return backend.value
+        return backend
 
     @callback
     def _changed(self) -> None:

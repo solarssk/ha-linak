@@ -5,11 +5,17 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.const import EntityCategory
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .entity import LinakEntity
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+# HA requires this async platform hook even when entity creation needs no await.
+async def async_setup_entry(  # NOSONAR: HA platform contract (python:S7503)
+    _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     async_add_entities([LinakConnectionSensor(entry.runtime_data, "connection")])
 
 

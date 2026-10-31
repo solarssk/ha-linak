@@ -13,7 +13,7 @@ from .entity import LinakEntity
 
 
 # HA requires this async platform hook even when entity creation needs no await.
-async def async_setup_entry(  # NOSONAR: HA platform contract (python:S7503)
+async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     async_add_entities([LinakConnectionSensor(entry.runtime_data, "connection")])

@@ -1,4 +1,4 @@
-"""Native read-only LINAK integration."""
+"""Native LINAK integration with explicitly configured movement controls."""
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from .coordinator import LinakCoordinator
 from .naming import DEFAULT_NAME, desk_name
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.BUTTON]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

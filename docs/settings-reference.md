@@ -1,6 +1,6 @@
 # DPG1C settings and implementation reference
 
-Reviewed 2026-10-31. This is a research inventory and product plan, not a list of enabled controls. Runtime 0.1.0a6 is read-only. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
+Reviewed 2026-10-31. This is a research inventory and product plan, not a list of enabled controls. Runtime 0.1.0a7 adds opt-in native movement; panel-settings writes remain unimplemented. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
 
 ## Evidence levels
 
@@ -41,8 +41,8 @@ O4 distinguishes Owner and Guest storage/transfer behavior, describes settings f
 | Feature | Evidence | Intended HA surface | Current boundary / required proof |
 | --- | --- | --- | --- |
 | Actual height | H, O2 | Regular distance sensor in cm | Implemented. Verify against a physical measurement/panel after calibration. |
-| Target height and Stop | O3, C3, S | Native number in cm and Stop button | Controller simulated and unregistered; supervised movement/Stop evidence first. |
-| Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Read values available; drive not physically verified. Respect configured/available slots. |
+| Target height and Stop | O3, C3, S | Native number in cm and Stop button | Implemented behind Options Flow opt-in; simulated HA coverage, physical movement/Stop evidence pending. |
+| Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Opt-in drive buttons re-read the selected slot; drive not physically verified. Respect configured/available slots. |
 | Save/replace favourite | O4, C1 | Separate explicit save operation | Write payload, slot identity and persistence unverified; read back the exact slot. |
 | Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Offset read works. Write, persistence and relationship to displayed calibration need verification. |
 | Panel display units | O1, O2, C2 | Configuration choice if verified | Preserve the integration's centimeter interface; changing panel units must not reinterpret raw positions or cause motion. |
@@ -113,4 +113,4 @@ Questions to retain for LINAK or the desk OEM: exact SKU/firmware and Full/Limit
 
 ## Delivery order
 
-Supervised movement/Stop evidence comes first, followed by native target/Stop controls and favourite drive. Verify memory/offset/reminder writes separately while designing post-install configuration alongside the control work. This reference does not enable a runtime feature or authorize hardware writes. Keep detailed private progress and captures in the local handoff/research workspace.
+Opt-in native target/Stop and favourite-drive entities support the first supervised HA tests. Record physical movement/Stop evidence before claiming hardware validation or recommending unattended use. Verify memory/offset/reminder writes separately while designing post-install configuration alongside the control work. This reference does not enable a runtime feature or authorize hardware writes. Keep detailed private progress and captures in the local handoff/research workspace.

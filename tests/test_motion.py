@@ -172,16 +172,6 @@ async def test_stop_failure_discards_session():
     assert not transport.connected
 
 
-def test_movement_is_not_imported_by_runtime():
-    from pathlib import Path
-
-    root = Path(__file__).parents[1] / "custom_components/ha_linak"
-    for path in root.glob("*.py"):
-        if path.name != "motion.py":
-            assert "from .motion import" not in path.read_text()
-            assert "import motion" not in path.read_text()
-
-
 async def test_total_movement_deadline_stops_even_with_slow_progress():
     transport = Transport(tuple(range(1400, 1500)))
     motion = controller(transport)

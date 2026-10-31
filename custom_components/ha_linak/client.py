@@ -1,4 +1,4 @@
-"""Read-only asynchronous DPG client; no movement or settings writes."""
+"""Serialized DPG readings and explicitly requested, bounded movement."""
 
 import asyncio
 import logging
@@ -13,6 +13,17 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
+from .control_settings import ControlSettings
+from .motion import (
+    BleakMotionTransport,
+    CONTROL_UUID,
+    TARGET_UUID,
+    STOP,
+    IO_TIMEOUT as MOTION_IO_TIMEOUT,
+    MotionController,
+    MotionError,
+    _drain_cleanup,
+)
 from .naming import DEFAULT_NAME, desk_name
 from .pairing import BlueZAgentUnavailable, pair_bluez
 from .protocol import (
@@ -104,6 +115,10 @@ class DeskClient:
         self._closing = False
         self._ready = False
         self._generation = 0
+        self._motion_task: asyncio.Task[None] | None = None
+        self._stop_task: asyncio.Task[None] | None = None
+        self.last_control_result = "not_requested"
+        self._motion_stop_sent = False
 
     def _set_stage(self, stage: str) -> None:
         now = monotonic()
@@ -259,6 +274,8 @@ class DeskClient:
         return await self._pending
 
     async def refresh(self) -> DeskState:
+        if self.control_busy:
+            return self.state
         async with self._lock:
             try:
                 async with asyncio.timeout(REFRESH_TIMEOUT):
@@ -337,7 +354,161 @@ class DeskClient:
         self._set_stage("ready")
         return state
 
+    @property
+    def control_busy(self) -> bool:
+        return self._motion_task is not None or (
+            self._stop_task is not None and not self._stop_task.done()
+        )
+
+    def _check_control_properties(self, target: bool = False) -> None:
+        if not self.connected:
+            raise MotionError("An existing ready connection is required")
+        assert self.client is not None
+        required = [(CONTROL_UUID, "write-without-response")]
+        if target:
+            required += [(TARGET_UUID, "write-without-response"), (HEIGHT_UUID, "read")]
+        for uuid, operation in required:
+            characteristic = self.client.services.get_characteristic(uuid)
+            if characteristic is None or operation not in characteristic.properties:
+                raise MotionError("The required Bluetooth operation is unavailable")
+
+    async def move_to_cm(self, height_cm: float, settings: ControlSettings) -> None:
+        await self._start_move(height_cm, settings)
+
+    async def move_to_memory(self, index: int, settings: ControlSettings) -> None:
+        if type(index) is not int or not 0 <= index < len(self.state.memories):
+            raise MotionError("Stored position is unavailable")
+        await self._start_move(None, settings, index)
+
+    async def _start_move(
+        self,
+        height_cm: float | None,
+        settings: ControlSettings,
+        memory_index: int | None = None,
+    ) -> None:
+        if self.control_busy or self._lock.locked():
+            raise MotionError("The desk is busy; commands are not queued")
+        self._check_control_properties(target=True)
+        # Reserve before the first await; a competing action cannot queue a move.
+        task = self._motion_task = asyncio.create_task(
+            self._move(height_cm, settings, memory_index)
+        )
+        self.last_control_result = "moving"
+        self._motion_stop_sent = False
+        try:
+            await task
+            self.last_control_result = "completed"
+        except asyncio.CancelledError:
+            self.last_control_result = "interrupted"
+            current = asyncio.current_task()
+            if current is not None and current.cancelling():
+                raise
+            raise MotionError("Movement was interrupted by Stop") from None
+        except Exception:
+            self.last_control_result = "failed"
+            raise
+        finally:
+            settled = asyncio.gather(task, return_exceptions=True)
+            try:
+                await _drain_cleanup(settled)
+            finally:
+                self._motion_task = None
+                self.changed()
+
+    async def _move(
+        self,
+        height_cm: float | None,
+        settings: ControlSettings,
+        memory_index: int | None,
+    ) -> None:
+        async with self._lock:
+            try:
+                self._set_stage("movement_prepare")
+                # Re-read the conversion reference under exclusive session ownership.
+                offset = decode_offset(await self._query(ReadCommand.OFFSET, 3))
+                if offset is None:
+                    raise ValueError("No valid height reference")
+                limits = settings.limits(offset)
+                if memory_index is not None:
+                    command = ReadCommand(0x89 + memory_index)
+                    memory = decode_stored_position(await self._query(command, 7))
+                    self.state.memories[memory_index] = memory
+                    if memory.position_raw is None:
+                        raise MotionError("Stored position is empty")
+                    height_cm = (memory.position_raw + offset) / 100
+                assert height_cm is not None
+                limits.target(height_cm, offset)
+                self.state.offset_raw = offset
+                assert self.client is not None
+                transport = _LiveMotionTransport(self)
+                controller = MotionController(transport, limits, offset)
+                self._set_stage("movement")
+                await controller.move_to_cm(height_cm)
+                self._set_stage("ready")
+            except BaseException:
+                # Stop cleanup in the controller settles before this discards the link.
+                cleanup = asyncio.gather(
+                    self._disconnect_link(), return_exceptions=True
+                )
+                await _drain_cleanup(cleanup)
+                raise
+
+    async def stop(self) -> None:
+        if self._stop_task is None or self._stop_task.done():
+            self._stop_task = asyncio.create_task(self._stop_control())
+        settled = asyncio.gather(self._stop_task, return_exceptions=True)
+        try:
+            await asyncio.shield(settled)
+        except asyncio.CancelledError:
+            await _drain_cleanup(settled)
+            raise
+        result = settled.result()[0]
+        if isinstance(result, BaseException):
+            raise result
+
+    async def _stop_control(self) -> None:
+        task = self._motion_task
+        if task is not None and not task.done():
+            task.cancel()
+            settled = asyncio.gather(task, return_exceptions=True)
+            await _drain_cleanup(settled)
+            # Cancellation discards the movement session after its final Stop.
+            # Its cleanup failure must remain visible to this Stop caller too.
+            result = settled.result()[0]
+            if isinstance(result, Exception):
+                self.last_control_result = "stop_failed"
+                raise MotionError(
+                    "Movement cleanup failed; check physical Stop"
+                ) from result
+            if not self.connected:
+                if not self._motion_stop_sent:
+                    self.last_control_result = "stop_failed"
+                    raise MotionError("Stop was not delivered; check physical Stop")
+                self.last_control_result = "stop_sent"
+                return
+        try:
+            self._check_control_properties()
+            assert self.client is not None
+            self._set_stage("stop")
+            async with asyncio.timeout(MOTION_IO_TIMEOUT):
+                await self.client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+            self.last_control_result = "stop_sent"
+            self._set_stage("ready")
+        except Exception as err:
+            self.last_control_result = "stop_failed"
+            await self._disconnect_link()
+            raise MotionError("Stop failed; check physical Stop") from err
+        finally:
+            self.changed()
+
     async def disconnect(self) -> None:
+        try:
+            if self.control_busy:
+                await self.stop()
+        finally:
+            await self._disconnect_link()
+
+    async def _disconnect_link(self) -> None:
         self._closing = True
         self._link_lost = True
         if self._operation is not None:
@@ -350,3 +521,26 @@ class DeskClient:
         if client is not None and client.is_connected:
             async with asyncio.timeout(IO_TIMEOUT):
                 await client.disconnect()
+
+
+class _LiveMotionTransport(BleakMotionTransport):
+    """Reuse the connected HA client and publish only measured position values."""
+
+    def __init__(self, desk: DeskClient) -> None:
+        assert desk.client is not None
+        super().__init__(desk.client)
+        self.desk = desk
+
+    async def read_position(self) -> PositionSample:
+        sample = await super().read_position()
+        self.desk.state.position = sample
+        self.desk.changed()
+        return sample
+
+    async def write_control(self, payload: bytes) -> None:
+        await super().write_control(payload)
+        if payload == STOP:
+            self.desk._motion_stop_sent = True
+
+    async def disconnect(self) -> None:
+        await self.desk._disconnect_link()

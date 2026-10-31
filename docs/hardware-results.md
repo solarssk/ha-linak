@@ -1,4 +1,4 @@
-# DPG1C hardware read results — 2026-10-29
+# DPG1C hardware read results: 2026-10-29
 
 The Mac successfully subscribed to notifications on the DPG characteristic and sent seven serialized read requests (`7f <command> 00`) using GATT writes with response. Each query received one response before the next query. The connection was closed after completion. No movement, wake, reset or configuration-write commands were sent.
 
@@ -29,7 +29,7 @@ Public fixtures contain only configuration response bytes and unknown counters, 
 
 Extended read access works on this particular DPG1C. It does not yet prove compatibility with other firmware, setting persistence, movement behavior, Raspberry Pi pairing or ESPHome proxy operation. The later Raspberry Pi results below extend this initial evidence; automatic first pairing and proxy validation remain pending.
 
-## Raspberry Pi pairing investigation — 2026-10-31
+## Raspberry Pi pairing investigation: 2026-10-31
 
 Environment reported during the supervised investigation: Raspberry Pi 4B, HAOS 18.4, Home Assistant Core 2026.10.4, local BlueZ, DPG1C. Private captures and identifiers are not included here.
 

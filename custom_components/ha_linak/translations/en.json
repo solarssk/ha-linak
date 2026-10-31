@@ -100,6 +100,66 @@
       "connection": {
         "name": "Connection"
       }
+    },
+    "number": {
+      "target_height": {
+        "name": "Target height"
+      }
+    },
+    "button": {
+      "stop": {
+        "name": "Stop"
+      },
+      "go_to_memory_1": {
+        "name": "Go to stored position 1"
+      },
+      "go_to_memory_2": {
+        "name": "Go to stored position 2"
+      },
+      "go_to_memory_3": {
+        "name": "Go to stored position 3"
+      },
+      "go_to_memory_4": {
+        "name": "Go to stored position 4"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Desk controls",
+        "description": "Enable experimental controls and enter measured desk-height bounds in cm, matching the Height reading. Saving options does not move the desk or change firmware limits or offset. Leave disabled for read-only use.",
+        "data": {
+          "enable_control": "Enable controls",
+          "minimum_height": "Minimum height (cm)",
+          "maximum_height": "Maximum height (cm)"
+        }
+      },
+      "confirm": {
+        "title": "Confirm movement controls",
+        "description": "Setting Target height or pressing a stored-position button starts movement. These controls are not yet verified on a physical DPG1C. Run the first tests at the panel with a clear travel path and no automations. Bluetooth Stop may not be delivered after connection loss. Check units and measured bounds before confirming.",
+        "data": {
+          "confirm_control": "I understand and confirm enabling movement controls"
+        }
+      }
+    },
+    "error": {
+      "invalid_limits": "Enter valid measured bounds containing the current height. A ready connection and valid offset reading are required.",
+      "confirmation_required": "Confirm enabling controls or cancel configuration."
+    }
+  },
+  "exceptions": {
+    "control_unavailable": {
+      "message": "Controls are disabled or the desk has no ready connection. Check integration options and Bluetooth connectivity."
+    },
+    "movement_failed": {
+      "message": "Movement did not complete. Check physical stopping, bounds, stored position, availability and the ha_linak log. Commands are not queued or resumed."
+    },
+    "stop_failed": {
+      "message": "Stop could not be delivered or the previous operation could not settle. Check the desk immediately and use the physical panel."
+    },
+    "memory_unavailable": {
+      "message": "This stored position is empty or unavailable."
     }
   }
 }

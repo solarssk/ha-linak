@@ -8,8 +8,13 @@ import probatio as vol
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 from homeassistant.const import CONF_ADDRESS
+from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .client import (
@@ -19,6 +24,12 @@ from .client import (
     DeskPairingUnsupported,
     DeskPairingTimeout,
     DeskPairingAgentError,
+)
+from .control_settings import (
+    ControlSettings,
+    ENABLE_CONTROL,
+    MINIMUM_HEIGHT,
+    MAXIMUM_HEIGHT,
 )
 from .const import DOMAIN
 from .naming import DEFAULT_NAME, desk_name, discovery_title
@@ -46,6 +57,11 @@ def _validation_error(error: Exception, stage: str) -> str:
 
 class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return LinakOptionsFlow()
 
     def __init__(self) -> None:
         self._devices: dict[str, bluetooth.BluetoothServiceInfoBleak] = {}
@@ -203,4 +219,75 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         return self.async_create_entry(
             title=self._name, data={CONF_ADDRESS: self._address}
+        )
+
+
+class LinakOptionsFlow(OptionsFlowWithReload):
+    """Explicit opt-in and measured host bounds without changing panel settings."""
+
+    def __init__(self) -> None:
+        self._pending: dict[str, Any] = {}
+
+    async def async_step_init(self, user_input=None) -> ConfigFlowResult:
+        errors = {}
+        if user_input is not None:
+            try:
+                settings = ControlSettings.from_options(user_input)
+                if settings is not None:
+                    self._validate_current_height(settings)
+                    self._pending = dict(user_input)
+                    return await self.async_step_confirm()
+                return self.async_create_entry(title="", data=dict(user_input))
+            except ValueError:
+                errors["base"] = "invalid_limits"
+        options = user_input if user_input is not None else self.config_entry.options
+        schema: dict[Any, Any] = {
+            vol.Required(
+                ENABLE_CONTROL, default=options.get(ENABLE_CONTROL, False)
+            ): bool,
+        }
+        for key in (MINIMUM_HEIGHT, MAXIMUM_HEIGHT):
+            field = (
+                vol.Optional(key, default=options[key])
+                if key in options
+                else vol.Optional(key)
+            )
+            schema[field] = selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    mode=selector.NumberSelectorMode.BOX,
+                    step=0.1,
+                    unit_of_measurement="cm",
+                )
+            )
+        return self.async_show_form(
+            step_id="init", data_schema=vol.Schema(schema), errors=errors
+        )
+
+    def _validate_current_height(self, settings: ControlSettings) -> None:
+        coordinator = getattr(self.config_entry, "runtime_data", None)
+        if (
+            coordinator is None
+            or not coordinator.last_update_success
+            or coordinator.desk is None
+            or not coordinator.desk.connected
+            or coordinator.data.offset_raw is None
+        ):
+            raise ValueError("A valid read is required")
+        limits = settings.limits(coordinator.data.offset_raw)
+        position = coordinator.data.position
+        if (
+            position is None
+            or not limits.minimum_raw <= position.position_raw <= limits.maximum_raw
+        ):
+            raise ValueError("Current height must be inside the measured bounds")
+
+    async def async_step_confirm(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None and user_input.get("confirm_control") is True:
+            return self.async_create_entry(title="", data=self._pending)
+        return self.async_show_form(
+            step_id="confirm",
+            data_schema=vol.Schema(
+                {vol.Required("confirm_control", default=False): bool}
+            ),
+            errors={"base": "confirmation_required"} if user_input is not None else {},
         )

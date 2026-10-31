@@ -11,7 +11,7 @@
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-> **Wersja alfa, tylko odczyt.** Odczyty sprawdzono na jednym DPG1C przy użyciu Maca. Odczyty na Malinie działały po ręcznym sparowaniu. Automatyczne pierwsze parowanie i proxy wymagają jeszcze testów. Ruch, Stop i zmiana ustawień panelu nie są jeszcze dostępne w HA.
+> **Eksperymentalna wersja alfa.** Odczyty działają domyślnie. Wysokość zadaną, Stop i jazdę do zapisanych pozycji włączysz w ustawieniach LINAK, po podaniu zmierzonych granic i potwierdzeniu. Testy fizycznego ruchu jeszcze nie są potwierdzone. [Włączanie i pierwszy test po angielsku](docs/controls.md)
 
 ![Poglądowy układ czujników, przykładowe wartości](docs/assets/desk-overview-pl.svg)
 
@@ -31,7 +31,7 @@ Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki p
 
 ## 📊 Encje w Home Assistant
 
-### Czujniki — dostępne
+### Czujniki: dostępne
 
 - 📏 **Wysokość** jest głównym czujnikiem pomiarowym, w centymetrach.
 - 🔖 **Zapisana wysokość 1–4** pokazuje do czterech pozycji pamięci, w centymetrach.
@@ -40,7 +40,7 @@ Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki p
 
 Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka (`sensor`). Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
 
-### Diagnostyka — dostępna
+### Diagnostyka: dostępna
 
 - 📐 **Korekta wysokości** (`sensor`, cm): punkt odniesienia zapisany na panelu.
 - 🔗 **Połączenie** (`binary_sensor`): czy biurko ma gotowe połączenie i poprawne odczyty. Przy zerwaniu pokazuje stan rozłączony.
@@ -51,14 +51,17 @@ RSSI i backend są domyślnie wyłączone. Możesz je włączyć w **Ustawienia 
 
 Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka pomija nazwę, MAC i identyfikatory adapterów. Diagnostyka pojawia się po pomyślnym dodaniu integracji; nie zastępuje komunikatów pierwszej konfiguracji.
 
-### Sterowanie i ustawienia — planowane
+### Sterowanie: po włączeniu w ustawieniach
 
-Encje sterowania nie są jeszcze dostępne w HA. Planowane są:
+| Typ encji | Nazwa w HA | Działanie |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Wysokość zadana** | Wpisanie wartości uruchamia jazdę w podanych granicach; bez procentów i suwaka |
+| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
+| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
 
-- 🎯 **Wysokość zadana** (`number`, cm) oraz **Stop** i **Przejdź do zapisanej pozycji 1–4** (`button`), po testach sprzętowych i obsługi połączenia w HA.
-- ⚙️ Zmiana pamięci i przypomnień po sprawdzeniu ich zapisu; korekta wysokości przez osobny krok kalibracji w ustawieniach integracji.
+Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**, włącz sterowanie, podaj zmierzone granice w cm i potwierdź. Zapis opcji nie porusza biurkiem. Cel nie jest przywracany ani wykonywany po restarcie. Wykonaj pierwsze próby przy panelu, z wolną przestrzenią. [Instrukcja włączania i testu po angielsku](docs/controls.md).
 
-Do tego czasu powyższe czujniki służą wyłącznie do odczytu. [Plan ustawień i kalibracji po angielsku](docs/settings-reference.md) · [Plan rozwoju](docs/roadmap.md)
+Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 
 ## 📋 Czego potrzebujesz
 
@@ -94,11 +97,9 @@ Sprawdź komunikat błędu i dziennik `ha_linak`. W zgłoszeniu podaj wersję HA
 
 Na Malinie zaobserwowano odczyty i ponowne połączenia po ręcznym sparowaniu hosta. Nowe automatyczne pierwsze parowanie i proxy ESPHome wymagają jeszcze testów. Zielony badge CI potwierdza testy oprogramowania, nie działanie każdego biurka i adaptera. [Wyniki testów sprzętowych →](docs/hardware-results.md)
 
-### Testy sterowania dla współtwórców
+### Testy sterowania
 
-Osobne [narzędzie testowe i instrukcja po angielsku](docs/movement-test.md) pozwalają sprawdzić krótki ruch i Stop pod nadzorem, poza HA. Narzędzie wymaga zmierzonych granic, wyłączenia innych klientów biurka i jawnego potwierdzenia ruchu; ogranicza cel do 2 cm od początkowego odczytu. Zacznij od kroku bez ruchu.
-
-Wyniki fizycznego ruchu i Stop nadal czekają na potwierdzenie; narzędzie nie dodaje encji do HA.
+Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i zamykanie integracji. Wyniki fizycznego ruchu i Stop na DPG1C nadal wymagają potwierdzenia. [Pierwszy test w HA po angielsku](docs/controls.md) opisuje próby i raportowanie; [osobne narzędzie badawcze](docs/movement-test.md) służy do eksperymentów protokołu poza HA.
 
 ## 📚 Więcej informacji
 

@@ -1,6 +1,6 @@
 # Supervised movement test
 
-This branch adds an executable research runner, not HA control entities. HACS remains read-only. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the existing motion controller on one dedicated connection, does not change user ID, memories, reminders or offset, and never reconnects/replays a target. A successful software result is not evidence of physical Stop.
+This document describes the standalone research runner. Native opt-in HA entities are documented separately in [controls.md](controls.md); using this runner does not enable them. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the existing motion controller on one dedicated connection, does not change user ID, memories, reminders or offset, and never reconnects/replays a target. A successful software result is not evidence of physical Stop.
 
 ## Prepare
 
@@ -17,7 +17,7 @@ python3.14 -m venv .venv
 
 Use the computer's local BLE identifier: on macOS this is a UUID, not the Pi's MAC address. See the [Bleak client documentation](https://bleak.readthedocs.io/en/latest/api/client.html). This tool does not scan/list nearby devices itself, pair/unpair explicitly or repair the host's bonding state; connecting by identifier can trigger Bleak's implicit discovery and OS-managed authentication. Reuse the private identifier from the previous local research, or obtain it locally before the experiment. If authentication fails, stop and investigate it rather than resetting the panel.
 
-## Inspect first — no control writes
+## Inspect first: no control writes
 
 Replace the placeholders with private local values. Keep the shell variables and reports on your computer; they are not repository configuration.
 
@@ -66,4 +66,4 @@ Keep one result per attempt, plus these observations. Reports omit the device id
 
 Exit 0 means the selected software path completed, 1 means failure, 130 means interruption. `error_type` is deliberately sanitized: ValueError means check parameters, properties, initial bounds or the 2 cm limit; TimeoutError means an I/O/deadline failed; other backend errors require local Bluetooth investigation. Never publish raw backend logs without identifier review. A failed attempt is not permission to retry blindly or change application ownership.
 
-Re-enable only the LINAK integration after the script has exited and the desk has physically stopped. Verify current height/connection in HA. Attach redacted reports and observations to the PR; record validated results in [hardware-results.md](hardware-results.md). Target/Stop entities are the next step after this evidence, including a separate HA session-ownership/lifecycle test. Disconnect and packet-cessation experiments remain separately scoped work.
+Re-enable only the LINAK integration after the script has exited and the desk has physically stopped. Verify current height/connection in HA. Attach redacted reports and observations to the PR; record validated results in [hardware-results.md](hardware-results.md). Native Target/Stop entities have a [separate HA test procedure](controls.md), including session ownership and lifecycle validation. Disconnect and packet-cessation experiments remain separately scoped work.

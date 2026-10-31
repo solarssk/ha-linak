@@ -1,7 +1,7 @@
-"""Movement research foundation, deliberately not registered with Home Assistant.
+"""Bounded movement shared by opt-in HA controls and the supervised runner.
 
-No production module imports this file. See docs/movement.md for the hardware gate.
 The caller must own the BLE session exclusively for the entire operation.
+Physical behavior still requires supervised validation; see docs/movement.md.
 """
 
 import asyncio
@@ -28,8 +28,8 @@ TOLERANCE_RAW = 10  # 1 mm; not a promise of the desk's positioning accuracy.
 async def _drain_cleanup(settled: asyncio.Future) -> None:
     """Defer repeated cancellation until an already bounded cleanup settles.
 
-    Called only while handling cancellation; the caller re-raises it afterward.
-    The gather future observes failures without cancelling the underlying work.
+    The caller retains ownership until the gather future settles. Cancellation
+    handlers re-raise afterward; gather observes failures without cancelling work.
     """
     while not settled.done():
         try:
@@ -85,7 +85,7 @@ class MotionTransport(Protocol):
 
 
 class BleakMotionTransport:
-    """Unregistered adapter for later supervised tests on a dedicated session."""
+    """Transport adapter for an already connected, exclusively owned session."""
 
     def __init__(self, client: BleakClient) -> None:
         self.client = client

@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../docs/assets/linak-logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="../docs/assets/linak-logo-light.svg">
-    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK — We improve your life" width="360">
+    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK: We improve your life" width="360">
   </picture>
 </p>
 
@@ -31,7 +31,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Read-only alpha.** You can view desk data. HA movement, Stop and panel-setting controls are still being developed. [What's next →](../docs/roadmap.md)
+> **Experimental alpha.** Readings work by default. Enable Target height, Stop and stored-position drive in LINAK options with measured bounds and confirmation. Physical movement tests are not yet verified. [Enable controls and run the first test](../docs/controls.md)
 
 <details>
 <summary><strong>On this page</strong></summary>
@@ -52,11 +52,11 @@
 
 ## 🪑 Supported panels
 
-The first supported model is **DPG1C**. This version reads desk data.
+The first supported model is **DPG1C**. This version reads desk data and offers explicitly configured experimental controls.
 
 | LINAK panel | Available functions | Hardware evidence |
 | --- | --- | --- |
-| **DPG1C** | Height, stored heights, height offset and reminder profiles | Read queries verified on one panel |
+| **DPG1C** | Height, stored heights, offset, reminders; opt-in target/Stop/memory drive | Read queries verified on one panel |
 
 Compatibility with other panel models is not confirmed. [Read-query results →](../docs/hardware-results.md)
 
@@ -64,9 +64,9 @@ Compatibility with other panel models is not confirmed. [Read-query results →]
 
 ## 📊 Home Assistant entities
 
-The integration creates **sensor entities (`sensor`) and a diagnostic binary sensor (`binary_sensor`)**. These labels match the English names in HA; your device name may appear before them.
+Readings and diagnostics are available by default. Enabling controls in LINAK options adds the number and buttons below. These labels match the English names in HA; your device name may appear before them.
 
-### Sensors — available
+### Sensors: available
 
 <table>
   <thead>
@@ -86,7 +86,7 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
     </tr>
     <tr>
       <td>🔔 <strong>Active reminder profile</strong></td>
-      <td>—</td>
+      <td>-</td>
       <td>The selected profile number</td>
     </tr>
     <tr>
@@ -107,7 +107,7 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
 - Reminder durations are configured values, not elapsed-time counters.
 - Sensors do not move the desk or change its settings.
 
-### Diagnostics — available
+### Diagnostics: available
 
 <table>
   <thead><tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
@@ -121,14 +121,17 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
 
 Enable optional entities under **Settings → Devices & services → Entities**, showing disabled LINAK entities. They are not desk-setting switches. Name and MAC are device information, without separate sensors; downloaded diagnostics omit these identifiers. [Interpreting diagnostics →](../docs/diagnostics.md)
 
-### Controls and settings — planned
+### Controls: after enabling in options
 
-Control entities are not available in HA yet. Planned additions are:
+| Entity type | Name in HA | Action |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Target height** | Entering a value starts travel within measured bounds; box input, no percentages |
+| `button` | ⏹️ **Stop** | Interrupts the current movement request |
+| `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
 
-- 🎯 **Target height** (`number`, cm), **Stop** and **Go to stored position 1–4** (`button`), after hardware and HA session-handling tests.
-- ⚙️ Memory and reminder changes after write verification; height correction through a dedicated calibration step in integration settings.
+Open **Settings → Devices & services → LINAK → Configure**, enable controls, enter measured centimeter bounds and confirm. Saving options does not move the desk. No target is restored or executed after restart. Run the first tests at the panel with a clear travel path. [Activation and test instructions](../docs/controls.md).
 
-Until then, the sensors above are read-only. [Settings and calibration plan](../docs/settings-reference.md) · [Roadmap](../docs/roadmap.md)
+Offset changes, saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md). Offset is still read-only diagnostics.
 
 <a id="requirements"></a>
 
@@ -220,11 +223,9 @@ Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then re
 
 This describes environment validation, not supported panel models. [Full results →](../docs/hardware-results.md)
 
-### Control tests for contributors
+### Control validation
 
-A separate [research runner and instructions](../docs/movement-test.md) support supervised short-movement and Stop tests outside HA. The runner requires measured bounds, other desk clients disabled and explicit motion confirmation; targets are limited to 2 cm from the initial reading. Start with inspection only.
-
-Physical motion and Stop results are still pending; the runner does not add HA entities.
+Software tests cover entities, session ownership, interruption and unloading. Physical DPG1C movement and Stop results still need verification. The [first HA test](../docs/controls.md) explains the sequence and evidence to record; the [standalone research tool](../docs/movement-test.md) is for protocol experiments outside HA.
 
 <details>
 <summary>Measurement and control limitations</summary>

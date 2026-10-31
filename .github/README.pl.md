@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../docs/assets/linak-logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="../docs/assets/linak-logo-light.svg">
-    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK — We improve your life" width="360">
+    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK: We improve your life" width="360">
   </picture>
 </p>
 
@@ -31,7 +31,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Wersja alfa, tylko odczyt.** Możesz przeglądać dane biurka. Sterowanie ruchem, Stop i zmiana ustawień panelu w HA są jeszcze w przygotowaniu. [Co dalej? →](../docs/roadmap.md)
+> **Eksperymentalna wersja alfa.** Odczyty działają domyślnie. Wysokość zadaną, Stop i jazdę do zapisanych pozycji włączysz w ustawieniach LINAK, po podaniu zmierzonych granic i potwierdzeniu. Testy fizycznego ruchu jeszcze nie są potwierdzone. [Włączanie i pierwszy test po angielsku](../docs/controls.md)
 
 <details>
 <summary><strong>Spis treści</strong></summary>
@@ -52,11 +52,11 @@
 
 ## 🪑 Obsługiwane panele
 
-Pierwszym obsługiwanym modelem jest **DPG1C**. Zakres tej wersji obejmuje odczyt danych.
+Pierwszym obsługiwanym modelem jest **DPG1C**. Ta wersja odczytuje dane i udostępnia eksperymentalne sterowanie po jawnej konfiguracji.
 
 | Panel LINAK | Dostępne funkcje | Potwierdzenie na sprzęcie |
 | --- | --- | --- |
-| **DPG1C** | Wysokość, zapisane wysokości, korekta wysokości i profile przypomnień | Zapytania odczytu sprawdzone na jednym panelu |
+| **DPG1C** | Wysokość, pamięci, offset, przypomnienia; opcjonalne sterowanie wysokością/Stop/pamięcią | Zapytania odczytu sprawdzone na jednym panelu |
 
 Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów →](../docs/hardware-results.md)
 
@@ -64,9 +64,9 @@ Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów
 
 ## 📊 Encje w Home Assistant
 
-Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny (`binary_sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+Odczyty i diagnostyka są dostępne domyślnie. Włączenie sterowania w opcjach LINAK dodaje opisane poniżej encję liczbową i przyciski. Nazwy odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
 
-### Czujniki — dostępne
+### Czujniki: dostępne
 
 <table>
   <thead>
@@ -86,7 +86,7 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
     </tr>
     <tr>
       <td>🔔 <strong>Aktywny profil przypomnień</strong></td>
-      <td>—</td>
+      <td>-</td>
       <td>Numer wybranego profilu</td>
     </tr>
     <tr>
@@ -107,7 +107,7 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
 - Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
 - Czujniki nie sterują ruchem ani nie zmieniają ustawień.
 
-### Diagnostyka — dostępna
+### Diagnostyka: dostępna
 
 <table>
   <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Domyślnie</th><th scope="col">Znaczenie</th></tr></thead>
@@ -121,14 +121,17 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
 
 Opcjonalne encje włączysz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
 
-### Sterowanie i ustawienia — planowane
+### Sterowanie: po włączeniu w ustawieniach
 
-Encje sterowania nie są jeszcze dostępne w HA. Planowane są:
+| Typ encji | Nazwa w HA | Działanie |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Wysokość zadana** | Wpisanie wartości uruchamia jazdę w podanych granicach; bez procentów i suwaka |
+| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
+| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
 
-- 🎯 **Wysokość zadana** (`number`, cm) oraz **Stop** i **Przejdź do zapisanej pozycji 1–4** (`button`), po testach sprzętowych i obsługi połączenia w HA.
-- ⚙️ Zmiana pamięci i przypomnień po sprawdzeniu ich zapisu; korekta wysokości przez osobny krok kalibracji w ustawieniach integracji.
+Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**, włącz sterowanie, podaj zmierzone granice w cm i potwierdź. Zapis opcji nie porusza biurkiem. Cel nie jest przywracany ani wykonywany po restarcie. Wykonaj pierwsze próby przy panelu, z wolną przestrzenią. [Instrukcja włączania i testu po angielsku](../docs/controls.md).
 
-Do tego czasu powyższe czujniki służą wyłącznie do odczytu. [Plan ustawień i kalibracji po angielsku](../docs/settings-reference.md) · [Plan rozwoju](../docs/roadmap.md)
+Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 
 <a id="requirements"></a>
 
@@ -220,11 +223,9 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](../docs/hardware-results.md)
 
-### Testy sterowania dla współtwórców
+### Testy sterowania
 
-Osobne [narzędzie testowe i instrukcja po angielsku](../docs/movement-test.md) pozwalają sprawdzić krótki ruch i Stop pod nadzorem, poza HA. Narzędzie wymaga zmierzonych granic, wyłączenia innych klientów biurka i jawnego potwierdzenia ruchu; ogranicza cel do 2 cm od początkowego odczytu. Zacznij od kroku bez ruchu.
-
-Wyniki fizycznego ruchu i Stop nadal czekają na potwierdzenie; narzędzie nie dodaje encji do HA.
+Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i zamykanie integracji. Wyniki fizycznego ruchu i Stop na DPG1C nadal wymagają potwierdzenia. [Pierwszy test w HA po angielsku](../docs/controls.md) opisuje próby i raportowanie; [osobne narzędzie badawcze](../docs/movement-test.md) służy do eksperymentów protokołu poza HA.
 
 <details>
 <summary>Ograniczenia pomiarów i sterowania</summary>

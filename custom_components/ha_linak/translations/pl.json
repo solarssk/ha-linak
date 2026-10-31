@@ -100,6 +100,66 @@
       "connection": {
         "name": "Połączenie"
       }
+    },
+    "number": {
+      "target_height": {
+        "name": "Wysokość zadana"
+      }
+    },
+    "button": {
+      "stop": {
+        "name": "Stop"
+      },
+      "go_to_memory_1": {
+        "name": "Przejdź do zapisanej pozycji 1"
+      },
+      "go_to_memory_2": {
+        "name": "Przejdź do zapisanej pozycji 2"
+      },
+      "go_to_memory_3": {
+        "name": "Przejdź do zapisanej pozycji 3"
+      },
+      "go_to_memory_4": {
+        "name": "Przejdź do zapisanej pozycji 4"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sterowanie biurkiem",
+        "description": "Włącz eksperymentalne sterowanie i podaj zmierzone granice wysokości blatu w cm, zgodne z odczytem Wysokość. Zapis opcji nie porusza biurkiem i nie zmienia granic firmware ani offsetu. Pozostaw wyłączone, aby używać tylko odczytu.",
+        "data": {
+          "enable_control": "Włącz sterowanie",
+          "minimum_height": "Minimalna wysokość (cm)",
+          "maximum_height": "Maksymalna wysokość (cm)"
+        }
+      },
+      "confirm": {
+        "title": "Potwierdź sterowanie ruchem",
+        "description": "Zmiana Wysokości zadanej lub przycisk pozycji uruchamia ruch. Funkcje nie mają jeszcze potwierdzenia testem na fizycznym DPG1C. Pierwsze próby wykonaj przy panelu, z wolną przestrzenią i bez automatyzacji. Stop przez Bluetooth może nie dotrzeć po utracie połączenia. Sprawdź jednostki i granice, zanim potwierdzisz.",
+        "data": {
+          "confirm_control": "Rozumiem i potwierdzam włączenie sterowania"
+        }
+      }
+    },
+    "error": {
+      "invalid_limits": "Podaj poprawne zmierzone granice obejmujące aktualną wysokość. Wymagane są gotowe połączenie i prawidłowy odczyt offsetu.",
+      "confirmation_required": "Potwierdź włączenie albo anuluj konfigurację."
+    }
+  },
+  "exceptions": {
+    "control_unavailable": {
+      "message": "Sterowanie nie jest włączone lub biurko nie ma gotowego połączenia. Sprawdź ustawienia integracji i połączenie Bluetooth."
+    },
+    "movement_failed": {
+      "message": "Ruch nie zakończył się prawidłowo. Sprawdź fizyczne zatrzymanie, granice, pamięć, dostępność i dziennik ha_linak. Polecenia nie są kolejkowane ani wznawiane."
+    },
+    "stop_failed": {
+      "message": "Nie udało się dostarczyć Stop lub zakończyć poprzedniej operacji. Natychmiast sprawdź biurko i użyj fizycznego panelu."
+    },
+    "memory_unavailable": {
+      "message": "Ta pozycja pamięci jest pusta lub niedostępna."
     }
   }
 }

@@ -11,7 +11,7 @@
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. Raspberry Pi reads worked after manual pairing. Automatic first pairing and proxy validation are still in progress. Movement, Stop and changing panel settings are not available in HA yet.
+> **Experimental alpha.** Readings work by default. Enable Target height, Stop and stored-position drive in LINAK options with measured bounds and confirmation. Physical movement tests are not yet verified. [Enable controls and run the first test](docs/controls.md)
 
 ![Illustration of sensor values, not a Home Assistant screenshot](docs/assets/desk-overview-en.svg)
 
@@ -31,7 +31,7 @@ Check your saved sitting and standing heights in one place. The stored-height se
 
 ## 📊 Home Assistant entities
 
-### Sensors — available
+### Sensors: available
 
 - 📏 **Height** is the main measurement sensor, in centimeters.
 - 🔖 **Stored height 1–4** shows up to four saved positions, in centimeters.
@@ -40,7 +40,7 @@ Check your saved sitting and standing heights in one place. The stored-height se
 
 Height, stored heights and reminder profiles are regular desk sensors (`sensor`). Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
 
-### Diagnostics — available
+### Diagnostics: available
 
 - 📐 **Height offset** (`sensor`, cm): the height reference stored on the panel.
 - 🔗 **Connection** (`binary_sensor`): whether the desk has a ready session and valid readings. It shows disconnected when the session is lost.
@@ -51,14 +51,17 @@ RSSI and backend sensors are disabled by default. Enable them under **Settings �
 
 The device information contains its name and Bluetooth address. Downloaded diagnostics omit names, MACs and adapter identifiers. These entities appear after successful integration setup; they do not replace first-setup error messages.
 
-### Controls and settings — planned
+### Controls: after enabling in options
 
-Control entities are not available in HA yet. Planned additions are:
+| Entity type | Name in HA | Action |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Target height** | Entering a value starts travel within measured bounds; box input, no percentages |
+| `button` | ⏹️ **Stop** | Interrupts the current movement request |
+| `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
 
-- 🎯 **Target height** (`number`, cm), **Stop** and **Go to stored position 1–4** (`button`), after hardware and HA session-handling tests.
-- ⚙️ Memory and reminder changes after write verification; height correction through a dedicated calibration step in integration settings.
+Open **Settings → Devices & services → LINAK → Configure**, enable controls, enter measured centimeter bounds and confirm. Saving options does not move the desk. No target is restored or executed after restart. Run the first tests at the panel with a clear travel path. [Activation and test instructions](docs/controls.md).
 
-Until then, the sensors above are read-only. [Settings and calibration plan](docs/settings-reference.md) · [Roadmap](docs/roadmap.md)
+Offset changes, saving memories and changing reminders remain in the [settings plan](docs/settings-reference.md). Offset is still read-only diagnostics.
 
 ## 📋 What you need
 
@@ -94,11 +97,9 @@ Check the displayed error and the `ha_linak` log. For a report, include your HA/
 
 Raspberry Pi reads and reconnects were observed after manual host pairing. The new automatic first-pairing path and ESPHome proxy validation remain pending. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
 
-### Control tests for contributors
+### Control validation
 
-A separate [research runner and instructions](docs/movement-test.md) support supervised short-movement and Stop tests outside HA. The runner requires measured bounds, other desk clients disabled and explicit motion confirmation; targets are limited to 2 cm from the initial reading. Start with inspection only.
-
-Physical motion and Stop results are still pending; the runner does not add HA entities.
+Software tests cover entities, session ownership, interruption and unloading. Physical DPG1C movement and Stop results still need verification. The [first HA test](docs/controls.md) explains the sequence and evidence to record; the [standalone research tool](docs/movement-test.md) is for protocol experiments outside HA.
 
 ## 📚 Learn more
 

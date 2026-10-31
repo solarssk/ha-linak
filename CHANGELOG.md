@@ -31,7 +31,7 @@
 ## 0.1.0a5 — unpublished alpha
 
 - Show stored heights and reminder profiles as regular desk sensors; retain height offset as a diagnostic parameter without changing existing entity IDs.
-- Add a diagnostic connection binary sensor and optional, default-disabled Bluetooth signal-strength and backend sensors using HA-managed data only.
+- Add a diagnostic connection binary sensor and optional, default-disabled Bluetooth signal-strength and backend sensors using HA-managed data only. Recheck enabled RSSI availability every 60 seconds even during repeated connection failures.
 - Add the Bluetooth address to local device information; keep downloaded diagnostics free of names, addresses and adapter identifiers.
 
 ### Adopter action

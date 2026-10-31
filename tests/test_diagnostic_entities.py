@@ -203,3 +203,65 @@ async def test_no_session_has_no_backend_and_connection_is_off(hass):
     assert not connection.is_on
     coordinator.desk = SimpleNamespace(client=None)
     assert coordinator.bluetooth_backend is None
+
+
+async def test_rssi_expires_during_repeated_connection_failures_and_timer_unloads(hass):
+    from datetime import timedelta
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from homeassistant.helpers.update_coordinator import UpdateFailed
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    signal = registry.async_get_or_create(
+        "sensor", DOMAIN, f"{ADDRESS}_signal_strength", config_entry=entry
+    )
+    fake = FakeBleak()
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",
+            return_value=DEVICE,
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            AsyncMock(return_value=fake),
+        ),
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_address_present",
+            return_value=True,
+        ) as present,
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_last_service_info",
+            return_value=SimpleNamespace(rssi=-65),
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data
+        fake.is_connected = False
+        coordinator._changed()
+        await hass.async_block_till_done()
+        assert hass.states.get(signal.entity_id).state == "-65"
+        # Keep GATT attempts failing while HA's advertisement presence expires.
+        present.return_value = False
+        with patch.object(
+            coordinator,
+            "_async_update_data",
+            AsyncMock(side_effect=UpdateFailed("offline")),
+        ):
+            await coordinator.async_refresh()
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+            assert hass.states.get(signal.entity_id).state == "-65"
+            async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=61))
+            await hass.async_block_till_done()
+            assert hass.states.get(signal.entity_id).state == "unavailable"
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        await hass.async_block_till_done()
+        reads_after_unload = present.call_count
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=180))
+        await hass.async_block_till_done()
+        assert present.call_count == reads_after_unload

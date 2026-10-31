@@ -31,7 +31,11 @@ carries the connection. It becomes unavailable when HA no longer considers the
 advertiser present, when no advertisement exists, or for the Bluetooth unknown
 RSSI marker (127). The entity does not retain stale values as a current reading.
 No additional scan, active scan request or GATT query is made. Updates follow the
-shared coordinator's notifications and 60-second refresh, not every advertisement.
+shared coordinator. While enabled, RSSI also rechecks the cached value/presence
+every 60 seconds, independently of coordinator success. This prevents stale RSSI
+when repeated connection failures suppress coordinator notifications. Its timer
+is removed when the entity is unloaded; disabled entities create no timer.
+These updates do not run for every advertisement.
 A quiet connected desk can have an unavailable RSSI sensor.
 
 Backend is unavailable without a connected client. Unknown identifiers are mapped

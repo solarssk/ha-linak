@@ -1,5 +1,9 @@
 """Read-only desk heights and reminder profiles."""
 
+from datetime import datetime, timedelta
+
+from homeassistant.core import callback
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorDeviceClass,
@@ -92,6 +96,21 @@ class LinakDiagnosticSensor(LinakEntity, SensorEntity):
         else:
             self._attr_device_class = SensorDeviceClass.ENUM
             self._attr_options = list(coordinator.BACKENDS)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if self.key == "signal_strength":
+            self.async_on_remove(
+                async_track_time_interval(
+                    self.hass, self._refresh_signal, timedelta(seconds=60)
+                )
+            )
+
+    @callback
+    def _refresh_signal(self, _now: datetime) -> None:
+        # Repeated coordinator failures can suppress listener notifications.
+        # Re-evaluate HA's cached presence even while the desk remains offline.
+        self.async_write_ha_state()
 
     @property
     def available(self) -> bool:

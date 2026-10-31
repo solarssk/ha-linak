@@ -43,7 +43,6 @@
 - [🔌 Configuration](#configuration)
 - [🏠 Everyday use](#daily-use)
 - [🧪 Validation status](#validation)
-- [🕹️ Control development status](#controls)
 - [📚 Help and documentation](#help)
 - [📄 License](#license)
 
@@ -66,6 +65,8 @@ Compatibility with other panel models is not confirmed. [Read-query results →]
 ## 📊 Home Assistant entities
 
 The integration creates **sensor entities (`sensor`) and a diagnostic binary sensor (`binary_sensor`)**. These labels match the English names in HA; your device name may appear before them.
+
+### Sensors — available
 
 <table>
   <thead>
@@ -106,7 +107,7 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
 - Reminder durations are configured values, not elapsed-time counters.
 - Sensors do not move the desk or change its settings.
 
-### Diagnostics
+### Diagnostics — available
 
 <table>
   <thead><tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
@@ -119,6 +120,15 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
 </table>
 
 Enable optional entities under **Settings → Devices & services → Entities**, showing disabled LINAK entities. They are not desk-setting switches. Name and MAC are device information, without separate sensors; downloaded diagnostics omit these identifiers. [Interpreting diagnostics →](../docs/diagnostics.md)
+
+### Controls and settings — planned
+
+Control entities are not available in HA yet. Planned additions are:
+
+- 🎯 **Target height** (`number`, cm), **Stop** and **Go to stored position 1–4** (`button`), after hardware and HA session-handling tests.
+- ⚙️ Memory and reminder changes after write verification; height correction through a dedicated calibration step in integration settings.
+
+Until then, the sensors above are read-only. [Settings and calibration plan](../docs/settings-reference.md) · [Roadmap](../docs/roadmap.md)
 
 <a id="requirements"></a>
 
@@ -210,27 +220,19 @@ Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then re
 
 This describes environment validation, not supported panel models. [Full results →](../docs/hardware-results.md)
 
+### Control tests for contributors
+
+A separate [research runner and instructions](../docs/movement-test.md) support supervised short-movement and Stop tests outside HA. The runner requires measured bounds, other desk clients disabled and explicit motion confirmation; targets are limited to 2 cm from the initial reading. Start with inspection only.
+
+Physical motion and Stop results are still pending; the runner does not add HA entities.
+
 <details>
 <summary>Measurement and control limitations</summary>
 
 - Unknown speed words and counters are not exposed as verified measurements.
 - Desk height does not indicate occupancy.
-- Movement and Stop remain unavailable in HA. There is no percentage-based cover entity.
 
 </details>
-
-<a id="controls"></a>
-
-## 🕹️ Control development status
-
-| Feature | Available now | How to try it |
-| --- | --- | --- |
-| Read height, saved positions and reminders | In the HA integration | Add LINAK through HACS |
-| Short target movement and timed Stop | Separate supervised research tool; hardware results pending | [Movement test instructions](../docs/movement-test.md) |
-| Target-height number, Stop button and saved-position buttons in HA | Not registered yet | Planned after recorded hardware tests and HA session/lifecycle validation |
-| Change offset, memories or reminder settings | Not implemented | [Settings and calibration plan](../docs/settings-reference.md) |
-
-The research tool is run separately on a nearby Bluetooth computer, with other desk clients disabled. It requires measured limits, explicit confirmation for motion and a target within 2 cm of the initial reading. It produces a report for review; it is not an HA service or entity, and installing through HACS does not expose these commands. Start with its inspection-only step. Physical movement and Stop have not yet been validated on the owner's desk.
 
 <a id="help"></a>
 

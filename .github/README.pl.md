@@ -43,7 +43,6 @@
 - [🔌 Konfiguracja](#configuration)
 - [🏠 Na co dzień](#daily-use)
 - [🧪 Stan testów](#validation)
-- [🕹️ Stan prac nad sterowaniem](#controls)
 - [📚 Pomoc i dokumentacja](#help)
 - [📄 Licencja](#license)
 
@@ -66,6 +65,8 @@ Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów
 ## 📊 Encje w Home Assistant
 
 Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny (`binary_sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+
+### Czujniki — dostępne
 
 <table>
   <thead>
@@ -106,7 +107,7 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
 - Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
 - Czujniki nie sterują ruchem ani nie zmieniają ustawień.
 
-### Diagnostyka
+### Diagnostyka — dostępna
 
 <table>
   <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Domyślnie</th><th scope="col">Znaczenie</th></tr></thead>
@@ -119,6 +120,15 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
 </table>
 
 Opcjonalne encje włączysz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
+
+### Sterowanie i ustawienia — planowane
+
+Encje sterowania nie są jeszcze dostępne w HA. Planowane są:
+
+- 🎯 **Wysokość zadana** (`number`, cm) oraz **Stop** i **Przejdź do zapisanej pozycji 1–4** (`button`), po testach sprzętowych i obsługi połączenia w HA.
+- ⚙️ Zmiana pamięci i przypomnień po sprawdzeniu ich zapisu; korekta wysokości przez osobny krok kalibracji w ustawieniach integracji.
+
+Do tego czasu powyższe czujniki służą wyłącznie do odczytu. [Plan ustawień i kalibracji po angielsku](../docs/settings-reference.md) · [Plan rozwoju](../docs/roadmap.md)
 
 <a id="requirements"></a>
 
@@ -210,27 +220,19 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](../docs/hardware-results.md)
 
+### Testy sterowania dla współtwórców
+
+Osobne [narzędzie testowe i instrukcja po angielsku](../docs/movement-test.md) pozwalają sprawdzić krótki ruch i Stop pod nadzorem, poza HA. Narzędzie wymaga zmierzonych granic, wyłączenia innych klientów biurka i jawnego potwierdzenia ruchu; ogranicza cel do 2 cm od początkowego odczytu. Zacznij od kroku bez ruchu.
+
+Wyniki fizycznego ruchu i Stop nadal czekają na potwierdzenie; narzędzie nie dodaje encji do HA.
+
 <details>
 <summary>Ograniczenia pomiarów i sterowania</summary>
 
 - Nieznane pola prędkości i liczniki nie są udostępniane jako potwierdzone pomiary.
 - Wysokość biurka nie oznacza wykrywania obecności.
-- Ruch i Stop pozostają niedostępne w HA. Nie ma encji rolety pokazującej wysokość w procentach.
 
 </details>
-
-<a id="controls"></a>
-
-## 🕹️ Stan prac nad sterowaniem
-
-| Funkcja | Dostępność teraz | Jak sprawdzić |
-| --- | --- | --- |
-| Odczyt wysokości, pamięci i przypomnień | W integracji HA | Dodaj LINAK przez HACS |
-| Krótki ruch do celu i Stop po zadanym czasie | Osobne narzędzie badawcze do testu pod nadzorem; wyniki sprzętowe jeszcze niepotwierdzone | [Instrukcja testu po angielsku](../docs/movement-test.md) |
-| Zadawanie wysokości, przycisk Stop i przyciski zapisanych pozycji w HA | Encje nie są jeszcze włączone | Po zapisaniu wyników sprzętowych i sprawdzeniu obsługi połączenia oraz cyklu pracy HA |
-| Zmiana offsetu, pamięci lub przypomnień | Jeszcze niezaimplementowana | [Plan ustawień i kalibracji po angielsku](../docs/settings-reference.md) |
-
-Narzędzie badawcze uruchamia się osobno na komputerze z Bluetooth obok biurka, po wyłączeniu innych klientów biurka. Wymaga zmierzonych granic, jawnego potwierdzenia ruchu i celu oddalonego najwyżej o 2 cm od początkowego odczytu. Zapisuje raport do sprawdzenia; nie jest usługą ani encją HA, a instalacja przez HACS nie udostępnia tych poleceń. Zacznij od kroku kontrolnego bez ruchu. Fizyczny ruch i Stop nie zostały jeszcze sprawdzone na biurku właściciela.
 
 <a id="help"></a>
 

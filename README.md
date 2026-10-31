@@ -29,18 +29,20 @@ Add **Height** to a standard Home Assistant card and see your desk's position wi
 
 Check your saved sitting and standing heights in one place. The stored-height sensors show what is saved on the panel; viewing them does not start a move. Reminder sensors show the panel's configured profiles, rather than sending phone notifications.
 
-### Sensors in Home Assistant
+## 📊 Home Assistant entities
+
+### Sensors — available
 
 - 📏 **Height** is the main measurement sensor, in centimeters.
 - 🔖 **Stored height 1–4** shows up to four saved positions, in centimeters.
 - 🔔 **Active reminder profile** identifies the selected profile.
 - ⏱️ **Profile 1–3 sitting time** and **standing time** show configured durations, in minutes.
-- 📐 **Height offset** shows the panel's height reference, in centimeters.
 
-Height, stored heights and reminder profiles are regular desk sensors. Height offset is a diagnostic parameter. Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
+Height, stored heights and reminder profiles are regular desk sensors (`sensor`). Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
 
-### Connection diagnostics
+### Diagnostics — available
 
+- 📐 **Height offset** (`sensor`, cm): the height reference stored on the panel.
 - 🔗 **Connection** (`binary_sensor`): whether the desk has a ready session and valid readings. It shows disconnected when the session is lost.
 - 📶 **Bluetooth signal strength** (`sensor`, dBm): the latest advertisement received by HA, not a measurement of the active link.
 - 🛠️ **Bluetooth backend** (`sensor`): for example local BlueZ or an ESPHome proxy, without the adapter name.
@@ -48,6 +50,15 @@ Height, stored heights and reminder profiles are regular desk sensors. Height of
 RSSI and backend sensors are disabled by default. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities. This enables diagnostic readings in HA without changing desk settings.
 
 The device information contains its name and Bluetooth address. Downloaded diagnostics omit names, MACs and adapter identifiers. These entities appear after successful integration setup; they do not replace first-setup error messages.
+
+### Controls and settings — planned
+
+Control entities are not available in HA yet. Planned additions are:
+
+- 🎯 **Target height** (`number`, cm), **Stop** and **Go to stored position 1–4** (`button`), after hardware and HA session-handling tests.
+- ⚙️ Memory and reminder changes after write verification; height correction through a dedicated calibration step in integration settings.
+
+Until then, the sensors above are read-only. [Settings and calibration plan](docs/settings-reference.md) · [Roadmap](docs/roadmap.md)
 
 ## 📋 What you need
 
@@ -83,18 +94,11 @@ Check the displayed error and the `ha_linak` log. For a report, include your HA/
 
 Raspberry Pi reads and reconnects were observed after manual host pairing. The new automatic first-pairing path and ESPHome proxy validation remain pending. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
 
-Next comes reliable height control in **centimeters**, Stop and saved-position controls, after supervised hardware tests. These controls are not included in this alpha. [Follow the roadmap →](docs/roadmap.md)
+### Control tests for contributors
 
-## 🕹️ Control development status
+A separate [research runner and instructions](docs/movement-test.md) support supervised short-movement and Stop tests outside HA. The runner requires measured bounds, other desk clients disabled and explicit motion confirmation; targets are limited to 2 cm from the initial reading. Start with inspection only.
 
-| Feature | Available now | How to try it |
-| --- | --- | --- |
-| Read height, saved positions and reminders | In the HA integration | Add LINAK through HACS |
-| Short target movement and timed Stop | Separate supervised research tool; hardware results pending | [Movement test instructions](docs/movement-test.md) |
-| Target-height number, Stop button and saved-position buttons in HA | Not registered yet | Planned after recorded hardware tests and HA session/lifecycle validation |
-| Change offset, memories or reminder settings | Not implemented | [Settings and calibration plan](docs/settings-reference.md) |
-
-The research tool is run separately on a nearby Bluetooth computer, with other desk clients disabled. It requires measured limits, explicit confirmation for motion and a target within 2 cm of the initial reading. It produces a report for review; it is not an HA service or entity, and installing through HACS does not expose these commands. Start with its inspection-only step. Physical movement and Stop have not yet been validated on the owner's desk.
+Physical motion and Stop results are still pending; the runner does not add HA entities.
 
 ## 📚 Learn more
 

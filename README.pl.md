@@ -29,18 +29,20 @@ Dodaj **Wysokość** do standardowej karty Home Assistanta i sprawdzaj pozycję 
 
 Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki pokazują pamięć panelu; ich przeglądanie nie rozpoczyna ruchu. Czujniki przypomnień pokazują ustawione profile panelu, a nie wysyłają powiadomień na telefon.
 
-### Czujniki w Home Assistant
+## 📊 Encje w Home Assistant
+
+### Czujniki — dostępne
 
 - 📏 **Wysokość** jest głównym czujnikiem pomiarowym, w centymetrach.
 - 🔖 **Zapisana wysokość 1–4** pokazuje do czterech pozycji pamięci, w centymetrach.
 - 🔔 **Aktywny profil przypomnień** wskazuje wybrany profil.
 - ⏱️ **Profil 1–3: czas siedzenia** i **czas stania** pokazują ustawione czasy, w minutach.
-- 📐 **Korekta wysokości** pokazuje punkt odniesienia zapisany na panelu, w centymetrach.
 
-Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka. Korekta wysokości jest parametrem diagnostycznym. Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
+Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka (`sensor`). Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
 
-### Diagnostyka połączenia
+### Diagnostyka — dostępna
 
+- 📐 **Korekta wysokości** (`sensor`, cm): punkt odniesienia zapisany na panelu.
 - 🔗 **Połączenie** (`binary_sensor`): czy biurko ma gotowe połączenie i poprawne odczyty. Przy zerwaniu pokazuje stan rozłączony.
 - 📶 **Siła sygnału Bluetooth** (`sensor`, dBm): ostatnia reklama odbierana przez HA, nie pomiar aktywnego łącza.
 - 🛠️ **Backend Bluetooth** (`sensor`): np. lokalny BlueZ albo proxy ESPHome, bez nazwy adaptera.
@@ -48,6 +50,15 @@ Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka. Korekta 
 RSSI i backend są domyślnie wyłączone. Możesz je włączyć w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. To włącza odczyt diagnostyczny w HA, bez zmiany ustawień biurka.
 
 Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka pomija nazwę, MAC i identyfikatory adapterów. Diagnostyka pojawia się po pomyślnym dodaniu integracji; nie zastępuje komunikatów pierwszej konfiguracji.
+
+### Sterowanie i ustawienia — planowane
+
+Encje sterowania nie są jeszcze dostępne w HA. Planowane są:
+
+- 🎯 **Wysokość zadana** (`number`, cm) oraz **Stop** i **Przejdź do zapisanej pozycji 1–4** (`button`), po testach sprzętowych i obsługi połączenia w HA.
+- ⚙️ Zmiana pamięci i przypomnień po sprawdzeniu ich zapisu; korekta wysokości przez osobny krok kalibracji w ustawieniach integracji.
+
+Do tego czasu powyższe czujniki służą wyłącznie do odczytu. [Plan ustawień i kalibracji po angielsku](docs/settings-reference.md) · [Plan rozwoju](docs/roadmap.md)
 
 ## 📋 Czego potrzebujesz
 
@@ -83,18 +94,11 @@ Sprawdź komunikat błędu i dziennik `ha_linak`. W zgłoszeniu podaj wersję HA
 
 Na Malinie zaobserwowano odczyty i ponowne połączenia po ręcznym sparowaniu hosta. Nowe automatyczne pierwsze parowanie i proxy ESPHome wymagają jeszcze testów. Zielony badge CI potwierdza testy oprogramowania, nie działanie każdego biurka i adaptera. [Wyniki testów sprzętowych →](docs/hardware-results.md)
 
-Kolejny etap to stabilne sterowanie wysokością w **centymetrach**, Stop i wybór zapisanych pozycji po testach sprzętowych pod nadzorem. Te funkcje nie są jeszcze częścią wersji alfa. [Zobacz plan rozwoju →](docs/roadmap.md)
+### Testy sterowania dla współtwórców
 
-## 🕹️ Stan prac nad sterowaniem
+Osobne [narzędzie testowe i instrukcja po angielsku](docs/movement-test.md) pozwalają sprawdzić krótki ruch i Stop pod nadzorem, poza HA. Narzędzie wymaga zmierzonych granic, wyłączenia innych klientów biurka i jawnego potwierdzenia ruchu; ogranicza cel do 2 cm od początkowego odczytu. Zacznij od kroku bez ruchu.
 
-| Funkcja | Dostępność teraz | Jak sprawdzić |
-| --- | --- | --- |
-| Odczyt wysokości, pamięci i przypomnień | W integracji HA | Dodaj LINAK przez HACS |
-| Krótki ruch do celu i Stop po zadanym czasie | Osobne narzędzie badawcze do testu pod nadzorem; wyniki sprzętowe jeszcze niepotwierdzone | [Instrukcja testu po angielsku](docs/movement-test.md) |
-| Zadawanie wysokości, przycisk Stop i przyciski zapisanych pozycji w HA | Encje nie są jeszcze włączone | Po zapisaniu wyników sprzętowych i sprawdzeniu obsługi połączenia oraz cyklu pracy HA |
-| Zmiana offsetu, pamięci lub przypomnień | Jeszcze niezaimplementowana | [Plan ustawień i kalibracji po angielsku](docs/settings-reference.md) |
-
-Narzędzie badawcze uruchamia się osobno na komputerze z Bluetooth obok biurka, po wyłączeniu innych klientów biurka. Wymaga zmierzonych granic, jawnego potwierdzenia ruchu i celu oddalonego najwyżej o 2 cm od początkowego odczytu. Zapisuje raport do sprawdzenia; nie jest usługą ani encją HA, a instalacja przez HACS nie udostępnia tych poleceń. Zacznij od kroku kontrolnego bez ruchu. Fizyczny ruch i Stop nie zostały jeszcze sprawdzone na biurku właściciela.
+Wyniki fizycznego ruchu i Stop nadal czekają na potwierdzenie; narzędzie nie dodaje encji do HA.
 
 ## 📚 Więcej informacji
 

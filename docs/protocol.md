@@ -26,6 +26,10 @@ Community code frames extended read requests as `7f <command> 00` on `99fa0011`,
 
 Do not treat a successful GATT write as a successful query. Correlate and validate each response; serialize requests and retain unknown bytes. Do not label unknown counters as lifetime usage or infer occupant presence from desk height.
 
+## Settings and configuration planning
+
+See the [settings reference](settings-reference.md) for the source register, capability matrix, protected offset calibration, post-install configuration requirements and unverified write candidates.
+
 ## Sources
 
 - Official DPG manual, 2026-04: https://cdn.linak.com/-/media/files/user-manual-source/en/deskline-dpg-desk-panels-and-desk-control-app-user-manual-eng.ashx

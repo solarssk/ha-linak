@@ -66,9 +66,10 @@ def test_exact_cm(value):
     ],
 )
 async def test_invalid_input_never_connects(changes):
+    options = args(**changes)
     with patch("scripts.test_motion_hardware.BleakClient") as factory:
         with pytest.raises(ValueError):
-            await run(args(**changes), {})
+            await run(options, {})
         factory.assert_not_called()
 
 
@@ -90,20 +91,22 @@ async def test_inspection_never_sends_control():
 async def test_long_move_rejected_before_any_control_write():
     fake = client()
     options = args(target_cm=83, confirm_supervised_motion=True)
+    limits = validate(options)
     with pytest.raises(ValueError, match="at most 2 cm"):
-        await experiment(fake, options, validate(options), {})
+        await experiment(fake, options, limits, {})
     fake.write_gatt_char.assert_not_awaited()
 
 
 async def test_motion_uses_shared_controller_and_closes():
     fake, report = client(), {}
     options = args(target_cm=81, confirm_supervised_motion=True)
+    limits = validate(options)
     with patch("scripts.test_motion_hardware.MotionController") as factory:
         controller = factory.return_value
         controller.move_to_cm = AsyncMock()
         controller.close = AsyncMock()
         controller.stop = AsyncMock()
-        await experiment(fake, options, validate(options), report)
+        await experiment(fake, options, limits, report)
         controller.move_to_cm.assert_awaited_once_with(81)
         controller.close.assert_awaited_once()
         assert report["final_height_cm"] == 80
@@ -112,9 +115,10 @@ async def test_motion_uses_shared_controller_and_closes():
 async def test_failed_inspection_disconnects_and_never_writes():
     fake = client()
     fake.connect = AsyncMock(side_effect=ConnectionError("private"))
+    options = args()
     with patch("scripts.test_motion_hardware.BleakClient", return_value=fake):
         with pytest.raises(ConnectionError):
-            await run(args(), {})
+            await run(options, {})
     fake.disconnect.assert_awaited_once()
     fake.write_gatt_char.assert_not_awaited()
 
@@ -149,10 +153,11 @@ async def test_timed_stop_cancels_motion_and_closes():
 async def test_motion_error_still_closes():
     fake = client()
     options = args(target_cm=81, confirm_supervised_motion=True)
+    limits = validate(options)
     with patch("scripts.test_motion_hardware.MotionController") as factory:
         controller = factory.return_value
         controller.move_to_cm = AsyncMock(side_effect=TimeoutError())
         controller.close = AsyncMock()
         with pytest.raises(TimeoutError):
-            await experiment(fake, options, validate(options), {})
+            await experiment(fake, options, limits, {})
         controller.close.assert_awaited_once()

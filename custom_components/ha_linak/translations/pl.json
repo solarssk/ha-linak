@@ -1,5 +1,5 @@
 {
-  "title": "LINAK",
+  "title": "Biurka LINAK",
   "config": {
     "flow_title": "{name}",
     "step": {
@@ -162,7 +162,7 @@
       "message": "Ta pozycja pamięci jest pusta lub niedostępna."
     },
     "range_not_configured": {
-      "message": "Ustaw zakres wysokości w konfiguracji LINAK."
+      "message": "Ustaw zakres wysokości w konfiguracji Biurka LINAK."
     }
   }
 }

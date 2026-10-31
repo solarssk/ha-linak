@@ -1,17 +1,15 @@
 ![LINAK](docs/assets/linak-logo.svg)
 
-# LINAK for Home Assistant
+# LINAK Desks for Home Assistant
 
-**Set your desk height in centimeters from Home Assistant.** A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
+Control a height-adjustable desk with a LINAK **DPG1C** panel from Home Assistant over Bluetooth. Set the height in centimeters, use saved positions and check reminder settings.
 
 🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 
-[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](hacs.json)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
-
-![Illustration of sensor values, not a Home Assistant screenshot](docs/assets/desk-overview-en.svg)
 
 ## 📏 What you can see
 
@@ -51,15 +49,13 @@ The device information contains its name and Bluetooth address. Downloaded diagn
 
 ### Controls
 
-| Entity type | Name in HA | Action |
-| --- | --- | --- |
-| `number`, cm | 🎯 **Target height** | Move the slider to choose a height in centimeters |
-| `button` | ⏹️ **Stop** | Interrupts the current movement request |
-| `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
+- 🎚️ **Target height** (`number`, cm): choose the desk height with a slider
+- ⏹️ **Stop** (`button`): stop the current movement
+- 🔖 **Go to stored position 1–4** (`button`): move to a position saved on the panel
 
 The slider shows the current desk height. Move it to choose a new height, and press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
 
-Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
+Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
 
 Offset changes, saving memories and changing reminders remain in the [settings plan](docs/settings-reference.md). Offset is still read-only diagnostics.
 
@@ -74,10 +70,10 @@ The integration runs directly on your HA host. No Mac or separate bridge is need
 ## 🚀 Install and connect
 
 1. In HACS, add `https://github.com/solarssk/ha-linak` as a custom repository of type **Integration**.
-2. Download **LINAK**, then restart Home Assistant.
+2. Download **LINAK Desks**, then restart Home Assistant.
 3. Close connected desk phone apps and disable any Idasen integration using the same desk.
 4. Enable **Bluetooth pairing** on the desk panel.
-5. Go to **Settings → Devices & services → Add integration**. Search for **LINAK** and select this custom integration (`ha_linak`), then choose your desk. You can also use its discovery card.
+5. Go to **Settings → Devices & services → Add integration**. Search for **LINAK Desks**, then choose your desk. You can also use its discovery card.
 
 Setup connects, authenticates and reads the panel. Allow up to **60 seconds**, plus **10 seconds** to release a failed connection. A failed attempt shows a reason and offers a retry.
 

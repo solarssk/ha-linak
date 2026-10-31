@@ -1,5 +1,5 @@
 {
-  "title": "LINAK",
+  "title": "LINAK Desks",
   "config": {
     "flow_title": "{name}",
     "step": {
@@ -162,7 +162,7 @@
       "message": "This stored position is empty or unavailable."
     },
     "range_not_configured": {
-      "message": "Set the desk height range in LINAK configuration."
+      "message": "Set the desk height range in LINAK Desks configuration."
     }
   }
 }

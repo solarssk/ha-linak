@@ -16,3 +16,9 @@ The GitHub-facing READMEs retain the theme-aware SVG pair. The local HA PNG asse
 ## HACS header
 
 The root HACS READMEs use a Markdown image pointing to linak-logo.svg. It reuses the light SVG's original paths with a white rounded background and padding, at a 320-pixel intrinsic width. No artwork colors or lettering change. This neutral background keeps the official lettering readable in both HA themes without picture/source HTML. Local Home Assistant brand PNGs are unchanged.
+
+## Product name and illustrations
+
+The integration's display name is LINAK Desks, or Biurka LINAK in Polish, to identify the current desk-panel scope. This does not change the LINAK artwork, manufacturer identity, integration domain or stored device/entity identifiers. The HACS catalog icon uses its own frontend source; see [the rendering reference](hacs-presentation.md#name-and-catalog-icon).
+
+The illustrative `desk-overview-*.svg` assets are retained only for older README versions. Current product pages do not embed them because they can be mistaken for a supplied dashboard card. Use actual, anonymized HA screenshots for future interface examples.

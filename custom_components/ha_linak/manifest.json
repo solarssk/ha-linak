@@ -22,5 +22,5 @@
     "bleak-retry-connector>=4.7.1",
     "dbus-fast>=5.0.22"
   ],
-  "version": "0.1.0a4"
+  "version": "0.1.0a5"
 }

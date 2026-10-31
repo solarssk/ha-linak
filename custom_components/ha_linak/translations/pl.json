@@ -78,6 +78,27 @@
       },
       "reminder_3_stand": {
         "name": "Profil 3: czas stania"
+      },
+      "signal_strength": {
+        "name": "Siła sygnału Bluetooth"
+      },
+      "bluetooth_backend": {
+        "name": "Backend Bluetooth",
+        "state": {
+          "bluez_dbus": "Lokalny BlueZ",
+          "bleak_esphome": "Proxy ESPHome",
+          "bluez_mgmt": "Lokalny BlueZ (MGMT)",
+          "core_bluetooth": "CoreBluetooth",
+          "pythonista_cb": "Pythonista CoreBluetooth",
+          "win_rt": "Windows Bluetooth",
+          "p4android": "Android Bluetooth",
+          "other": "Inny zarządzany backend"
+        }
+      }
+    },
+    "binary_sensor": {
+      "connection": {
+        "name": "Połączenie"
       }
     }
   }

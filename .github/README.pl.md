@@ -64,7 +64,7 @@ Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów
 
 ## 📊 Encje w Home Assistant
 
-Integracja tworzy **encje czujników (`sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny (`binary_sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
 
 <table>
   <thead>
@@ -72,7 +72,7 @@ Integracja tworzy **encje czujników (`sensor`)**. Nazwy poniżej odpowiadają p
   </thead>
   <tbody>
     <tr>
-      <td rowspan="6">Czujnik<br><code>sensor</code></td>
+      <td rowspan="5">Czujnik<br><code>sensor</code></td>
       <td>📏 <strong>Wysokość</strong></td>
       <td>cm</td>
       <td>Aktualną wysokość biurka, z korektą panelu</td>
@@ -97,18 +97,27 @@ Integracja tworzy **encje czujników (`sensor`)**. Nazwy poniżej odpowiadają p
       <td>min</td>
       <td>Czas stania ustawiony w każdym z trzech profili</td>
     </tr>
-    <tr>
-      <td>📐 <strong>Korekta wysokości</strong></td>
-      <td>cm</td>
-      <td>Punkt odniesienia wysokości zapisany na panelu</td>
-    </tr>
   </tbody>
 </table>
 
 - **Wysokość** jest głównym czujnikiem pomiarowym.
-- Pozostałe encje mają kategorię **Diagnostyka** i pokazują ustawienia odczytane z panelu.
+- Zapisane pozycje i profile przypomnień są zwykłymi czujnikami biurka, bez kategorii Diagnostyka.
 - Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
 - Czujniki nie sterują ruchem ani nie zmieniają ustawień.
+
+### Diagnostyka
+
+<table>
+  <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Domyślnie</th><th scope="col">Znaczenie</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3">Czujnik<br><code>sensor</code></td><td>📐 <strong>Korekta wysokości</strong></td><td>Włączony</td><td>Punkt odniesienia zapisany na panelu, w cm</td></tr>
+    <tr><td>📶 <strong>Siła sygnału Bluetooth</strong></td><td>Wyłączony</td><td>Ostatnia reklama odbierana przez HA, w dBm; nie RSSI aktywnego łącza</td></tr>
+    <tr><td>🛠️ <strong>Backend Bluetooth</strong></td><td>Wyłączony</td><td>Kategoria aktywnego połączenia, np. BlueZ lub ESPHome</td></tr>
+    <tr><td>Czujnik binarny<br><code>binary_sensor</code></td><td>🔗 <strong>Połączenie</strong></td><td>Włączony</td><td>Gotowa sesja biurka; stan rozłączony po zerwaniu</td></tr>
+  </tbody>
+</table>
+
+Opcjonalne encje włączysz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
 
 <a id="requirements"></a>
 

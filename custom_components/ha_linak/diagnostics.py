@@ -10,5 +10,9 @@ async def async_get_config_entry_diagnostics(hass, entry):
         "connected": coordinator.desk.connected if coordinator.desk else False,
         "stage": coordinator.desk.stage if coordinator.desk else "not_started",
         "last_update_success": coordinator.last_update_success,
+        "bluetooth": {
+            "signal_strength": coordinator.signal_strength,
+            "backend": coordinator.bluetooth_backend,
+        },
         "state": asdict(coordinator.data) if coordinator.data else None,
     }

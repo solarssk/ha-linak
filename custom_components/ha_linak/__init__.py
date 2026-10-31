@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from .coordinator import LinakCoordinator
 from .naming import desk_name
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

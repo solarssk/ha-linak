@@ -7,7 +7,7 @@ pytest_plugins = ["pytest_homeassistant_custom_component"]
 
 @pytest.fixture(autouse=True)
 def custom_integrations(enable_custom_integrations):
-    yield
+    return enable_custom_integrations
 
 
 @pytest.fixture(autouse=True)

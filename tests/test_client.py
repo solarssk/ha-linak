@@ -39,7 +39,8 @@ class FakeBleak:
 
     async def write_gatt_char(self, uuid, data, response):
         self.writes.append((uuid, bytes(data)))
-        assert data[0] == 0x7F and data[2] == 0
+        assert data[0] == 0x7F
+        assert data[2] == 0
         if data[1] == self.fail_command:
             raise ConnectionError("simulated link loss")
         self.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE[f"{data[1]:02x}"]))

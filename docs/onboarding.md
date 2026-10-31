@@ -26,8 +26,9 @@ is still a fallback can supply its standard GAP Device Name characteristic
 Missing, denied or malformed names retain the fallback; transport loss and read
 timeout still invalidate the session. This optional metadata phase is named
 `device_name`, has the existing 10-second I/O limit inside the total 60-second
-attempt, and sends no DPG settings writes. Raw names are never put in logs or the
-diagnostic state object.
+attempt, and sends no DPG settings writes. The name reader does not log raw
+values/errors or add the name to the diagnostic state object. HA/framework logs
+can still contain configured device/entry names; redact them before sharing.
 
 A new entry uses the resolved native name after validation. Existing address-only
 entry titles are repaired as before. An older entry titled exactly `LINAK` retains

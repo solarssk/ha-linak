@@ -177,7 +177,7 @@ async def test_rssi_requires_present_connectable_advertisement(
     [
         (BleakBackend.BLUEZ_DBUS, True, "bluez_dbus"),
         ("bleak_esphome", True, "bleak_esphome"),
-        ("Private proxy name", True, None),
+        ("Private proxy name", True, "other"),
         ("bluez_dbus", False, None),
     ],
 )

@@ -21,7 +21,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
     BACKENDS = tuple(
         sorted(
             {backend.value for backend in BleakBackend}
-            | {"bleak_esphome", "bluez_mgmt"}
+            | {"bleak_esphome", "bluez_mgmt", "other"}
         )
     )
 
@@ -60,11 +60,9 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         ):
             return None
         backend = self.desk.client.backend_id
-        if backend not in self.BACKENDS:
-            return None
         if isinstance(backend, BleakBackend):
-            return backend.value
-        return backend
+            backend = backend.value
+        return backend if backend in self.BACKENDS else "other"
 
     @callback
     def _changed(self) -> None:

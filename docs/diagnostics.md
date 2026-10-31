@@ -34,8 +34,11 @@ No additional scan, active scan request or GATT query is made. Updates follow th
 shared coordinator's notifications and 60-second refresh, not every advertisement.
 A quiet connected desk can have an unavailable RSSI sensor.
 
-Backend is unavailable without a connected client or for an unrecognized backend;
-it is a category, not an adapter name, MAC, source ID or signal measurement.
+Backend is unavailable without a connected client. Unknown identifiers are mapped
+to Other managed backend without publishing their raw value. HA can expose a
+generic proxy wrapper rather than a specific ESPHome backend ID; report Other
+in that case instead of guessing the proxy type. It is a category, not an adapter
+name, MAC, source ID or signal measurement.
 Connection stays available and reports off when the desk session fails, while
 ordinary desk readings become unavailable. These entities require a successfully
 loaded integration; first-onboarding failures still use the setup error/logs.

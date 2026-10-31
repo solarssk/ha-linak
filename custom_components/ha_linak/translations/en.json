@@ -91,7 +91,8 @@
           "core_bluetooth": "CoreBluetooth",
           "pythonista_cb": "Pythonista CoreBluetooth",
           "win_rt": "Windows Bluetooth",
-          "p4android": "Android Bluetooth"
+          "p4android": "Android Bluetooth",
+          "other": "Other managed backend"
         }
       }
     },

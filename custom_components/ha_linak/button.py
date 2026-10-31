@@ -16,14 +16,13 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
-    if coordinator.controls is not None:
-        async_add_entities(
-            [LinakStop(coordinator)]
-            + [
-                LinakMemory(coordinator, index)
-                for index in range(len(coordinator.data.memories))
-            ]
-        )
+    async_add_entities(
+        [LinakStop(coordinator)]
+        + [
+            LinakMemory(coordinator, index)
+            for index in range(len(coordinator.data.memories))
+        ]
+    )
 
 
 class LinakStop(LinakEntity, ButtonEntity):
@@ -52,7 +51,8 @@ class LinakMemory(LinakEntity, ButtonEntity):
     def available(self) -> bool:
         memories = self.coordinator.data.memories
         return (
-            super().available
+            self.coordinator.controls is not None
+            and super().available
             and self.index < len(memories)
             and memories[self.index].position_raw is not None
         )

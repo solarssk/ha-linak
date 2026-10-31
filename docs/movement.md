@@ -2,7 +2,7 @@
 
 ## Status
 
-Native HA controls are available as an experimental opt-in in 0.1.0a7: Target height (`number`, cm), Stop (`button`) and go-to-memory buttons. Existing installations remain read-only until Options Flow receives measured bounds and explicit confirmation. Saving options, setup and reconnect never issue movement/wakeup commands. No physical movement/Stop result is claimed yet.
+Version 0.1.0a7 registers Target height (`number`, cm slider), Stop (`button`) and go-to-memory buttons by default. Onboarding collects measured height bounds; existing entries can set their range in Configure. Stop works independently of the travel range. Saving options, setup and reconnect never issue movement/wakeup commands. No physical movement/Stop result is claimed yet.
 
 The client holds exclusive ownership across preparation, fresh offset/memory queries, movement, position reads and final Stop. Polling returns existing state while a control operation owns the connection. Another target is rejected rather than queued. Stop bypasses the refresh lock, cancels a pending target and drains bounded cleanup. Interrupted/failed moves discard the connection and never resume after reconnection.
 
@@ -12,7 +12,7 @@ The [HA control test procedure](controls.md) covers activation and recording res
 
 | Control | Experimental behavior |
 | --- | --- |
-| Target height | Native number, centimeters, box input, measured travel limits; changing it explicitly starts a move |
+| Target height | Native number, centimeters, slider input, measured travel limits; changing it explicitly starts a move |
 | Stop | Native button, interrupts a pending movement; no automatic retry |
 | Go to stored position 1–4 | Native buttons only for configured slots; use the latest panel value and the same movement path |
 | Actual height | Existing sensor; independent of the target and updated from device feedback |

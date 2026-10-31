@@ -6,7 +6,6 @@ from typing import Any
 
 from .motion import TravelLimits
 
-ENABLE_CONTROL = "enable_control"
 MINIMUM_HEIGHT = "minimum_height"
 MAXIMUM_HEIGHT = "maximum_height"
 
@@ -18,7 +17,7 @@ class ControlSettings:
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> ControlSettings | None:
-        if options.get(ENABLE_CONTROL) is not True:
+        if MINIMUM_HEIGHT not in options and MAXIMUM_HEIGHT not in options:
             return None
         minimum = _height(options.get(MINIMUM_HEIGHT))
         maximum = _height(options.get(MAXIMUM_HEIGHT))

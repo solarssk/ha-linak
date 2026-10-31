@@ -30,9 +30,6 @@
   <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="Licencja kodu: MIT"></a>
 </p>
 
-> [!IMPORTANT]
-> **Eksperymentalna wersja alfa.** Odczyty działają domyślnie. Wysokość zadaną, Stop i jazdę do zapisanych pozycji włączysz w ustawieniach LINAK, po podaniu zmierzonych granic i potwierdzeniu. Testy fizycznego ruchu jeszcze nie są potwierdzone. [Włączanie i pierwszy test po angielsku](../docs/controls.md)
-
 <details>
 <summary><strong>Spis treści</strong></summary>
 
@@ -52,11 +49,11 @@
 
 ## 🪑 Obsługiwane panele
 
-Pierwszym obsługiwanym modelem jest **DPG1C**. Ta wersja odczytuje dane i udostępnia eksperymentalne sterowanie po jawnej konfiguracji.
+Pierwszym obsługiwanym modelem jest **DPG1C**. Integracja pozwala sprawdzać odczyty biurka i sterować jego wysokością.
 
 | Panel LINAK | Dostępne funkcje | Potwierdzenie na sprzęcie |
 | --- | --- | --- |
-| **DPG1C** | Wysokość, pamięci, offset, przypomnienia; opcjonalne sterowanie wysokością/Stop/pamięcią | Zapytania odczytu sprawdzone na jednym panelu |
+| **DPG1C** | Wysokość, pamięci, offset, przypomnienia, suwak wysokości, Stop i jazda do pamięci | Zapytania odczytu sprawdzone na jednym panelu |
 
 Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów →](../docs/hardware-results.md)
 
@@ -64,9 +61,9 @@ Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów
 
 ## 📊 Encje w Home Assistant
 
-Odczyty i diagnostyka są dostępne domyślnie. Włączenie sterowania w opcjach LINAK dodaje opisane poniżej encję liczbową i przyciski. Nazwy odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Nazwy odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
 
-### Czujniki: dostępne
+### Czujniki
 
 <table>
   <thead>
@@ -107,7 +104,7 @@ Odczyty i diagnostyka są dostępne domyślnie. Włączenie sterowania w opcjach
 - Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
 - Czujniki nie sterują ruchem ani nie zmieniają ustawień.
 
-### Diagnostyka: dostępna
+### Diagnostyka
 
 <table>
   <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Domyślnie</th><th scope="col">Znaczenie</th></tr></thead>
@@ -119,17 +116,19 @@ Odczyty i diagnostyka są dostępne domyślnie. Włączenie sterowania w opcjach
   </tbody>
 </table>
 
-Opcjonalne encje włączysz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
+Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
 
-### Sterowanie: po włączeniu w ustawieniach
+### Sterowanie
 
 | Typ encji | Nazwa w HA | Działanie |
 | --- | --- | --- |
-| `number`, cm | 🎯 **Wysokość zadana** | Wpisanie wartości uruchamia jazdę w podanych granicach; bez procentów i suwaka |
+| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
 | `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
 | `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
 
-Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**, włącz sterowanie, podaj zmierzone granice w cm i potwierdź. Zapis opcji nie porusza biurkiem. Cel nie jest przywracany ani wykonywany po restarcie. Wykonaj pierwsze próby przy panelu, z wolną przestrzenią. [Instrukcja włączania i testu po angielsku](../docs/controls.md).
+Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a przyciskiem **Stop** zatrzymaj jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
+
+Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
 
 Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 

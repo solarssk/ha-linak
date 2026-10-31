@@ -1,6 +1,6 @@
 # Supervised movement test
 
-This document describes the standalone research runner. Native opt-in HA entities are documented separately in [controls.md](controls.md); using this runner does not enable them. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the existing motion controller on one dedicated connection, does not change user ID, memories, reminders or offset, and never reconnects/replays a target. A successful software result is not evidence of physical Stop.
+This document describes the standalone research runner. Native HA entities are documented separately in [controls.md](controls.md); using this runner does not enable them. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the existing motion controller on one dedicated connection, does not change user ID, memories, reminders or offset, and never reconnects/replays a target. A successful software result is not evidence of physical Stop.
 
 ## Prepare
 

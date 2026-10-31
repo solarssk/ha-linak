@@ -15,28 +15,29 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
-    if coordinator.controls is not None:
-        async_add_entities([LinakTargetHeight(coordinator)])
+    async_add_entities([LinakTargetHeight(coordinator)])
 
 
 class LinakTargetHeight(LinakEntity, NumberEntity):
-    _attr_mode = NumberMode.BOX
+    _attr_mode = NumberMode.SLIDER
     _attr_native_unit_of_measurement = UnitOfLength.CENTIMETERS
     _attr_native_step = 0.1
     _attr_device_class = NumberDeviceClass.DISTANCE
 
     def __init__(self, coordinator) -> None:
         super().__init__(coordinator, "target_height")
-        self._target: float | None = None
-        self._attr_native_min_value = coordinator.controls.minimum_cm
-        self._attr_native_max_value = coordinator.controls.maximum_cm
+        settings = coordinator.controls
+        self._attr_native_min_value = settings.minimum_cm if settings else 0
+        self._attr_native_max_value = settings.maximum_cm if settings else 0
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.controls is not None and super().available
 
     @property
     def native_value(self) -> float | None:
-        # Unknown until a request succeeds. Never substitute the measured height.
-        return self._target
+        return self.coordinator.data.height_cm
 
     async def async_set_native_value(self, value: float) -> None:
         await self.coordinator.async_move_to_cm(value)
-        self._target = value
         self.async_write_ha_state()

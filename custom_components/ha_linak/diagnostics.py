@@ -15,7 +15,7 @@ async def async_get_config_entry_diagnostics(hass, entry):
             "backend": coordinator.bluetooth_backend,
         },
         "controls": {
-            "enabled": getattr(coordinator, "controls", None) is not None,
+            "range_configured": getattr(coordinator, "controls", None) is not None,
             "busy": coordinator.desk.control_busy if coordinator.desk else False,
             "last_result": coordinator.desk.last_control_result
             if coordinator.desk

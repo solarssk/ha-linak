@@ -2,7 +2,7 @@
 
 # LINAK dla Home Assistant
 
-**Wysokość biurka w centymetrach, bezpośrednio w Home Assistant.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
+**Ustawiaj wysokość biurka w centymetrach z Home Assistanta.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
 
 🇬🇧 [English](README.md) · 🇵🇱 **Polski**
 
@@ -10,8 +10,6 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
-
-> **Eksperymentalna wersja alfa.** Odczyty działają domyślnie. Wysokość zadaną, Stop i jazdę do zapisanych pozycji włączysz w ustawieniach LINAK, po podaniu zmierzonych granic i potwierdzeniu. Testy fizycznego ruchu jeszcze nie są potwierdzone. [Włączanie i pierwszy test po angielsku](docs/controls.md)
 
 ![Poglądowy układ czujników, przykładowe wartości](docs/assets/desk-overview-pl.svg)
 
@@ -31,7 +29,7 @@ Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki p
 
 ## 📊 Encje w Home Assistant
 
-### Czujniki: dostępne
+### Czujniki
 
 - 📏 **Wysokość** jest głównym czujnikiem pomiarowym, w centymetrach.
 - 🔖 **Zapisana wysokość 1–4** pokazuje do czterech pozycji pamięci, w centymetrach.
@@ -40,7 +38,7 @@ Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki p
 
 Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka (`sensor`). Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
 
-### Diagnostyka: dostępna
+### Diagnostyka
 
 - 📐 **Korekta wysokości** (`sensor`, cm): punkt odniesienia zapisany na panelu.
 - 🔗 **Połączenie** (`binary_sensor`): czy biurko ma gotowe połączenie i poprawne odczyty. Przy zerwaniu pokazuje stan rozłączony.
@@ -51,15 +49,17 @@ RSSI i backend są domyślnie wyłączone. Możesz je włączyć w **Ustawienia 
 
 Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka pomija nazwę, MAC i identyfikatory adapterów. Diagnostyka pojawia się po pomyślnym dodaniu integracji; nie zastępuje komunikatów pierwszej konfiguracji.
 
-### Sterowanie: po włączeniu w ustawieniach
+### Sterowanie
 
 | Typ encji | Nazwa w HA | Działanie |
 | --- | --- | --- |
-| `number`, cm | 🎯 **Wysokość zadana** | Wpisanie wartości uruchamia jazdę w podanych granicach; bez procentów i suwaka |
+| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
 | `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
 | `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
 
-Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**, włącz sterowanie, podaj zmierzone granice w cm i potwierdź. Zapis opcji nie porusza biurkiem. Cel nie jest przywracany ani wykonywany po restarcie. Wykonaj pierwsze próby przy panelu, z wolną przestrzenią. [Instrukcja włączania i testu po angielsku](docs/controls.md).
+Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a przyciskiem **Stop** zatrzymaj jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
+
+Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](docs/controls.md).
 
 Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 

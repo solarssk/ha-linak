@@ -1,4 +1,4 @@
-"""Bounded movement shared by opt-in HA controls and the supervised runner.
+"""Bounded movement shared by native HA controls and the supervised runner.
 
 The caller must own the BLE session exclusively for the entire operation.
 Physical behavior still requires supervised validation; see docs/movement.md.

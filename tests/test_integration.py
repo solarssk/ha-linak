@@ -35,7 +35,12 @@ def available_bluetooth_device():
 async def finish_progress(hass, result):
     assert result["type"] == "progress"
     await hass.async_block_till_done()
-    return await hass.config_entries.flow.async_configure(result["flow_id"])
+    result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    if result["type"] == "form" and result["step_id"] == "finish":
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"minimum_height": 70, "maximum_height": 125}
+        )
+    return result
 
 
 async def test_setup_reads_centimeters_and_unload_disconnects(hass):

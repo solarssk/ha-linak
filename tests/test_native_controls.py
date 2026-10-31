@@ -25,7 +25,7 @@ from test_client import FakeBleak
 
 ADDRESS = "AA:BB:CC:DD:EE:FF"
 DEVICE = BLEDevice(ADDRESS, "Test desk", {})
-OPTIONS = {"enable_control": True, "minimum_height": 70.0, "maximum_height": 125.0}
+OPTIONS = {"minimum_height": 70.0, "maximum_height": 125.0}
 
 
 class MotionBleak(FakeBleak):
@@ -191,10 +191,15 @@ async def setup_entry(hass, options=None):
     return entry, fake
 
 
-async def test_ha_controls_require_options_and_never_move_on_setup(hass):
+async def test_existing_entry_gets_controls_and_stop_without_motion(hass):
     entry, fake = await setup_entry(hass)
-    assert not hass.states.async_all("number")
-    assert not hass.states.async_all("button")
+    assert len(hass.states.async_all("number")) == 1
+    assert hass.states.async_all("number")[0].state == "unavailable"
+    assert len(hass.states.async_all("button")) == 5
+    stop = next(
+        s for s in hass.states.async_all("button") if s.entity_id.endswith("_stop")
+    )
+    assert stop.state != "unavailable"
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     await hass.config_entries.async_unload(entry.entry_id)
 
@@ -205,9 +210,9 @@ async def test_native_number_buttons_and_service_errors(hass):
     assert len(numbers) == 1
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     target = numbers[0]
-    assert target.state == "unknown"
+    assert target.state == "82.38"
     assert target.attributes["unit_of_measurement"] == "cm"
-    assert target.attributes["mode"] == "box"
+    assert target.attributes["mode"] == "slider"
     assert target.attributes["min"] == 70
     assert target.attributes["max"] == 125
     assert len(hass.states.async_all("button")) == 5
@@ -231,7 +236,7 @@ async def test_native_number_buttons_and_service_errors(hass):
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_options_flow_validates_limits_and_requires_confirmation(hass):
+async def test_options_flow_updates_height_range_without_switches(hass):
     entry, fake = await setup_entry(hass)
     with patch(
         "homeassistant.config_entries.ConfigEntries.async_reload",
@@ -244,14 +249,6 @@ async def test_options_flow_validates_limits_and_requires_confirmation(hass):
         assert result["errors"] == {"base": "invalid_limits"}
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], OPTIONS
-        )
-        assert result["step_id"] == "confirm"
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"confirm_control": False}
-        )
-        assert result["errors"] == {"base": "confirmation_required"}
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"confirm_control": True}
         )
         assert result["type"] == "create_entry"
         assert entry.options == OPTIONS
@@ -332,37 +329,19 @@ async def test_coordinator_poll_does_not_disconnect_active_movement(hass):
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_disabled_actions_are_rejected_by_coordinator(hass):
+async def test_missing_range_blocks_targets_but_keeps_stop_available(hass):
     entry, fake = await setup_entry(hass)
     fake.writes.clear()
     with pytest.raises(HomeAssistantError):
         await entry.runtime_data.async_move_to_cm(83)
-    with pytest.raises(HomeAssistantError):
-        await entry.runtime_data.async_stop()
-    assert not fake.writes
+    await entry.runtime_data.async_stop()
+    assert fake.writes == [(CONTROL_UUID, STOP)]
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_options_disable_works_without_connection(hass):
-    entry, fake = await setup_entry(hass, OPTIONS)
-    fake.is_connected = False
-    with patch(
-        "homeassistant.config_entries.ConfigEntries.async_reload",
-        new=AsyncMock(return_value=True),
-    ):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"enable_control": False}
-        )
-        assert result["type"] == "create_entry"
-        assert entry.options == OPTIONS | {"enable_control": False}
-        await hass.async_block_till_done()
-    await hass.config_entries.async_unload(entry.entry_id)
-
-
-async def test_options_reject_enabling_when_offline(hass):
+async def test_options_reject_range_when_current_height_is_unavailable(hass):
     entry, fake = await setup_entry(hass)
-    fake.is_connected = False
+    entry.runtime_data.last_update_success = False
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], OPTIONS
@@ -488,7 +467,7 @@ async def test_ha_unload_during_move_stops_before_disconnect(hass):
     assert not fake.is_connected
 
 
-async def test_real_options_reload_creates_controls_without_moving(hass):
+async def test_real_options_reload_sets_range_without_moving(hass):
     entry, first = await setup_entry(hass)
     second = MotionBleak()
     with (
@@ -505,9 +484,6 @@ async def test_real_options_reload_creates_controls_without_moving(hass):
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], OPTIONS
         )
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"confirm_control": True}
-        )
         assert result["type"] == "create_entry"
         await hass.async_block_till_done()
         assert not first.is_connected
@@ -515,3 +491,60 @@ async def test_real_options_reload_creates_controls_without_moving(hass):
         assert len(hass.states.async_all("button")) == 5
         assert all(uuid == DPG_UUID for uuid, _ in second.writes)
         assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_slider_follows_physical_height_changes(hass):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    target_id = hass.states.async_all("number")[0].entity_id
+    fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1600, 0)))
+    await hass.async_block_till_done()
+    assert hass.states.get(target_id).state == "84.0"
+    assert hass.states.get(target_id).attributes["mode"] == "slider"
+    assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_onboarding_collects_range_before_creating_entry(hass):
+    fake = MotionBleak()
+    info = SimpleNamespace(
+        address=ADDRESS,
+        name="Desk",
+        device=DEVICE,
+        service_uuids=["99fa0001-338a-1024-8a49-009c0215f78a"],
+        connectable=True,
+    )
+    with (
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
+            return_value=[info],
+        ),
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_ble_device_from_address",
+            return_value=DEVICE,
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection", return_value=fake
+        ),
+        patch("custom_components.ha_linak.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_ADDRESS: ADDRESS}
+        )
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["step_id"] == "finish"
+        assert not hass.config_entries.async_entries(DOMAIN)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], OPTIONS | {"minimum_height": 90}
+        )
+        assert result["errors"] == {"base": "invalid_limits"}
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], OPTIONS
+        )
+        assert result["type"] == "create_entry"
+        assert result["options"] == OPTIONS
+        assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
+        await hass.async_block_till_done()

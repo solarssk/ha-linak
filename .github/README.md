@@ -9,7 +9,7 @@
 <h1 align="center">LINAK for Home Assistant</h1>
 
 <p align="center">
-  <strong>Your LINAK desk in Home Assistant.<br>Live height in centimeters, saved heights and reminders.</strong><br>
+  <strong>Your LINAK desk in Home Assistant.<br>Height control in centimeters, saved positions and reminders.</strong><br>
   Runs directly in Home Assistant. First hardware target: <strong>DPG1C</strong>.
 </p>
 
@@ -30,9 +30,6 @@
   <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="Code license: MIT"></a>
 </p>
 
-> [!IMPORTANT]
-> **Experimental alpha.** Readings work by default. Enable Target height, Stop and stored-position drive in LINAK options with measured bounds and confirmation. Physical movement tests are not yet verified. [Enable controls and run the first test](../docs/controls.md)
-
 <details>
 <summary><strong>On this page</strong></summary>
 
@@ -52,11 +49,11 @@
 
 ## 🪑 Supported panels
 
-The first supported model is **DPG1C**. This version reads desk data and offers explicitly configured experimental controls.
+The first supported model is **DPG1C**. Use the integration to check desk readings and control its height.
 
 | LINAK panel | Available functions | Hardware evidence |
 | --- | --- | --- |
-| **DPG1C** | Height, stored heights, offset, reminders; opt-in target/Stop/memory drive | Read queries verified on one panel |
+| **DPG1C** | Height, stored heights, offset, reminders, height slider, Stop and stored-position drive | Read queries verified on one panel |
 
 Compatibility with other panel models is not confirmed. [Read-query results →](../docs/hardware-results.md)
 
@@ -64,9 +61,9 @@ Compatibility with other panel models is not confirmed. [Read-query results →]
 
 ## 📊 Home Assistant entities
 
-Readings and diagnostics are available by default. Enabling controls in LINAK options adds the number and buttons below. These labels match the English names in HA; your device name may appear before them.
+The device page groups desk readings, diagnostics and movement controls. These labels match the English names in HA; your device name may appear before them.
 
-### Sensors: available
+### Sensors
 
 <table>
   <thead>
@@ -107,7 +104,7 @@ Readings and diagnostics are available by default. Enabling controls in LINAK op
 - Reminder durations are configured values, not elapsed-time counters.
 - Sensors do not move the desk or change its settings.
 
-### Diagnostics: available
+### Diagnostics
 
 <table>
   <thead><tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
@@ -121,15 +118,17 @@ Readings and diagnostics are available by default. Enabling controls in LINAK op
 
 Enable optional entities under **Settings → Devices & services → Entities**, showing disabled LINAK entities. They are not desk-setting switches. Name and MAC are device information, without separate sensors; downloaded diagnostics omit these identifiers. [Interpreting diagnostics →](../docs/diagnostics.md)
 
-### Controls: after enabling in options
+### Controls
 
 | Entity type | Name in HA | Action |
 | --- | --- | --- |
-| `number`, cm | 🎯 **Target height** | Entering a value starts travel within measured bounds; box input, no percentages |
+| `number`, cm | 🎯 **Target height** | Move the slider to choose a height in centimeters |
 | `button` | ⏹️ **Stop** | Interrupts the current movement request |
 | `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
 
-Open **Settings → Devices & services → LINAK → Configure**, enable controls, enter measured centimeter bounds and confirm. Saving options does not move the desk. No target is restored or executed after restart. Run the first tests at the panel with a clear travel path. [Activation and test instructions](../docs/controls.md).
+The slider shows the current desk height. Move it to choose a new height, and press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
+
+Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](../docs/controls.md).
 
 Offset changes, saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md). Offset is still read-only diagnostics.
 

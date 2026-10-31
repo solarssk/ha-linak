@@ -16,6 +16,14 @@
       "retry": {
         "title": "Ponów połączenie z biurkiem",
         "description": "Zbliż biurko do adaptera Bluetooth, włącz parowanie na panelu i zamknij inne aplikacje połączone z biurkiem. Zatwierdź, aby spróbować ponownie."
+      },
+      "finish": {
+        "title": "Zakres wysokości biurka",
+        "description": "Podaj zmierzoną minimalną i maksymalną wysokość biurka w cm, zgodną z odczytem panelu. Suwak będzie działał w tym zakresie. Zapis nie porusza biurkiem.",
+        "data": {
+          "minimum_height": "Minimalna wysokość (cm)",
+          "maximum_height": "Maksymalna wysokość (cm)"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
       "authentication_failed": "Uwierzytelnianie Bluetooth nie powiodło się. Włącz parowanie na panelu, zamknij połączone aplikacje biurka i spróbuj ponownie.",
       "pairing_unsupported": "Wybrany adapter lub proxy Bluetooth nie obsługuje jawnego parowania. Użyj zgodnego adaptera lub zaktualizowanego proxy.",
       "connection_lost": "Połączenie Bluetooth zostało zerwane podczas sprawdzania biurka. Włącz parowanie na panelu i spróbuj ponownie.",
-      "pairing_agent_unavailable": "Home Assistant nie mógł przygotować lokalnego parowania Bluetooth. Sprawdź usługę Bluetooth hosta i uprawnienia D-Bus, a następnie spróbuj ponownie."
+      "pairing_agent_unavailable": "Home Assistant nie mógł przygotować lokalnego parowania Bluetooth. Sprawdź usługę Bluetooth hosta i uprawnienia D-Bus, a następnie spróbuj ponownie.",
+      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
@@ -127,30 +136,21 @@
   "options": {
     "step": {
       "init": {
-        "title": "Sterowanie biurkiem",
-        "description": "Włącz eksperymentalne sterowanie i podaj zmierzone granice wysokości blatu w cm, zgodne z odczytem Wysokość. Zapis opcji nie porusza biurkiem i nie zmienia granic firmware ani offsetu. Pozostaw wyłączone, aby używać tylko odczytu.",
+        "title": "Zakres wysokości biurka",
+        "description": "Zmień zakres wysokości używany przez suwak i przyciski pozycji. Te wartości nie zmieniają ograniczeń zapisanych w panelu ani korekty wysokości.",
         "data": {
-          "enable_control": "Włącz sterowanie",
           "minimum_height": "Minimalna wysokość (cm)",
           "maximum_height": "Maksymalna wysokość (cm)"
-        }
-      },
-      "confirm": {
-        "title": "Potwierdź sterowanie ruchem",
-        "description": "Zmiana Wysokości zadanej lub przycisk pozycji uruchamia ruch. Funkcje nie mają jeszcze potwierdzenia testem na fizycznym DPG1C. Pierwsze próby wykonaj przy panelu, z wolną przestrzenią i bez automatyzacji. Stop przez Bluetooth może nie dotrzeć po utracie połączenia. Sprawdź jednostki i granice, zanim potwierdzisz.",
-        "data": {
-          "confirm_control": "Rozumiem i potwierdzam włączenie sterowania"
         }
       }
     },
     "error": {
-      "invalid_limits": "Podaj poprawne zmierzone granice obejmujące aktualną wysokość. Wymagane są gotowe połączenie i prawidłowy odczyt offsetu.",
-      "confirmation_required": "Potwierdź włączenie albo anuluj konfigurację."
+      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie."
     }
   },
   "exceptions": {
     "control_unavailable": {
-      "message": "Sterowanie nie jest włączone lub biurko nie ma gotowego połączenia. Sprawdź ustawienia integracji i połączenie Bluetooth."
+      "message": "Biurko nie ma gotowego połączenia. Sprawdź połączenie Bluetooth."
     },
     "movement_failed": {
       "message": "Ruch nie zakończył się prawidłowo. Sprawdź fizyczne zatrzymanie, granice, pamięć, dostępność i dziennik ha_linak. Polecenia nie są kolejkowane ani wznawiane."
@@ -160,6 +160,9 @@
     },
     "memory_unavailable": {
       "message": "Ta pozycja pamięci jest pusta lub niedostępna."
+    },
+    "range_not_configured": {
+      "message": "Ustaw zakres wysokości w konfiguracji LINAK."
     }
   }
 }

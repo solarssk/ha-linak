@@ -115,21 +115,23 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         await self._async_control("stop")
 
     async def _async_control(self, action: str, value: float | int = 0) -> None:
-        if (
-            self.controls is None
-            or self.desk is None
-            or (action != "stop" and not self.desk.connected)
-        ):
+        if self.desk is None or (action != "stop" and not self.desk.connected):
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="control_unavailable"
             )
+        if action != "stop" and self.controls is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="range_not_configured"
+            )
+        settings = self.controls
         try:
             if action == "stop":
                 await self.desk.stop()
-            elif action == "memory":
-                await self.desk.move_to_memory(int(value), self.controls)
-            else:
-                await self.desk.move_to_cm(value, self.controls)
+            elif settings is not None:
+                if action == "memory":
+                    await self.desk.move_to_memory(int(value), settings)
+                else:
+                    await self.desk.move_to_cm(value, settings)
         except (
             MotionError,
             BleakError,

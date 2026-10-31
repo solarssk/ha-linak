@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Group sensors, diagnostics and opt-in controls in one entity section across GitHub/HACS READMEs; link the native HA test procedure.
-- Add an opt-in supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions; HACS remains read-only.
+- Group sensors, diagnostics and controls in one entity section across GitHub/HACS READMEs; link the native HA test procedure.
+- Add a standalone supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions.
 - Record manufacturer settings/variant evidence, pinned community protocol candidates, protected offset calibration and post-install configuration requirements for the next control milestones.
 - Standardize Markdown prose and list-item paragraphs on single source lines; document the authoring convention while preserving structural markup and rendered content.
 
@@ -21,7 +21,7 @@
 - Separate supported panels, HA sensor entities, requirements and environment validation in both READMEs; match entity labels to HA translations and add section icons and quality badges.
 - Extract the supplied official Illustrator logos as theme-aware SVGs; simplify both READMEs for hobbyist users with language flags, centered HA/HACS badges and a collapsible contents list.
 - Redesign the English and Polish READMEs with LINAK branding, matching navigation, feature tables and one shared installation/configuration path per language.
-- Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. Installed HA behavior remains read-only pending supervised hardware validation.
+- Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. The controller now also supports the native HA entities described in 0.1.0a7.
 - Adopt the playbook Tier 2 maintenance baseline and document the native-control contract.
 - Package the supplied LINAK icon and logo as local HA brand images, with provenance and trademark notices.
 
@@ -35,14 +35,14 @@
 
 ## 0.1.0a7 (unpublished alpha)
 
-- Add opt-in native Target height in centimeters, Stop and go-to-memory buttons, with English/Polish labels and action errors.
-- Configure measured command bounds through an Options Flow and separate confirmation; existing installations remain read-only until explicitly enabled. No target is restored or sent on setup/reconnect.
+- Add a native centimeter height slider, Stop and go-to-memory buttons, with English/Polish labels and action errors.
+- Collect measured command bounds during onboarding and support range changes through Options Flow; controls are registered by default. No target is restored or sent on setup/reconnect.
 - Reserve the shared BLE session across fresh offset/memory reads, movement, feedback and final Stop; reject concurrent targets, yield polling and stop/disconnect on interruption or unload.
 - Validate characteristic operations, retain the bounded motion guards and expose software control outcomes in redacted diagnostics. Physical movement/Stop verification remains pending.
 
 ### Adopter action
 
-- Update via HACS and restart HA. To try controls, open LINAK configuration, enter measured centimeter bounds and confirm enabling them. Follow [the supervised HA test](docs/controls.md) before using automations. Offset/memory/reminder writes are not included.
+- Update via HACS and restart HA. For an existing entry, set measured centimeter bounds once in LINAK configuration. New onboarding includes the range. Follow [the supervised HA test](docs/controls.md) before using automations. Offset/memory/reminder writes are not included.
 
 ## 0.1.0a6: unpublished alpha
 

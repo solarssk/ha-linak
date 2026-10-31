@@ -6,6 +6,10 @@
 
 The next PR may connect native entities only after supervised hardware tests. Never put this controller on the read client's connection while its refresh task is running: the future integration must hold exclusive session ownership across movement, readback and final Stop. Stop must bypass polling and queued commands.
 
+## Executable supervised test
+
+Use the [research runner and result checklist](movement-test.md) to collect the missing evidence on a dedicated connection. It is not registered with HA and does not bypass this gate.
+
 ## Native interface contract
 
 | Control | Behavior after validation |

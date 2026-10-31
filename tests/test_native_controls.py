@@ -9,6 +9,7 @@ import pytest
 from bleak.backends.device import BLEDevice
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_linak.client import DeskClient
@@ -487,6 +488,7 @@ async def test_real_options_reload_sets_range_without_moving(hass):
         assert result["type"] == "create_entry"
         await hass.async_block_till_done()
         assert not first.is_connected
+        assert all(uuid == DPG_UUID for uuid, _ in first.writes)
         assert len(hass.states.async_all("number")) == 1
         assert len(hass.states.async_all("button")) == 5
         assert all(uuid == DPG_UUID for uuid, _ in second.writes)
@@ -523,7 +525,8 @@ async def test_onboarding_collects_range_before_creating_entry(hass):
             return_value=DEVICE,
         ),
         patch(
-            "custom_components.ha_linak.client.establish_connection", return_value=fake
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=fake.reconnect,
         ),
         patch("custom_components.ha_linak.async_setup_entry", return_value=True),
     ):
@@ -537,14 +540,111 @@ async def test_onboarding_collects_range_before_creating_entry(hass):
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
         assert result["step_id"] == "finish"
         assert not hass.config_entries.async_entries(DOMAIN)
+        initial_writes = list(fake.writes)
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], OPTIONS | {"minimum_height": 90}
+            result["flow_id"], OPTIONS | {"minimum_height": 130}
         )
         assert result["errors"] == {"base": "invalid_limits"}
+        assert fake.writes == initial_writes
+        # The desk moved while the range form was open. Initial cached height
+        # fits OPTIONS, but the fresh 128 cm reading must reject that range.
+        fake.position = 6000
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], OPTIONS
         )
+        assert result["type"] == "progress"
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["errors"] == {"base": "invalid_limits"}
+        assert not hass.config_entries.async_entries(DOMAIN)
+        updated_range = OPTIONS | {"maximum_height": 130}
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], updated_range
+        )
+        assert result["type"] == "progress"
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
         assert result["type"] == "create_entry"
-        assert result["options"] == OPTIONS
+        assert result["options"] == updated_range
         assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
         await hass.async_block_till_done()
+
+
+async def test_stalled_move_preserves_measured_sensor_and_slider_height(hass):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    fake.stall = True
+    target_id = hass.states.async_all("number")[0].entity_id
+    before = entry.runtime_data.data.height_cm
+    operation = asyncio.create_task(entry.runtime_data.async_move_to_cm(83))
+    await fake.target_written.wait()
+    assert entry.runtime_data.data.height_cm == before
+    assert float(hass.states.get(target_id).state) == before
+    await entry.runtime_data.async_stop()
+    with pytest.raises(HomeAssistantError):
+        await operation
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_poll_during_disconnected_control_does_not_restore_availability(hass):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    fake.stall = True
+    operation = asyncio.create_task(entry.runtime_data.async_move_to_cm(83))
+    await fake.target_written.wait()
+    fake.is_connected = False
+    entry.runtime_data.desk._disconnected(fake)
+    assert entry.runtime_data.desk.control_busy
+    with pytest.raises(UpdateFailed):
+        await entry.runtime_data._async_update_data()
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert not entry.runtime_data.last_update_success
+    assert all(s.state == "unavailable" for s in hass.states.async_all("number"))
+    with pytest.raises(HomeAssistantError):
+        await operation
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_failed_fresh_range_read_does_not_create_entry(hass):
+    fake = MotionBleak()
+    info = SimpleNamespace(
+        address=ADDRESS,
+        name="Desk",
+        device=DEVICE,
+        service_uuids=["99fa0001-338a-1024-8a49-009c0215f78a"],
+        connectable=True,
+    )
+    with (
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
+            return_value=[info],
+        ),
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_ble_device_from_address",
+            return_value=DEVICE,
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=fake.reconnect,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_ADDRESS: ADDRESS}
+        )
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["step_id"] == "finish"
+        fake.fail_command = 0x80
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], OPTIONS
+        )
+        assert result["type"] == "progress"
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["step_id"] == "finish"
+        assert result["errors"] == {"base": "cannot_connect"}
+        assert not hass.config_entries.async_entries(DOMAIN)
+        assert not fake.is_connected
+        assert all(uuid == DPG_UUID for uuid, _ in fake.writes)

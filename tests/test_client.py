@@ -27,6 +27,10 @@ class FakeBleak:
         self.paired = False
         self.disconnected = asyncio.Event()
 
+    def reconnect(self, *_args, **_kwargs):
+        self.is_connected = True
+        return self
+
     async def pair(self):
         self.paired = True
 

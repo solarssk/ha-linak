@@ -41,7 +41,7 @@ O4 distinguishes Owner and Guest storage/transfer behavior, describes settings f
 | Feature | Evidence | Intended HA surface | Current boundary / required proof |
 | --- | --- | --- | --- |
 | Actual height | H, O2 | Regular distance sensor in cm | Implemented. Verify against a physical measurement/panel after calibration. |
-| Target height and Stop | O3, C3, S | Native number in cm and Stop button | Registered by default with a configured travel range; simulated HA coverage, physical movement/Stop evidence pending. |
+| Target height and Stop | O3, C3, S | Native number in cm and Stop button | Registered by default. Target height needs a configured travel range; Stop works with a ready connection. Simulated HA coverage, physical movement/Stop evidence pending. |
 | Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Drive buttons re-read the selected slot; drive not physically verified. Respect configured/available slots. |
 | Save/replace favourite | O4, C1 | Separate explicit save operation | Write payload, slot identity and persistence unverified; read back the exact slot. |
 | Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Offset read works. Write, persistence and relationship to displayed calibration need verification. |

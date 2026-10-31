@@ -88,6 +88,8 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
 
     async def _async_update_data(self) -> DeskState:
         if self.desk is not None and self.desk.control_busy:
+            if not self.desk.connected:
+                raise UpdateFailed("Desk disconnected during control cleanup")
             return self.desk.state
         device = bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True

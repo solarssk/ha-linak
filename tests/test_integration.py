@@ -40,6 +40,8 @@ async def finish_progress(hass, result):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"minimum_height": 70, "maximum_height": 125}
         )
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
     return result
 
 
@@ -47,7 +49,7 @@ async def test_setup_reads_centimeters_and_unload_disconnects(hass):
     fake = FakeBleak()
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -99,7 +101,7 @@ async def test_config_flow_tests_connection_and_prevents_duplicates(hass):
     )
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     with (
         patch(
@@ -154,7 +156,7 @@ async def test_failed_validation_returns_form_and_closes_link(hass):
     )
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     with (
         patch(
@@ -228,7 +230,7 @@ async def test_validation_errors_show_retry_and_allow_a_new_attempt(
         connectable=True,
     )
     fake = FakeBleak()
-    connect = AsyncMock(return_value=fake)
+    connect = AsyncMock(side_effect=fake.reconnect)
     with (
         patch(
             "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
@@ -280,7 +282,7 @@ async def test_progress_revisit_does_not_start_second_connection_and_abort_clean
         await asyncio.Future()
 
     fake.start_notify = subscribe
-    connect = AsyncMock(return_value=fake)
+    connect = AsyncMock(side_effect=fake.reconnect)
     with (
         patch(
             "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
@@ -331,7 +333,8 @@ async def test_discovery_requires_confirmation_before_connection(hass):
         service_uuids=[SERVICE_UUID],
         connectable=True,
     )
-    connect = AsyncMock(return_value=FakeBleak())
+    fake = FakeBleak()
+    connect = AsyncMock(side_effect=fake.reconnect)
     with (
         patch("custom_components.ha_linak.client.establish_connection", connect),
         patch("custom_components.ha_linak.async_setup_entry", return_value=True),
@@ -401,7 +404,7 @@ async def test_hanging_initial_entry_setup_becomes_ha_setup_retry(hass):
     with (
         patch(
             "custom_components.ha_linak.client.establish_connection",
-            AsyncMock(return_value=fake),
+            AsyncMock(side_effect=fake.reconnect),
         ),
         patch("custom_components.ha_linak.client.IO_TIMEOUT", 0.01),
     ):
@@ -464,7 +467,7 @@ async def test_flow_title_uses_the_device_name_when_discovery_only_has_the_addre
     )
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     with (
         patch(
@@ -492,7 +495,7 @@ async def test_setup_replaces_a_title_saved_as_the_address(hass):
     fake = FakeBleak()
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -522,7 +525,7 @@ async def test_setup_keeps_a_title_the_user_chose(hass):
     fake = FakeBleak()
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -551,7 +554,7 @@ async def test_setup_uses_the_fallback_name_when_no_device_name_is_known(hass):
     fake = FakeBleak()
 
     async def connect(*args, **kwargs):
-        return fake
+        return fake.reconnect()
 
     entry = MockConfigEntry(
         domain=DOMAIN,

@@ -35,6 +35,7 @@
 
 ## 0.1.0a7 (unpublished alpha)
 
+- Recheck the desk on range submission and keep disconnected readings unavailable during control cleanup; test stalled feedback and both connections during range reload.
 - Add a native centimeter height slider, Stop and go-to-memory buttons, with English/Polish labels and action errors.
 - Collect measured command bounds during onboarding and support range changes through Options Flow; controls are registered by default. No target is restored or sent on setup/reconnect.
 - Reserve the shared BLE session across fresh offset/memory reads, movement, feedback and final Stop; reject concurrent targets, yield polling and stop/disconnect on interruption or unload.

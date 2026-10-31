@@ -124,7 +124,7 @@ async def test_validated_entry_uses_gap_name_when_discovery_has_only_fallback(ha
         ),
         patch(
             "custom_components.ha_linak.client.establish_connection",
-            AsyncMock(return_value=fake),
+            AsyncMock(side_effect=fake.reconnect),
         ),
         patch("custom_components.ha_linak.async_setup_entry", return_value=True),
     ):
@@ -136,7 +136,7 @@ async def test_validated_entry_uses_gap_name_when_discovery_has_only_fallback(ha
         )
         result = await finish_progress(hass, result)
         assert result["title"] == "Office desk"
-        assert fake.name_reads == 1
+        assert fake.name_reads == 2
 
 
 @pytest.mark.parametrize(
@@ -169,7 +169,7 @@ async def test_existing_fallback_device_name_is_improved_without_overwriting_use
         ),
         patch(
             "custom_components.ha_linak.client.establish_connection",
-            AsyncMock(return_value=fake),
+            AsyncMock(side_effect=fake.reconnect),
         ),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
@@ -190,7 +190,7 @@ async def test_invalid_optional_gap_names_do_not_block_readings(payload):
     desk = DeskClient(BLEDevice(ADDRESS, ADDRESS, {}), lambda: None)
     with patch(
         "custom_components.ha_linak.client.establish_connection",
-        AsyncMock(return_value=fake),
+        AsyncMock(side_effect=fake.reconnect),
     ):
         await desk.refresh()
     assert desk.connected
@@ -211,7 +211,7 @@ async def test_gap_name_is_read_once_per_session_and_not_exported(hass):
     desk = DeskClient(BLEDevice(ADDRESS, ADDRESS, {}), lambda: None)
     with patch(
         "custom_components.ha_linak.client.establish_connection",
-        AsyncMock(return_value=fake),
+        AsyncMock(side_effect=fake.reconnect),
     ):
         await desk.refresh()
         state = await desk.refresh()
@@ -238,7 +238,7 @@ async def test_missing_or_nonreadable_name_characteristic_is_optional(properties
     desk = DeskClient(BLEDevice(ADDRESS, ADDRESS, {}), lambda: None)
     with patch(
         "custom_components.ha_linak.client.establish_connection",
-        AsyncMock(return_value=fake),
+        AsyncMock(side_effect=fake.reconnect),
     ):
         await desk.refresh()
     assert desk.connected
@@ -264,7 +264,7 @@ async def test_denied_gap_name_is_optional_and_its_error_is_private(caplog):
     desk = DeskClient(BLEDevice(ADDRESS, ADDRESS, {}), lambda: None)
     with patch(
         "custom_components.ha_linak.client.establish_connection",
-        AsyncMock(return_value=fake),
+        AsyncMock(side_effect=fake.reconnect),
     ):
         await desk.refresh()
     assert desk.connected
@@ -286,7 +286,7 @@ async def test_name_read_timeout_invalidates_session_before_queries():
     with (
         patch(
             "custom_components.ha_linak.client.establish_connection",
-            AsyncMock(return_value=fake),
+            AsyncMock(side_effect=fake.reconnect),
         ),
         patch("custom_components.ha_linak.client.IO_TIMEOUT", 0.01),
         pytest.raises(TimeoutError),
@@ -311,7 +311,7 @@ async def test_link_loss_during_name_read_is_not_hidden_as_optional_metadata():
 
     fake.read_gatt_char = hang
     desk = DeskClient(BLEDevice(ADDRESS, ADDRESS, {}), lambda: None)
-    connect = AsyncMock(return_value=fake)
+    connect = AsyncMock(side_effect=fake.reconnect)
     with patch("custom_components.ha_linak.client.establish_connection", connect):
         task = asyncio.create_task(desk.refresh())
         await asyncio.wait_for(started.wait(), 1)
@@ -336,7 +336,7 @@ async def test_ambiguous_optional_name_characteristic_does_not_block_readings():
     desk = DeskClient(BLEDevice(ADDRESS, ADDRESS, {}), lambda: None)
     with patch(
         "custom_components.ha_linak.client.establish_connection",
-        AsyncMock(return_value=fake),
+        AsyncMock(side_effect=fake.reconnect),
     ):
         await desk.refresh()
     assert desk.connected

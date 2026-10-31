@@ -4,7 +4,7 @@ The device page includes a height slider in centimeters, Stop and buttons for po
 
 ## Set the height range
 
-New onboarding asks for the desk's measured minimum and maximum heights. Use the same centimeter reference as the Height reading and compare it against the panel and a physical measurement. Do not infer the range from favourites or probe mechanical extremes automatically.
+New onboarding asks for the desk's measured minimum and maximum heights, then rechecks the desk before saving them. Use the same centimeter reference as the Height reading and compare it against the panel and a physical measurement. Do not infer the range from favourites or probe mechanical extremes automatically.
 
 For an existing installation, update through HACS, restart HA and open Settings → Devices & services → LINAK → Configure to fill in the range. Use the same page to change it later. There is no movement-enable switch or extra confirmation step. Saving the range does not move the desk or program firmware limits or offset.
 

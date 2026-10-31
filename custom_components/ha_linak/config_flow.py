@@ -71,6 +71,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._validation_task: asyncio.Task[str | None] | None = None
         self._error: str | None = None
         self._validated_state: DeskState | None = None
+        self._pending_range: dict[str, Any] | None = None
 
     async def async_step_bluetooth(
         self, discovery_info: bluetooth.BluetoothServiceInfoBleak
@@ -157,6 +158,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _validate(self) -> str | None:
         desk: DeskClient | None = None
+        self._validated_state = None
         error = None
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
@@ -198,9 +200,11 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 progress_task=self._validation_task,
             )
         self._error = self._validation_task.result()
-        return self.async_show_progress_done(
-            next_step_id="retry" if self._error else "finish"
-        )
+        if self._pending_range is not None:
+            next_step = "finish" if self._error else "save_range"
+        else:
+            next_step = "retry" if self._error else "finish"
+        return self.async_show_progress_done(next_step_id=next_step)
 
     async def async_step_retry(
         self, user_input: dict[str, Any] | None = None
@@ -218,19 +222,35 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         self._abort_if_unique_id_configured()
-        errors = {}
+        errors = {"base": self._error} if self._error else {}
         if user_input is not None:
             try:
-                _validate_range(user_input, self._validated_state)
-                return self.async_create_entry(
-                    title=self._name,
-                    data={CONF_ADDRESS: self._address},
-                    options=user_input,
-                )
+                if ControlSettings.from_options(user_input) is None:
+                    raise ValueError("A height range is required")
             except ValueError:
                 errors["base"] = "invalid_limits"
+            else:
+                self._pending_range = dict(user_input)
+                self._validation_task = None
+                self._error = None
+                # Reconnect/read under the same bounded progress UI as initial setup.
+                return await self.async_step_connect()
+        options = user_input or self._pending_range or {}
         return self.async_show_form(
-            step_id="finish", data_schema=_range_schema(user_input or {}), errors=errors
+            step_id="finish", data_schema=_range_schema(options), errors=errors
+        )
+
+    async def async_step_save_range(self, user_input=None) -> ConfigFlowResult:
+        self._abort_if_unique_id_configured()
+        try:
+            _validate_range(self._pending_range or {}, self._validated_state)
+        except ValueError:
+            self._error = "invalid_limits"
+            return await self.async_step_finish()
+        return self.async_create_entry(
+            title=self._name,
+            data={CONF_ADDRESS: self._address},
+            options=self._pending_range,
         )
 
 

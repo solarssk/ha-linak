@@ -31,7 +31,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Read-only alpha.** You can view desk data. Movement, Stop and changing panel settings are still being developed. [What's next →](../docs/roadmap.md)
+> **Read-only alpha.** You can view desk data. HA movement, Stop and panel-setting controls are still being developed. [What's next →](../docs/roadmap.md)
 
 <details>
 <summary><strong>On this page</strong></summary>
@@ -43,6 +43,7 @@
 - [🔌 Configuration](#configuration)
 - [🏠 Everyday use](#daily-use)
 - [🧪 Validation status](#validation)
+- [🕹️ Control development status](#controls)
 - [📚 Help and documentation](#help)
 - [📄 License](#license)
 
@@ -214,9 +215,22 @@ This describes environment validation, not supported panel models. [Full results
 
 - Unknown speed words and counters are not exposed as verified measurements.
 - Desk height does not indicate occupancy.
-- Movement and Stop remain unavailable. There is no percentage-based cover entity.
+- Movement and Stop remain unavailable in HA. There is no percentage-based cover entity.
 
 </details>
+
+<a id="controls"></a>
+
+## 🕹️ Control development status
+
+| Feature | Available now | How to try it |
+| --- | --- | --- |
+| Read height, saved positions and reminders | In the HA integration | Add LINAK through HACS |
+| Short target movement and timed Stop | Separate supervised research tool; hardware results pending | [Movement test instructions](../docs/movement-test.md) |
+| Target-height number, Stop button and saved-position buttons in HA | Not registered yet | Planned after recorded hardware tests and HA session/lifecycle validation |
+| Change offset, memories or reminder settings | Not implemented | [Settings and calibration plan](../docs/settings-reference.md) |
+
+The research tool is run separately on a nearby Bluetooth computer, with other desk clients disabled. It requires measured limits, explicit confirmation for motion and a target within 2 cm of the initial reading. It produces a report for review; it is not an HA service or entity, and installing through HACS does not expose these commands. Start with its inspection-only step. Physical movement and Stop have not yet been validated on the owner's desk.
 
 <a id="help"></a>
 

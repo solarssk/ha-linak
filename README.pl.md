@@ -11,7 +11,7 @@
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-> **Wersja alfa, tylko odczyt.** Odczyty sprawdzono na jednym DPG1C przy użyciu Maca. Odczyty na Malinie działały po ręcznym sparowaniu. Automatyczne pierwsze parowanie i proxy wymagają jeszcze testów. Ruch, Stop i zmiana ustawień panelu nie są jeszcze dostępne.
+> **Wersja alfa, tylko odczyt.** Odczyty sprawdzono na jednym DPG1C przy użyciu Maca. Odczyty na Malinie działały po ręcznym sparowaniu. Automatyczne pierwsze parowanie i proxy wymagają jeszcze testów. Ruch, Stop i zmiana ustawień panelu nie są jeszcze dostępne w HA.
 
 ![Poglądowy układ czujników, przykładowe wartości](docs/assets/desk-overview-pl.svg)
 
@@ -84,6 +84,17 @@ Sprawdź komunikat błędu i dziennik `ha_linak`. W zgłoszeniu podaj wersję HA
 Na Malinie zaobserwowano odczyty i ponowne połączenia po ręcznym sparowaniu hosta. Nowe automatyczne pierwsze parowanie i proxy ESPHome wymagają jeszcze testów. Zielony badge CI potwierdza testy oprogramowania, nie działanie każdego biurka i adaptera. [Wyniki testów sprzętowych →](docs/hardware-results.md)
 
 Kolejny etap to stabilne sterowanie wysokością w **centymetrach**, Stop i wybór zapisanych pozycji po testach sprzętowych pod nadzorem. Te funkcje nie są jeszcze częścią wersji alfa. [Zobacz plan rozwoju →](docs/roadmap.md)
+
+## 🕹️ Stan prac nad sterowaniem
+
+| Funkcja | Dostępność teraz | Jak sprawdzić |
+| --- | --- | --- |
+| Odczyt wysokości, pamięci i przypomnień | W integracji HA | Dodaj LINAK przez HACS |
+| Krótki ruch do celu i Stop po zadanym czasie | Osobne narzędzie badawcze do testu pod nadzorem; wyniki sprzętowe jeszcze niepotwierdzone | [Instrukcja testu po angielsku](docs/movement-test.md) |
+| Zadawanie wysokości, przycisk Stop i przyciski zapisanych pozycji w HA | Encje nie są jeszcze włączone | Po zapisaniu wyników sprzętowych i sprawdzeniu obsługi połączenia oraz cyklu pracy HA |
+| Zmiana offsetu, pamięci lub przypomnień | Jeszcze niezaimplementowana | [Plan ustawień i kalibracji po angielsku](docs/settings-reference.md) |
+
+Narzędzie badawcze uruchamia się osobno na komputerze z Bluetooth obok biurka, po wyłączeniu innych klientów biurka. Wymaga zmierzonych granic, jawnego potwierdzenia ruchu i celu oddalonego najwyżej o 2 cm od początkowego odczytu. Zapisuje raport do sprawdzenia; nie jest usługą ani encją HA, a instalacja przez HACS nie udostępnia tych poleceń. Zacznij od kroku kontrolnego bez ruchu. Fizyczny ruch i Stop nie zostały jeszcze sprawdzone na biurku właściciela.
 
 ## 📚 Więcej informacji
 

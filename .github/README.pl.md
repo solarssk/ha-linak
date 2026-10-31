@@ -31,7 +31,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Wersja alfa, tylko odczyt.** Możesz przeglądać dane biurka. Ruch, Stop i zmiana ustawień panelu są jeszcze w przygotowaniu. [Co dalej? →](../docs/roadmap.md)
+> **Wersja alfa, tylko odczyt.** Możesz przeglądać dane biurka. Sterowanie ruchem, Stop i zmiana ustawień panelu w HA są jeszcze w przygotowaniu. [Co dalej? →](../docs/roadmap.md)
 
 <details>
 <summary><strong>Spis treści</strong></summary>
@@ -43,6 +43,7 @@
 - [🔌 Konfiguracja](#configuration)
 - [🏠 Na co dzień](#daily-use)
 - [🧪 Stan testów](#validation)
+- [🕹️ Stan prac nad sterowaniem](#controls)
 - [📚 Pomoc i dokumentacja](#help)
 - [📄 Licencja](#license)
 
@@ -214,9 +215,22 @@ To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](../
 
 - Nieznane pola prędkości i liczniki nie są udostępniane jako potwierdzone pomiary.
 - Wysokość biurka nie oznacza wykrywania obecności.
-- Ruch i Stop pozostają niedostępne. Nie ma encji rolety pokazującej wysokość w procentach.
+- Ruch i Stop pozostają niedostępne w HA. Nie ma encji rolety pokazującej wysokość w procentach.
 
 </details>
+
+<a id="controls"></a>
+
+## 🕹️ Stan prac nad sterowaniem
+
+| Funkcja | Dostępność teraz | Jak sprawdzić |
+| --- | --- | --- |
+| Odczyt wysokości, pamięci i przypomnień | W integracji HA | Dodaj LINAK przez HACS |
+| Krótki ruch do celu i Stop po zadanym czasie | Osobne narzędzie badawcze do testu pod nadzorem; wyniki sprzętowe jeszcze niepotwierdzone | [Instrukcja testu po angielsku](../docs/movement-test.md) |
+| Zadawanie wysokości, przycisk Stop i przyciski zapisanych pozycji w HA | Encje nie są jeszcze włączone | Po zapisaniu wyników sprzętowych i sprawdzeniu obsługi połączenia oraz cyklu pracy HA |
+| Zmiana offsetu, pamięci lub przypomnień | Jeszcze niezaimplementowana | [Plan ustawień i kalibracji po angielsku](../docs/settings-reference.md) |
+
+Narzędzie badawcze uruchamia się osobno na komputerze z Bluetooth obok biurka, po wyłączeniu innych klientów biurka. Wymaga zmierzonych granic, jawnego potwierdzenia ruchu i celu oddalonego najwyżej o 2 cm od początkowego odczytu. Zapisuje raport do sprawdzenia; nie jest usługą ani encją HA, a instalacja przez HACS nie udostępnia tych poleceń. Zacznij od kroku kontrolnego bez ruchu. Fizyczny ruch i Stop nie zostały jeszcze sprawdzone na biurku właściciela.
 
 <a id="help"></a>
 

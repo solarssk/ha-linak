@@ -11,7 +11,7 @@
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. Raspberry Pi reads worked after manual pairing. Automatic first pairing and proxy validation are still in progress. Movement, Stop and changing panel settings are not available yet.
+> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. Raspberry Pi reads worked after manual pairing. Automatic first pairing and proxy validation are still in progress. Movement, Stop and changing panel settings are not available in HA yet.
 
 ![Illustration of sensor values, not a Home Assistant screenshot](docs/assets/desk-overview-en.svg)
 
@@ -84,6 +84,17 @@ Check the displayed error and the `ha_linak` log. For a report, include your HA/
 Raspberry Pi reads and reconnects were observed after manual host pairing. The new automatic first-pairing path and ESPHome proxy validation remain pending. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
 
 Next comes reliable height control in **centimeters**, Stop and saved-position controls, after supervised hardware tests. These controls are not included in this alpha. [Follow the roadmap →](docs/roadmap.md)
+
+## 🕹️ Control development status
+
+| Feature | Available now | How to try it |
+| --- | --- | --- |
+| Read height, saved positions and reminders | In the HA integration | Add LINAK through HACS |
+| Short target movement and timed Stop | Separate supervised research tool; hardware results pending | [Movement test instructions](docs/movement-test.md) |
+| Target-height number, Stop button and saved-position buttons in HA | Not registered yet | Planned after recorded hardware tests and HA session/lifecycle validation |
+| Change offset, memories or reminder settings | Not implemented | [Settings and calibration plan](docs/settings-reference.md) |
+
+The research tool is run separately on a nearby Bluetooth computer, with other desk clients disabled. It requires measured limits, explicit confirmation for motion and a target within 2 cm of the initial reading. It produces a report for review; it is not an HA service or entity, and installing through HACS does not expose these commands. Start with its inspection-only step. Physical movement and Stop have not yet been validated on the owner's desk.
 
 ## 📚 Learn more
 

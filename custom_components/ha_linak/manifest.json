@@ -23,5 +23,5 @@
     "bluetooth-data-tools>=1.29.24",
     "dbus-fast>=5.0.22"
   ],
-  "version": "0.1.0a6"
+  "version": "0.1.0a7"
 }

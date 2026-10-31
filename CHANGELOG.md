@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Add an opt-in supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions; HACS remains read-only.
+- Group sensors, diagnostics and controls in one entity section across GitHub/HACS READMEs; link the native HA test procedure.
+- Add a standalone supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions.
 - Record manufacturer settings/variant evidence, pinned community protocol candidates, protected offset calibration and post-install configuration requirements for the next control milestones.
 - Standardize Markdown prose and list-item paragraphs on single source lines; document the authoring convention while preserving structural markup and rendered content.
 
@@ -20,7 +21,7 @@
 - Separate supported panels, HA sensor entities, requirements and environment validation in both READMEs; match entity labels to HA translations and add section icons and quality badges.
 - Extract the supplied official Illustrator logos as theme-aware SVGs; simplify both READMEs for hobbyist users with language flags, centered HA/HACS badges and a collapsible contents list.
 - Redesign the English and Polish READMEs with LINAK branding, matching navigation, feature tables and one shared installation/configuration path per language.
-- Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. Installed HA behavior remains read-only pending supervised hardware validation.
+- Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. The controller now also supports the native HA entities described in 0.1.0a7.
 - Adopt the playbook Tier 2 maintenance baseline and document the native-control contract.
 - Package the supplied LINAK icon and logo as local HA brand images, with provenance and trademark notices.
 
@@ -32,7 +33,19 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
-## 0.1.0a6 — unpublished alpha
+## 0.1.0a7 (unpublished alpha)
+
+- Recheck the desk on range submission and keep disconnected readings unavailable during control cleanup; test stalled feedback and both connections during range reload.
+- Add a native centimeter height slider, Stop and go-to-memory buttons, with English/Polish labels and action errors.
+- Collect measured command bounds during onboarding and support range changes through Options Flow; controls are registered by default. No target is restored or sent on setup/reconnect.
+- Reserve the shared BLE session across fresh offset/memory reads, movement, feedback and final Stop; reject concurrent targets, yield polling and stop/disconnect on interruption or unload.
+- Validate characteristic operations, retain the bounded motion guards and expose software control outcomes in redacted diagnostics. Physical movement/Stop verification remains pending.
+
+### Adopter action
+
+- Update via HACS and restart HA. For an existing entry, set measured centimeter bounds once in LINAK configuration. New onboarding includes the range. Follow [the supervised HA test](docs/controls.md) before using automations. Offset/memory/reminder writes are not included.
+
+## 0.1.0a6: unpublished alpha
 
 - Show the native desk name with a short address suffix on discovery cards, using the same naming helper as HA Idasen and removing the repeated LINAK prefix.
 - Resolve cached discovery/device names consistently for cards, selection and entry titles; generic LINAK/address fallbacks do not hide native names.
@@ -42,7 +55,7 @@
 
 - Redownload and restart HA. Keep the existing integration and pairing; the device name can improve during setup. A discovery card can still use LINAK plus a short suffix until a native name is available. Physical naming behavior needs validation.
 
-## 0.1.0a5 — unpublished alpha
+## 0.1.0a5: unpublished alpha
 
 - Show stored heights and reminder profiles as regular desk sensors; retain height offset as a diagnostic parameter without changing existing entity IDs.
 - Add a diagnostic connection binary sensor and optional, default-disabled Bluetooth signal-strength and backend sensors using HA-managed data only. Recheck enabled RSSI availability every 60 seconds even during repeated connection failures.
@@ -52,7 +65,7 @@
 
 - Redownload and restart HA. Enable optional Bluetooth sensors in the entity registry when needed; no new pairing, bond reset or desk setting write is required. Automatic first pairing from 0.1.0a4 still needs hardware validation.
 
-## 0.1.0a4 — unpublished alpha
+## 0.1.0a4: unpublished alpha
 
 - Provide a temporary, device-restricted BlueZ agent for local Just Works pairing, using the same application connection for registration and pairing. Reuse existing bonds; retain backend pairing for proxies.
 - Report unavailable local pairing-agent infrastructure separately from rejected authentication.
@@ -62,7 +75,7 @@
 
 - Redownload and restart HA to load the updated integration. The new automatic first-pairing path still requires a supervised Raspberry Pi test; keep an existing working bond. No movement or panel setting writes are enabled.
 
-## 0.1.0a3 — unpublished alpha
+## 0.1.0a3: unpublished alpha
 
 - Pair through the selected Bluetooth backend before subscribing; let CoreBluetooth manage authentication automatically.
 - Distinguish authentication failure, pairing timeout, unsupported pairing and lost connections in English and Polish setup errors.
@@ -73,7 +86,7 @@
 
 - Redownload the integration and restart HA, then retry with pairing enabled on the panel. Raspberry Pi and proxy validation of this change is still required.
 
-## 0.1.0a2 — unpublished alpha
+## 0.1.0a2: unpublished alpha
 
 - Add native HA progress, translated validation failures and retry for desk onboarding.
 - Bound complete connection/read attempts and individual notification/position operations; release connections after failure or flow cancellation.
@@ -84,7 +97,7 @@
 
 - Redownload/update the custom integration and restart HA. Cancel an old pending setup before trying again. If it still fails, report the setup-stage warning and HA version with private identifiers removed.
 
-## 0.1.0a1 — unpublished local alpha
+## 0.1.0a1: unpublished local alpha
 
 - Add native Home Assistant UI configuration and Bluetooth discovery.
 - Validate extended reads before creating a config entry.

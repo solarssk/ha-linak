@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../docs/assets/linak-logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="../docs/assets/linak-logo-light.svg">
-    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK — We improve your life" width="360">
+    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK: We improve your life" width="360">
   </picture>
 </p>
 
@@ -30,9 +30,6 @@
   <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="Licencja kodu: MIT"></a>
 </p>
 
-> [!IMPORTANT]
-> **Wersja alfa, tylko odczyt.** Możesz przeglądać dane biurka. Ruch, Stop i zmiana ustawień panelu są jeszcze w przygotowaniu. [Co dalej? →](../docs/roadmap.md)
-
 <details>
 <summary><strong>Spis treści</strong></summary>
 
@@ -52,11 +49,11 @@
 
 ## 🪑 Obsługiwane panele
 
-Pierwszym obsługiwanym modelem jest **DPG1C**. Zakres tej wersji obejmuje odczyt danych.
+Pierwszym obsługiwanym modelem jest **DPG1C**. Integracja pozwala sprawdzać odczyty biurka i sterować jego wysokością.
 
 | Panel LINAK | Dostępne funkcje | Potwierdzenie na sprzęcie |
 | --- | --- | --- |
-| **DPG1C** | Wysokość, zapisane wysokości, korekta wysokości i profile przypomnień | Zapytania odczytu sprawdzone na jednym panelu |
+| **DPG1C** | Wysokość, pamięci, offset, przypomnienia, suwak wysokości, Stop i jazda do pamięci | Zapytania odczytu sprawdzone na jednym panelu |
 
 Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów →](../docs/hardware-results.md)
 
@@ -64,7 +61,9 @@ Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów
 
 ## 📊 Encje w Home Assistant
 
-Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny (`binary_sensor`)**. Nazwy poniżej odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Nazwy odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+
+### Czujniki
 
 <table>
   <thead>
@@ -84,7 +83,7 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
     </tr>
     <tr>
       <td>🔔 <strong>Aktywny profil przypomnień</strong></td>
-      <td>—</td>
+      <td>-</td>
       <td>Numer wybranego profilu</td>
     </tr>
     <tr>
@@ -117,7 +116,21 @@ Integracja tworzy **encje czujników (`sensor`) i diagnostyczny czujnik binarny 
   </tbody>
 </table>
 
-Opcjonalne encje włączysz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
+Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
+
+### Sterowanie
+
+| Typ encji | Nazwa w HA | Działanie |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
+| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
+| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
+
+Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a przyciskiem **Stop** zatrzymaj jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
+
+Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
+
+Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 
 <a id="requirements"></a>
 
@@ -209,12 +222,15 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](../docs/hardware-results.md)
 
+### Testy sterowania
+
+Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i zamykanie integracji. Wyniki fizycznego ruchu i Stop na DPG1C nadal wymagają potwierdzenia. [Pierwszy test w HA po angielsku](../docs/controls.md) opisuje próby i raportowanie; [osobne narzędzie badawcze](../docs/movement-test.md) służy do eksperymentów protokołu poza HA.
+
 <details>
 <summary>Ograniczenia pomiarów i sterowania</summary>
 
 - Nieznane pola prędkości i liczniki nie są udostępniane jako potwierdzone pomiary.
 - Wysokość biurka nie oznacza wykrywania obecności.
-- Ruch i Stop pozostają niedostępne. Nie ma encji rolety pokazującej wysokość w procentach.
 
 </details>
 

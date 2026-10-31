@@ -17,11 +17,11 @@ Tests run against real Home Assistant with simulated Bluetooth and no network so
 
 Use Conventional Commit titles and scoped branches. Update English/Polish docs and translation keys together. In a pull request describe the behavior, verification and Documentation impact. The maintainer merges after required checks pass; reviews are not mandatory while there is one maintainer.
 
-HACS validation and hassfest check packaging; they do not prove physical hardware behavior. Only HA 2026.10.4 is currently validated. Movement and setting writes are not implemented.
+HACS validation and hassfest check packaging; they do not prove physical hardware behavior. Only HA 2026.10.4 is currently validated. Movement uses native slider/button controls with simulated tests; physical validation is pending. Panel-setting writes are not implemented.
 
 ## Markdown source format
 
-Write each prose paragraph on one source line and let the editor, GitHub or HACS wrap it visually. Keep a list item's prose on one line too; nested lists and multi-paragraph items retain their Markdown structure. Do not wrap prose to a fixed column width. Preserve paragraph separators, headings, tables, code fences, HTML layouts, image/badge blocks, GitHub alert marker lines and intentional hard line breaks. Keep consecutive CHANGELOG.md bullets compact, without blank lines between them.
+Do not use em dashes. Use periods, commas or colons. Write each prose paragraph on one source line and let the editor, GitHub or HACS wrap it visually. Keep a list item's prose on one line too; nested lists and multi-paragraph items retain their Markdown structure. Do not wrap prose to a fixed column width. Preserve paragraph separators, headings, tables, code fences, HTML layouts, image/badge blocks, GitHub alert marker lines and intentional hard line breaks. Keep consecutive CHANGELOG.md bullets compact, without blank lines between them.
 
 ## Updating dependencies
 

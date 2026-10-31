@@ -1,6 +1,6 @@
 # Repository governance and validation
 
-This public HACS package adopts Tier 2 of the [solarssk playbook](https://github.com/solarssk/playbook/blob/main/docs/tiers.md) before enabling physical hardware control. The currently installed alpha remains read-only. No official Home Assistant quality-scale award, HACS default-catalog acceptance, or earned OpenSSF rating is claimed.
+This public HACS package adopts Tier 2 of the [solarssk playbook](https://github.com/solarssk/playbook/blob/main/docs/tiers.md) before enabling physical hardware control. The alpha provides native movement controls using explicitly configured measured bounds. No official Home Assistant quality-scale award, HACS default-catalog acceptance, or earned OpenSSF rating is claimed.
 
 CodeQL uses GitHub default setup. OpenSSF Scorecard runs in report-only mode; its result is not a certification.
 

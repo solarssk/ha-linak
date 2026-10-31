@@ -8,17 +8,28 @@ import probatio as vol
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 from homeassistant.const import CONF_ADDRESS
+from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .client import (
     DeskClient,
+    DeskState,
     DeskLinkLost,
     DeskAuthenticationError,
     DeskPairingUnsupported,
     DeskPairingTimeout,
     DeskPairingAgentError,
+)
+from .control_settings import (
+    ControlSettings,
+    MINIMUM_HEIGHT,
+    MAXIMUM_HEIGHT,
 )
 from .const import DOMAIN
 from .naming import DEFAULT_NAME, desk_name, discovery_title
@@ -47,6 +58,11 @@ def _validation_error(error: Exception, stage: str) -> str:
 class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return LinakOptionsFlow()
+
     def __init__(self) -> None:
         self._devices: dict[str, bluetooth.BluetoothServiceInfoBleak] = {}
         self._address: str | None = None
@@ -54,6 +70,8 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._name = DEFAULT_NAME
         self._validation_task: asyncio.Task[str | None] | None = None
         self._error: str | None = None
+        self._validated_state: DeskState | None = None
+        self._pending_range: dict[str, Any] | None = None
 
     async def async_step_bluetooth(
         self, discovery_info: bluetooth.BluetoothServiceInfoBleak
@@ -140,10 +158,11 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _validate(self) -> str | None:
         desk: DeskClient | None = None
+        self._validated_state = None
         error = None
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
-            await desk.refresh()
+            self._validated_state = await desk.refresh()
             self._name = desk_name(desk.device.address, self._name, desk.device_name)
         except (TimeoutError, ValueError, BleakError, ConnectionError) as err:
             error = _validation_error(err, desk.stage if desk else "device_lookup")
@@ -181,9 +200,11 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 progress_task=self._validation_task,
             )
         self._error = self._validation_task.result()
-        return self.async_show_progress_done(
-            next_step_id="retry" if self._error else "finish"
-        )
+        if self._pending_range is not None:
+            next_step = "finish" if self._error else "save_range"
+        else:
+            next_step = "retry" if self._error else "finish"
+        return self.async_show_progress_done(next_step_id=next_step)
 
     async def async_step_retry(
         self, user_input: dict[str, Any] | None = None
@@ -201,6 +222,82 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         self._abort_if_unique_id_configured()
-        return self.async_create_entry(
-            title=self._name, data={CONF_ADDRESS: self._address}
+        errors = {"base": self._error} if self._error else {}
+        if user_input is not None:
+            try:
+                if ControlSettings.from_options(user_input) is None:
+                    raise ValueError("A height range is required")
+            except ValueError:
+                errors["base"] = "invalid_limits"
+            else:
+                self._pending_range = dict(user_input)
+                self._validation_task = None
+                self._error = None
+                # Reconnect/read under the same bounded progress UI as initial setup.
+                return await self.async_step_connect()
+        options = user_input or self._pending_range or {}
+        return self.async_show_form(
+            step_id="finish", data_schema=_range_schema(options), errors=errors
         )
+
+    async def async_step_save_range(self, user_input=None) -> ConfigFlowResult:
+        self._abort_if_unique_id_configured()
+        try:
+            _validate_range(self._pending_range or {}, self._validated_state)
+        except ValueError:
+            self._error = "invalid_limits"
+            return await self.async_step_finish()
+        return self.async_create_entry(
+            title=self._name,
+            data={CONF_ADDRESS: self._address},
+            options=self._pending_range,
+        )
+
+
+class LinakOptionsFlow(OptionsFlowWithReload):
+    """Change the desk height range without changing panel settings."""
+
+    async def async_step_init(self, user_input=None) -> ConfigFlowResult:
+        errors = {}
+        if user_input is not None:
+            try:
+                coordinator = getattr(self.config_entry, "runtime_data", None)
+                if coordinator is None or not coordinator.last_update_success:
+                    raise ValueError("A current height reading is required")
+                _validate_range(user_input, coordinator.data)
+                return self.async_create_entry(title="", data=user_input)
+            except ValueError:
+                errors["base"] = "invalid_limits"
+        options = user_input if user_input is not None else self.config_entry.options
+        return self.async_show_form(
+            step_id="init", data_schema=_range_schema(options), errors=errors
+        )
+
+
+def _validate_range(options: dict[str, Any], state: DeskState | None) -> None:
+    settings = ControlSettings.from_options(options)
+    if settings is None or state is None or state.offset_raw is None:
+        raise ValueError("A height range and valid reading are required")
+    limits = settings.limits(state.offset_raw)
+    position = state.position
+    if (
+        position is None
+        or not limits.minimum_raw <= position.position_raw <= limits.maximum_raw
+    ):
+        raise ValueError("Current height must be inside the measured bounds")
+
+
+def _range_schema(options) -> vol.Schema:
+    schema: dict[Any, Any] = {}
+    for key in (MINIMUM_HEIGHT, MAXIMUM_HEIGHT):
+        field = (
+            vol.Required(key, default=options[key])
+            if key in options
+            else vol.Required(key)
+        )
+        schema[field] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                mode=selector.NumberSelectorMode.BOX, step=0.1, unit_of_measurement="cm"
+            )
+        )
+    return vol.Schema(schema)

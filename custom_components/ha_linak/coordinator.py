@@ -10,9 +10,13 @@ from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .client import DeskClient, DeskState
+from .const import DOMAIN
+from .control_settings import ControlSettings
+from .motion import MotionError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +37,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             config_entry=entry,
             update_interval=timedelta(seconds=60),
         )
+        self.controls = ControlSettings.from_options(dict(entry.options))
         self.address = entry.data[CONF_ADDRESS]
         self.desk: DeskClient | None = None
 
@@ -82,6 +87,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         return device
 
     async def _async_update_data(self) -> DeskState:
+        if self.desk is not None and self.desk.control_busy:
+            if not self.desk.connected:
+                raise UpdateFailed("Desk disconnected during control cleanup")
+            return self.desk.state
         device = bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True
         )
@@ -97,6 +106,55 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             return await self.desk.refresh()
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
             raise UpdateFailed("Unable to read LINAK desk") from err
+
+    async def async_move_to_cm(self, height_cm: float) -> None:
+        await self._async_control("target", height_cm)
+
+    async def async_move_to_memory(self, index: int) -> None:
+        await self._async_control("memory", index)
+
+    async def async_stop(self) -> None:
+        await self._async_control("stop")
+
+    async def _async_control(self, action: str, value: float | int = 0) -> None:
+        if self.desk is None or (action != "stop" and not self.desk.connected):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="control_unavailable"
+            )
+        if action != "stop" and self.controls is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="range_not_configured"
+            )
+        settings = self.controls
+        try:
+            if action == "stop":
+                await self.desk.stop()
+            elif settings is not None:
+                if action == "memory":
+                    await self.desk.move_to_memory(int(value), settings)
+                else:
+                    await self.desk.move_to_cm(value, settings)
+        except (
+            MotionError,
+            BleakError,
+            ConnectionError,
+            TimeoutError,
+            ValueError,
+        ) as err:
+            _LOGGER.debug(
+                "LINAK %s failed during %s: %s",
+                action,
+                self.desk.stage,
+                type(err).__name__,
+            )
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="stop_failed"
+                if action == "stop"
+                else "movement_failed",
+            ) from err
+        finally:
+            self._changed()
 
     async def async_close(self) -> None:
         await self.async_shutdown()

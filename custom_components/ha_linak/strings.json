@@ -16,6 +16,14 @@
       "retry": {
         "title": "Try connecting again",
         "description": "Keep the desk within Bluetooth range, enable pairing on the panel and close other connected desk apps. Submit to try again."
+      },
+      "finish": {
+        "title": "Desk height range",
+        "description": "Enter the measured minimum and maximum desk heights in cm, matching the panel reading. The slider will use this range. Saving does not move the desk.",
+        "data": {
+          "minimum_height": "Minimum height (cm)",
+          "maximum_height": "Maximum height (cm)"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
       "authentication_failed": "Bluetooth authentication failed. Enable pairing on the panel and close connected desk apps, then try again.",
       "pairing_unsupported": "The selected Bluetooth adapter or proxy does not support explicit pairing. Use a compatible adapter or updated proxy.",
       "connection_lost": "The Bluetooth connection was lost while checking the desk. Enable pairing on the panel and try again.",
-      "pairing_agent_unavailable": "Home Assistant could not prepare local Bluetooth pairing. Check the host Bluetooth service and D-Bus permissions, then try again."
+      "pairing_agent_unavailable": "Home Assistant could not prepare local Bluetooth pairing. Check the host Bluetooth service and D-Bus permissions, then try again.",
+      "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -100,6 +109,60 @@
       "connection": {
         "name": "Connection"
       }
+    },
+    "number": {
+      "target_height": {
+        "name": "Target height"
+      }
+    },
+    "button": {
+      "stop": {
+        "name": "Stop"
+      },
+      "go_to_memory_1": {
+        "name": "Go to stored position 1"
+      },
+      "go_to_memory_2": {
+        "name": "Go to stored position 2"
+      },
+      "go_to_memory_3": {
+        "name": "Go to stored position 3"
+      },
+      "go_to_memory_4": {
+        "name": "Go to stored position 4"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Desk height range",
+        "description": "Change the height range used by the slider and stored-position buttons. These values do not change panel firmware limits or the height offset.",
+        "data": {
+          "minimum_height": "Minimum height (cm)",
+          "maximum_height": "Maximum height (cm)"
+        }
+      }
+    },
+    "error": {
+      "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again."
+    }
+  },
+  "exceptions": {
+    "control_unavailable": {
+      "message": "The desk has no ready connection. Check Bluetooth connectivity."
+    },
+    "movement_failed": {
+      "message": "Movement did not complete. Check physical stopping, bounds, stored position, availability and the ha_linak log. Commands are not queued or resumed."
+    },
+    "stop_failed": {
+      "message": "Stop could not be delivered or the previous operation could not settle. Check the desk immediately and use the physical panel."
+    },
+    "memory_unavailable": {
+      "message": "This stored position is empty or unavailable."
+    },
+    "range_not_configured": {
+      "message": "Set the desk height range in LINAK configuration."
     }
   }
 }

@@ -2,7 +2,7 @@
 
 # LINAK for Home Assistant
 
-**Your desk height in centimeters, right in Home Assistant.** A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
+**Set your desk height in centimeters from Home Assistant.** A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
 
 🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 
@@ -10,8 +10,6 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
-
-> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. Raspberry Pi reads worked after manual pairing. Automatic first pairing and proxy validation are still in progress. Movement, Stop and changing panel settings are not available yet.
 
 ![Illustration of sensor values, not a Home Assistant screenshot](docs/assets/desk-overview-en.svg)
 
@@ -29,18 +27,20 @@ Add **Height** to a standard Home Assistant card and see your desk's position wi
 
 Check your saved sitting and standing heights in one place. The stored-height sensors show what is saved on the panel; viewing them does not start a move. Reminder sensors show the panel's configured profiles, rather than sending phone notifications.
 
-### Sensors in Home Assistant
+## 📊 Home Assistant entities
+
+### Sensors
 
 - 📏 **Height** is the main measurement sensor, in centimeters.
 - 🔖 **Stored height 1–4** shows up to four saved positions, in centimeters.
 - 🔔 **Active reminder profile** identifies the selected profile.
 - ⏱️ **Profile 1–3 sitting time** and **standing time** show configured durations, in minutes.
-- 📐 **Height offset** shows the panel's height reference, in centimeters.
 
-Height, stored heights and reminder profiles are regular desk sensors. Height offset is a diagnostic parameter. Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
+Height, stored heights and reminder profiles are regular desk sensors (`sensor`). Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
 
-### Connection diagnostics
+### Diagnostics
 
+- 📐 **Height offset** (`sensor`, cm): the height reference stored on the panel.
 - 🔗 **Connection** (`binary_sensor`): whether the desk has a ready session and valid readings. It shows disconnected when the session is lost.
 - 📶 **Bluetooth signal strength** (`sensor`, dBm): the latest advertisement received by HA, not a measurement of the active link.
 - 🛠️ **Bluetooth backend** (`sensor`): for example local BlueZ or an ESPHome proxy, without the adapter name.
@@ -48,6 +48,20 @@ Height, stored heights and reminder profiles are regular desk sensors. Height of
 RSSI and backend sensors are disabled by default. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities. This enables diagnostic readings in HA without changing desk settings.
 
 The device information contains its name and Bluetooth address. Downloaded diagnostics omit names, MACs and adapter identifiers. These entities appear after successful integration setup; they do not replace first-setup error messages.
+
+### Controls
+
+| Entity type | Name in HA | Action |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Target height** | Move the slider to choose a height in centimeters |
+| `button` | ⏹️ **Stop** | Interrupts the current movement request |
+| `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
+
+The slider shows the current desk height. Move it to choose a new height, and press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
+
+Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
+
+Offset changes, saving memories and changing reminders remain in the [settings plan](docs/settings-reference.md). Offset is still read-only diagnostics.
 
 ## 📋 What you need
 
@@ -83,7 +97,9 @@ Check the displayed error and the `ha_linak` log. For a report, include your HA/
 
 Raspberry Pi reads and reconnects were observed after manual host pairing. The new automatic first-pairing path and ESPHome proxy validation remain pending. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
 
-Next comes reliable height control in **centimeters**, Stop and saved-position controls, after supervised hardware tests. These controls are not included in this alpha. [Follow the roadmap →](docs/roadmap.md)
+### Control validation
+
+Software tests cover entities, session ownership, interruption and unloading. Physical DPG1C movement and Stop results still need verification. The [first HA test](docs/controls.md) explains the sequence and evidence to record; the [standalone research tool](docs/movement-test.md) is for protocol experiments outside HA.
 
 ## 📚 Learn more
 

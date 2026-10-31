@@ -4,7 +4,7 @@
 
 Height, stored positions and reminder profiles are ordinary `sensor` entities. They describe how the desk is used. They remain read-only; reminder times are configured durations, not elapsed counters. Existing unique IDs are unchanged. HA updates the integration-defined category of existing entities on setup while retaining user names and enabled/disabled choices.
 
-Height offset stays Diagnostic: it is the technical reference used for converting raw positions. A future writable setting would need its own verified control. No settings, radio-enable, pairing, restart or movement switch is introduced.
+Height offset stays Diagnostic: it is the technical reference used for converting raw positions. A future writable setting would need its own verified control. No panel-settings, radio-enable, pairing or restart switch is introduced. Native movement is configured separately in [control options](controls.md).
 
 ## Transport entities
 
@@ -24,7 +24,7 @@ Backend is unavailable without a connected client. Unknown identifiers are mappe
 
 The device registry contains its configured name and Bluetooth address. A native name obtained from cached HA metadata or the optional GAP Device Name read can replace an integration-supplied LINAK fallback. Explicit device name_by_user is preserved; an existing LINAK config-entry title is not assumed to be user-owned or automatically renamed. Separate name/MAC sensors would duplicate this metadata and create unnecessary history. The address supplements the existing device identifier without changing entity unique IDs. Local device metadata can therefore identify the desk to its owner.
 
-The downloadable diagnostic file omits names, Bluetooth addresses and adapter identifiers. Its Bluetooth section contains only signal_strength and an allowlisted backend category, alongside the existing readiness, last stage and read results. Manually shared screenshots or HA/upstream debug logs still need identifier removal.
+The downloadable diagnostic file omits names, Bluetooth addresses and adapter identifiers. Its Bluetooth section contains only signal_strength and an allowlisted backend category, alongside the existing readiness, last stage and read results. The controls section reports only range_configured, busy and an allowlisted last-result label (not_requested, moving, completed, interrupted, failed, stop_sent or stop_failed). These describe software outcomes, not physical Stop evidence. Manually shared screenshots or HA/upstream debug logs still need identifier removal.
 
 ## Validation and next hardware test
 

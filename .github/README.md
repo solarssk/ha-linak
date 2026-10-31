@@ -2,14 +2,14 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../docs/assets/linak-logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="../docs/assets/linak-logo-light.svg">
-    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK — We improve your life" width="360">
+    <img src="../docs/assets/linak-logo-light.svg" alt="LINAK: We improve your life" width="360">
   </picture>
 </p>
 
 <h1 align="center">LINAK for Home Assistant</h1>
 
 <p align="center">
-  <strong>Your LINAK desk in Home Assistant.<br>Live height in centimeters, saved heights and reminders.</strong><br>
+  <strong>Your LINAK desk in Home Assistant.<br>Height control in centimeters, saved positions and reminders.</strong><br>
   Runs directly in Home Assistant. First hardware target: <strong>DPG1C</strong>.
 </p>
 
@@ -30,9 +30,6 @@
   <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="Code license: MIT"></a>
 </p>
 
-> [!IMPORTANT]
-> **Read-only alpha.** You can view desk data. Movement, Stop and changing panel settings are still being developed. [What's next →](../docs/roadmap.md)
-
 <details>
 <summary><strong>On this page</strong></summary>
 
@@ -52,11 +49,11 @@
 
 ## 🪑 Supported panels
 
-The first supported model is **DPG1C**. This version reads desk data.
+The first supported model is **DPG1C**. Use the integration to check desk readings and control its height.
 
 | LINAK panel | Available functions | Hardware evidence |
 | --- | --- | --- |
-| **DPG1C** | Height, stored heights, height offset and reminder profiles | Read queries verified on one panel |
+| **DPG1C** | Height, stored heights, offset, reminders, height slider, Stop and stored-position drive | Read queries verified on one panel |
 
 Compatibility with other panel models is not confirmed. [Read-query results →](../docs/hardware-results.md)
 
@@ -64,7 +61,9 @@ Compatibility with other panel models is not confirmed. [Read-query results →]
 
 ## 📊 Home Assistant entities
 
-The integration creates **sensor entities (`sensor`) and a diagnostic binary sensor (`binary_sensor`)**. These labels match the English names in HA; your device name may appear before them.
+The device page groups desk readings, diagnostics and movement controls. These labels match the English names in HA; your device name may appear before them.
+
+### Sensors
 
 <table>
   <thead>
@@ -84,7 +83,7 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
     </tr>
     <tr>
       <td>🔔 <strong>Active reminder profile</strong></td>
-      <td>—</td>
+      <td>-</td>
       <td>The selected profile number</td>
     </tr>
     <tr>
@@ -118,6 +117,20 @@ The integration creates **sensor entities (`sensor`) and a diagnostic binary sen
 </table>
 
 Enable optional entities under **Settings → Devices & services → Entities**, showing disabled LINAK entities. They are not desk-setting switches. Name and MAC are device information, without separate sensors; downloaded diagnostics omit these identifiers. [Interpreting diagnostics →](../docs/diagnostics.md)
+
+### Controls
+
+| Entity type | Name in HA | Action |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Target height** | Move the slider to choose a height in centimeters |
+| `button` | ⏹️ **Stop** | Interrupts the current movement request |
+| `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
+
+The slider shows the current desk height. Move it to choose a new height, and press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
+
+Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](../docs/controls.md).
+
+Offset changes, saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md). Offset is still read-only diagnostics.
 
 <a id="requirements"></a>
 
@@ -209,12 +222,15 @@ Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then re
 
 This describes environment validation, not supported panel models. [Full results →](../docs/hardware-results.md)
 
+### Control validation
+
+Software tests cover entities, session ownership, interruption and unloading. Physical DPG1C movement and Stop results still need verification. The [first HA test](../docs/controls.md) explains the sequence and evidence to record; the [standalone research tool](../docs/movement-test.md) is for protocol experiments outside HA.
+
 <details>
 <summary>Measurement and control limitations</summary>
 
 - Unknown speed words and counters are not exposed as verified measurements.
 - Desk height does not indicate occupancy.
-- Movement and Stop remain unavailable. There is no percentage-based cover entity.
 
 </details>
 

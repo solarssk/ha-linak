@@ -2,19 +2,17 @@
 
 ## Status
 
-`motion.py` is a tested research foundation, not an enabled feature. No runtime module imports it, no action or entity invokes it, and configuration does not offer an override. Installing this revision through HACS remains read-only. Simulated BLE tests do not establish physical Stop behavior or motion support on DPG1C.
+Version 0.1.0a7 registers Target height (`number`, cm slider), Stop (`button`) and go-to-memory buttons by default. Onboarding collects measured height bounds; existing entries can set their range in Configure. Stop works independently of the travel range. Saving options, setup and reconnect never issue movement/wakeup commands. No physical movement/Stop result is claimed yet.
 
-The next PR may connect native entities only after supervised hardware tests. Never put this controller on the read client's connection while its refresh task is running: the future integration must hold exclusive session ownership across movement, readback and final Stop. Stop must bypass polling and queued commands.
+The client holds exclusive ownership across preparation, fresh offset/memory queries, movement, position reads and final Stop. Polling returns existing state while a control operation owns the connection. Another target is rejected rather than queued. Stop bypasses the refresh lock, cancels a pending target and drains bounded cleanup. Interrupted/failed moves discard the connection and never resume after reconnection.
 
-## Executable supervised test
-
-Use the [research runner and result checklist](movement-test.md) to collect the missing evidence on a dedicated connection. It is not registered with HA and does not bypass this gate.
+The [HA control test procedure](controls.md) covers activation and recording results without a separate computer. The [standalone research runner](movement-test.md) remains an alternative for protocol investigation; its 2 cm experiment limit is not the range of the native target entity.
 
 ## Native interface contract
 
-| Control | Behavior after validation |
+| Control | Experimental behavior |
 | --- | --- |
-| Target height | Native number, centimeters, box input, measured travel limits; changing it explicitly starts a move |
+| Target height | Native number, centimeters, slider input, measured travel limits; changing it explicitly starts a move |
 | Stop | Native button, interrupts a pending movement; no automatic retry |
 | Go to stored position 1–4 | Native buttons only for configured slots; use the latest panel value and the same movement path |
 | Actual height | Existing sensor; independent of the target and updated from device feedback |
@@ -42,9 +40,9 @@ Record results without device names, addresses or other private identifiers:
 5. Check behavior when target packets cease and when the connection is lost.
 6. Confirm whether wake and reference writes require a user-ID setting; do not silently change that setting to make a test pass.
 7. Validate ownership with the polling client, HA shutdown/unload, disconnect, unavailable feedback and reconnection without resuming a target.
-8. Add native entities and run real HA tests for their names, units, range, availability, exceptions and lifecycle. Then validate on Raspberry Pi.
+8. Test the native entities for their names, units, range, availability, exceptions and lifecycle on Raspberry Pi. In-process HA tests cover these contracts with simulated Bluetooth.
 
-Only after these results are recorded may movement controls be enabled in a mergeable PR. Writing memories, reminders, offset or unrelated panel bits needs its own evidence and readback verification.
+Native entities are included for explicitly supervised HA testing. Record these results before claiming hardware validation or recommending unattended automations. Writing memories, reminders, offset or unrelated panel bits needs its own evidence and readback verification.
 
 Cancellation of `close()` waits for the reserved Stop operation to settle before disconnecting and then propagates cancellation. Repeated cancellation cannot bypass that wait; Stop keeps its existing I/O deadlines. Shielded task results are observed even when callers cancel, so a later Stop error is consumed while the controller remains closed.
 

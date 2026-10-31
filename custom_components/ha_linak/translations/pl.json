@@ -16,6 +16,14 @@
       "retry": {
         "title": "Ponów połączenie z biurkiem",
         "description": "Zbliż biurko do adaptera Bluetooth, włącz parowanie na panelu i zamknij inne aplikacje połączone z biurkiem. Zatwierdź, aby spróbować ponownie."
+      },
+      "finish": {
+        "title": "Zakres wysokości biurka",
+        "description": "Podaj zmierzoną minimalną i maksymalną wysokość biurka w cm, zgodną z odczytem panelu. Suwak będzie działał w tym zakresie. Zapis nie porusza biurkiem.",
+        "data": {
+          "minimum_height": "Minimalna wysokość (cm)",
+          "maximum_height": "Maksymalna wysokość (cm)"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
       "authentication_failed": "Uwierzytelnianie Bluetooth nie powiodło się. Włącz parowanie na panelu, zamknij połączone aplikacje biurka i spróbuj ponownie.",
       "pairing_unsupported": "Wybrany adapter lub proxy Bluetooth nie obsługuje jawnego parowania. Użyj zgodnego adaptera lub zaktualizowanego proxy.",
       "connection_lost": "Połączenie Bluetooth zostało zerwane podczas sprawdzania biurka. Włącz parowanie na panelu i spróbuj ponownie.",
-      "pairing_agent_unavailable": "Home Assistant nie mógł przygotować lokalnego parowania Bluetooth. Sprawdź usługę Bluetooth hosta i uprawnienia D-Bus, a następnie spróbuj ponownie."
+      "pairing_agent_unavailable": "Home Assistant nie mógł przygotować lokalnego parowania Bluetooth. Sprawdź usługę Bluetooth hosta i uprawnienia D-Bus, a następnie spróbuj ponownie.",
+      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
@@ -100,6 +109,60 @@
       "connection": {
         "name": "Połączenie"
       }
+    },
+    "number": {
+      "target_height": {
+        "name": "Wysokość zadana"
+      }
+    },
+    "button": {
+      "stop": {
+        "name": "Stop"
+      },
+      "go_to_memory_1": {
+        "name": "Przejdź do zapisanej pozycji 1"
+      },
+      "go_to_memory_2": {
+        "name": "Przejdź do zapisanej pozycji 2"
+      },
+      "go_to_memory_3": {
+        "name": "Przejdź do zapisanej pozycji 3"
+      },
+      "go_to_memory_4": {
+        "name": "Przejdź do zapisanej pozycji 4"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zakres wysokości biurka",
+        "description": "Zmień zakres wysokości używany przez suwak i przyciski pozycji. Te wartości nie zmieniają ograniczeń zapisanych w panelu ani korekty wysokości.",
+        "data": {
+          "minimum_height": "Minimalna wysokość (cm)",
+          "maximum_height": "Maksymalna wysokość (cm)"
+        }
+      }
+    },
+    "error": {
+      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie."
+    }
+  },
+  "exceptions": {
+    "control_unavailable": {
+      "message": "Biurko nie ma gotowego połączenia. Sprawdź połączenie Bluetooth."
+    },
+    "movement_failed": {
+      "message": "Ruch nie zakończył się prawidłowo. Sprawdź fizyczne zatrzymanie, granice, pamięć, dostępność i dziennik ha_linak. Polecenia nie są kolejkowane ani wznawiane."
+    },
+    "stop_failed": {
+      "message": "Nie udało się dostarczyć Stop lub zakończyć poprzedniej operacji. Natychmiast sprawdź biurko i użyj fizycznego panelu."
+    },
+    "memory_unavailable": {
+      "message": "Ta pozycja pamięci jest pusta lub niedostępna."
+    },
+    "range_not_configured": {
+      "message": "Ustaw zakres wysokości w konfiguracji LINAK."
     }
   }
 }

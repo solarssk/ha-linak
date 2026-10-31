@@ -2,7 +2,7 @@
 
 # LINAK dla Home Assistant
 
-**Wysokość biurka w centymetrach, bezpośrednio w Home Assistant.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
+**Ustawiaj wysokość biurka w centymetrach z Home Assistanta.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
 
 🇬🇧 [English](README.md) · 🇵🇱 **Polski**
 
@@ -10,8 +10,6 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
-
-> **Wersja alfa, tylko odczyt.** Odczyty sprawdzono na jednym DPG1C przy użyciu Maca. Odczyty na Malinie działały po ręcznym sparowaniu. Automatyczne pierwsze parowanie i proxy wymagają jeszcze testów. Ruch, Stop i zmiana ustawień panelu nie są jeszcze dostępne.
 
 ![Poglądowy układ czujników, przykładowe wartości](docs/assets/desk-overview-pl.svg)
 
@@ -29,18 +27,20 @@ Dodaj **Wysokość** do standardowej karty Home Assistanta i sprawdzaj pozycję 
 
 Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki pokazują pamięć panelu; ich przeglądanie nie rozpoczyna ruchu. Czujniki przypomnień pokazują ustawione profile panelu, a nie wysyłają powiadomień na telefon.
 
-### Czujniki w Home Assistant
+## 📊 Encje w Home Assistant
+
+### Czujniki
 
 - 📏 **Wysokość** jest głównym czujnikiem pomiarowym, w centymetrach.
 - 🔖 **Zapisana wysokość 1–4** pokazuje do czterech pozycji pamięci, w centymetrach.
 - 🔔 **Aktywny profil przypomnień** wskazuje wybrany profil.
 - ⏱️ **Profil 1–3: czas siedzenia** i **czas stania** pokazują ustawione czasy, w minutach.
-- 📐 **Korekta wysokości** pokazuje punkt odniesienia zapisany na panelu, w centymetrach.
 
-Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka. Korekta wysokości jest parametrem diagnostycznym. Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
+Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka (`sensor`). Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
 
-### Diagnostyka połączenia
+### Diagnostyka
 
+- 📐 **Korekta wysokości** (`sensor`, cm): punkt odniesienia zapisany na panelu.
 - 🔗 **Połączenie** (`binary_sensor`): czy biurko ma gotowe połączenie i poprawne odczyty. Przy zerwaniu pokazuje stan rozłączony.
 - 📶 **Siła sygnału Bluetooth** (`sensor`, dBm): ostatnia reklama odbierana przez HA, nie pomiar aktywnego łącza.
 - 🛠️ **Backend Bluetooth** (`sensor`): np. lokalny BlueZ albo proxy ESPHome, bez nazwy adaptera.
@@ -48,6 +48,20 @@ Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka. Korekta 
 RSSI i backend są domyślnie wyłączone. Możesz je włączyć w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. To włącza odczyt diagnostyczny w HA, bez zmiany ustawień biurka.
 
 Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka pomija nazwę, MAC i identyfikatory adapterów. Diagnostyka pojawia się po pomyślnym dodaniu integracji; nie zastępuje komunikatów pierwszej konfiguracji.
+
+### Sterowanie
+
+| Typ encji | Nazwa w HA | Działanie |
+| --- | --- | --- |
+| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
+| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
+| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
+
+Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a przyciskiem **Stop** zatrzymaj jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
+
+Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](docs/controls.md).
+
+Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 
 ## 📋 Czego potrzebujesz
 
@@ -83,7 +97,9 @@ Sprawdź komunikat błędu i dziennik `ha_linak`. W zgłoszeniu podaj wersję HA
 
 Na Malinie zaobserwowano odczyty i ponowne połączenia po ręcznym sparowaniu hosta. Nowe automatyczne pierwsze parowanie i proxy ESPHome wymagają jeszcze testów. Zielony badge CI potwierdza testy oprogramowania, nie działanie każdego biurka i adaptera. [Wyniki testów sprzętowych →](docs/hardware-results.md)
 
-Kolejny etap to stabilne sterowanie wysokością w **centymetrach**, Stop i wybór zapisanych pozycji po testach sprzętowych pod nadzorem. Te funkcje nie są jeszcze częścią wersji alfa. [Zobacz plan rozwoju →](docs/roadmap.md)
+### Testy sterowania
+
+Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i zamykanie integracji. Wyniki fizycznego ruchu i Stop na DPG1C nadal wymagają potwierdzenia. [Pierwszy test w HA po angielsku](docs/controls.md) opisuje próby i raportowanie; [osobne narzędzie badawcze](docs/movement-test.md) służy do eksperymentów protokołu poza HA.
 
 ## 📚 Więcej informacji
 

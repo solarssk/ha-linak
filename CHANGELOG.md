@@ -28,6 +28,16 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
+## 0.1.0a4 — unpublished alpha
+
+- Provide a temporary, device-restricted BlueZ agent for local Just Works pairing, using the same application connection for registration and pairing. Reuse existing bonds; retain backend pairing for proxies.
+- Report unavailable local pairing-agent infrastructure separately from rejected authentication.
+- Suppress incomplete height notifications before initial setup is ready, while retaining unavailable-state notifications after invalid readings or link loss.
+
+### Adopter action
+
+- Redownload and restart HA to load the updated integration. The new automatic first-pairing path still requires a supervised Raspberry Pi test; keep an existing working bond. No movement or panel setting writes are enabled.
+
 ## 0.1.0a3 — unpublished alpha
 
 - Pair through the selected Bluetooth backend before subscribing; let CoreBluetooth manage authentication automatically.

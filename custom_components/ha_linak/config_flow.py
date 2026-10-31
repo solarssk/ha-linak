@@ -18,6 +18,7 @@ from .client import (
     DeskAuthenticationError,
     DeskPairingUnsupported,
     DeskPairingTimeout,
+    DeskPairingAgentError,
 )
 from .const import DOMAIN
 from .naming import DEFAULT_NAME, desk_name
@@ -31,6 +32,7 @@ def _validation_error(error: Exception, stage: str) -> str:
         return "pairing_timeout"
     for exception_type, code in (
         (DeskPairingTimeout, "pairing_timeout"),
+        (DeskPairingAgentError, "pairing_agent_unavailable"),
         (DeskAuthenticationError, "authentication_failed"),
         (DeskPairingUnsupported, "pairing_unsupported"),
         (DeskLinkLost, "connection_lost"),

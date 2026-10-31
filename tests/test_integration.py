@@ -10,6 +10,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_linak.client import (
     DeskAuthenticationError,
+    DeskPairingAgentError,
     DeskPairingTimeout,
     DeskPairingUnsupported,
     DeskLinkLost,
@@ -199,6 +200,7 @@ async def test_diagnostics_do_not_contain_device_identifiers(hass):
         (ValueError, "unsupported_device"),
         (RuntimeError, "unknown"),
         (DeskAuthenticationError, "authentication_failed"),
+        (DeskPairingAgentError, "pairing_agent_unavailable"),
         (DeskPairingTimeout, "pairing_timeout"),
         (DeskPairingUnsupported, "pairing_unsupported"),
         (DeskLinkLost, "connection_lost"),

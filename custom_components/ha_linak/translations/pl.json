@@ -26,7 +26,8 @@
       "pairing_timeout": "Parowanie Bluetooth nie zakończyło się w wyznaczonym czasie. Włącz parowanie na panelu i spróbuj ponownie.",
       "authentication_failed": "Uwierzytelnianie Bluetooth nie powiodło się. Włącz parowanie na panelu, zamknij połączone aplikacje biurka i spróbuj ponownie.",
       "pairing_unsupported": "Wybrany adapter lub proxy Bluetooth nie obsługuje jawnego parowania. Użyj zgodnego adaptera lub zaktualizowanego proxy.",
-      "connection_lost": "Połączenie Bluetooth zostało zerwane podczas sprawdzania biurka. Włącz parowanie na panelu i spróbuj ponownie."
+      "connection_lost": "Połączenie Bluetooth zostało zerwane podczas sprawdzania biurka. Włącz parowanie na panelu i spróbuj ponownie.",
+      "pairing_agent_unavailable": "Home Assistant nie mógł przygotować lokalnego parowania Bluetooth. Sprawdź usługę Bluetooth hosta i uprawnienia D-Bus, a następnie spróbuj ponownie."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",

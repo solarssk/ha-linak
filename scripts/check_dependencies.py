@@ -29,16 +29,16 @@ def expected_components() -> str:
 
 
 def expected_audit(component_text: str) -> str:
-    # HA controls these versions. Gate only the connector directly imported by this integration,
+    # HA controls these versions. Gate direct integration imports,
     # plus independently maintained tools; full HA transitive auditing is not claimed.
-    connector = next(
+    direct = [
         line
         for line in component_text.splitlines()
-        if line.startswith("bleak-retry-connector==")
-    )
+        if line.startswith(("bleak-retry-connector==", "dbus-fast=="))
+    ]
     return (
         "# Generated direct dependency audit scope; not the complete HA dependency graph.\n-r ../requirements-tools.txt\n-r requirements-locker.txt\n"
-        + connector
+        + "\n".join(direct)
         + "\n"
     )
 

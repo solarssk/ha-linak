@@ -13,6 +13,7 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
+from .pairing import BlueZAgentUnavailable, pair_bluez
 from .protocol import (
     DPG_UUID,
     HEIGHT_UUID,
@@ -47,6 +48,10 @@ class DeskLinkLost(ConnectionError):
 
 class DeskAuthenticationError(ConnectionError):
     """Bluetooth authentication was rejected or failed."""
+
+
+class DeskPairingAgentError(ConnectionError):
+    """The local host cannot provide a scoped BlueZ pairing agent."""
 
 
 class DeskPairingUnsupported(ConnectionError):
@@ -139,11 +144,13 @@ class DeskClient:
     def _position(self, generation: int, data: bytearray) -> None:
         if generation != self._generation:
             return
+        was_ready = self._ready
         try:
             self.state.position = decode_position(bytes(data))
         except ValueError:
             self._ready = False
-        self.changed()
+        if was_ready:
+            self.changed()
 
     async def _io[T](self, operation: Coroutine[Any, Any, T], budget: float) -> T:
         """Own one operation; distinguish link loss from caller cancellation."""
@@ -184,7 +191,16 @@ class DeskClient:
             _LOGGER.debug("BLE authentication is managed by CoreBluetooth")
             return
         try:
-            await self._io(self.client.pair(), PAIR_TIMEOUT)
+            operation = (
+                pair_bluez(self.device.address)
+                if self.client.backend_id == BleakBackend.BLUEZ_DBUS
+                else self.client.pair()
+            )
+            await self._io(operation, PAIR_TIMEOUT)
+        except BlueZAgentUnavailable:
+            raise DeskPairingAgentError(
+                "Local Bluetooth pairing agent unavailable"
+            ) from None
         except NotImplementedError:
             raise DeskPairingUnsupported("Backend does not support pairing") from None
         except TimeoutError:

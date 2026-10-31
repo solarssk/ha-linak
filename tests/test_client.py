@@ -15,7 +15,7 @@ CAPTURE = json.loads(
 
 
 class FakeBleak:
-    backend_id = "bluez_dbus"
+    backend_id = "bleak_esphome"
 
     def __init__(self):
         self.is_connected = True
@@ -285,12 +285,23 @@ async def test_pairing_precedes_notifications_for_local_and_proxy_backends(backe
     fake = AuthenticatedBleak()
     fake.backend_id = backend
     desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
-    with patch(
-        "custom_components.ha_linak.client.establish_connection",
-        AsyncMock(return_value=fake),
+
+    async def pair_local(address):
+        assert address == desk.device.address
+        await fake.pair()
+
+    with (
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            AsyncMock(return_value=fake),
+        ),
+        patch(
+            "custom_components.ha_linak.client.pair_bluez", side_effect=pair_local
+        ) as local,
     ):
         await desk.refresh()
         await desk.refresh()
+    assert local.await_count == (1 if backend == "bluez_dbus" else 0)
     assert fake.paired
     assert desk.connected
     await desk.disconnect()
@@ -497,3 +508,61 @@ async def test_cleanup_failure_preserves_original_authentication_error_and_redac
     assert "BLE cleanup failed: BleakError" in caplog.text
     assert "Private" not in caplog.text
     assert "AA:BB:CC:DD:EE:FF" not in caplog.text
+
+
+async def test_initial_height_notification_does_not_publish_incomplete_state():
+    from unittest.mock import AsyncMock
+
+    changes = []
+
+    class EarlyPosition(FakeBleak):
+        async def start_notify(self, uuid, callback):
+            await super().start_notify(uuid, callback)
+            if uuid == HEIGHT_UUID:
+                callback(None, bytearray.fromhex("9e050000"))
+
+    desk = DeskClient(
+        BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}),
+        lambda: changes.append(desk.connected),
+    )
+    fake = EarlyPosition()
+    with patch(
+        "custom_components.ha_linak.client.establish_connection",
+        AsyncMock(return_value=fake),
+    ):
+        await desk.refresh()
+    assert desk.connected
+    assert changes == []
+    fake.callbacks[HEIGHT_UUID](None, bytearray.fromhex("e8030000"))
+    assert changes == [True]
+    fake.callbacks[HEIGHT_UUID](None, bytearray(b"\x00"))
+    assert changes == [True, False]
+    await desk.disconnect()
+
+
+async def test_bluez_agent_failure_is_distinct_and_releases_transport():
+    from unittest.mock import AsyncMock
+    from custom_components.ha_linak.client import DeskPairingAgentError
+    from custom_components.ha_linak.pairing import BlueZAgentUnavailable
+
+    fake = FakeBleak()
+    fake.backend_id = "bluez_dbus"
+    fake.pair = AsyncMock()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+    with (
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            AsyncMock(return_value=fake),
+        ),
+        patch(
+            "custom_components.ha_linak.client.pair_bluez",
+            AsyncMock(side_effect=BlueZAgentUnavailable("private address")),
+        ),
+        pytest.raises(DeskPairingAgentError) as error,
+    ):
+        await desk.refresh()
+    assert "private" not in str(error.value)
+    assert desk.stage == "pairing"
+    assert not fake.is_connected
+    assert fake.writes == []
+    fake.pair.assert_not_awaited()

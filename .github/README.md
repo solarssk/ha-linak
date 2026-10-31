@@ -154,12 +154,12 @@ The discovery card shows **LINAK · your desk name**. The internal integration d
 3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
 4. Select this custom integration, domain **`ha_linak`**, then choose your desk.
 
-Version **0.1.0a3** authenticates before reading. Setup distinguishes pairing failures, unsupported proxy pairing and lost connections. This change still needs Raspberry Pi/proxy hardware validation.
+Version **0.1.0a4** adds a temporary local BlueZ pairing agent. Setup distinguishes unavailable local pairing, rejected authentication, unsupported proxy pairing and lost connections. Automatic first pairing still needs hardware validation.
 
 After submitting, HA shows a progress screen. The attempt has a **60-second** limit; releasing the connection can take another **10 seconds**. A failed attempt shows a reason and lets you retry. [First setup and diagnosis →](../docs/onboarding.md)
 
 > [!TIP]
-> The panel accepts one Bluetooth connection at a time. If setup fails, check that another app is not connected. A local adapter may also need pairing on the HA host.
+> The panel accepts one Bluetooth connection at a time. If setup fails, check that another app is not connected. Local pairing is handled during setup; a host Bluetooth or D-Bus problem has a separate error message.
 
 <details>
 <summary>About this alpha and the built-in LINAK entry</summary>
@@ -193,7 +193,8 @@ Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then re
 
 - **Physical DPG1C:** seven read queries verified through macOS CoreBluetooth.
 - **Home Assistant 2026.10.4 with simulated Bluetooth:** setup, sensor, disconnect/recovery and unloading tests.
-- **Raspberry Pi and ESPHome proxy:** real-device integration testing pending.
+- **Raspberry Pi:** reads and reconnect after manual pairing observed; automatic first pairing remains pending.
+- **ESPHome proxy:** hardware validation pending.
 
 This describes environment validation, not supported panel models. [Full results →](../docs/hardware-results.md)
 

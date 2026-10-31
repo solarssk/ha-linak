@@ -12,13 +12,13 @@ A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. End-to-end Raspberry Pi and proxy validation is still in progress. Movement, Stop and changing panel settings are not available yet.
+> **Read-only alpha.** Desk reads have been verified on one DPG1C using a Mac. Raspberry Pi reads worked after manual pairing. Automatic first pairing and proxy validation are still in progress. Movement, Stop and changing panel settings are not available yet.
 
 ![Illustration of sensor values, not a Home Assistant screenshot](docs/assets/desk-overview-en.svg)
 
 ## 📏 What you can see
 
-- **A clear height reading:** centimeters above the floor, using the panel's own offset.
+- **A clear height reading:** centimeters using the height reference stored on the panel.
 - **Your desk's saved positions:** see the heights already stored on the panel.
 - **Reminder settings in one place:** check the selected profile and configured intervals.
 
@@ -70,7 +70,7 @@ Check the displayed error and the `ha_linak` log. For a report, include your HA/
 
 **DPG1C is the initial hardware target.** Seven extended read queries were checked on one physical panel through macOS CoreBluetooth. Setup, sensors, pairing errors and recovery are also tested inside Home Assistant with simulated Bluetooth.
 
-Real Raspberry Pi and ESPHome proxy validation is still ongoing. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
+Raspberry Pi reads and reconnects were observed after manual host pairing. The new automatic first-pairing path and ESPHome proxy validation remain pending. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
 
 Next comes reliable height control in **centimeters**, Stop and saved-position controls, after supervised hardware tests. These controls are not included in this alpha. [Follow the roadmap →](docs/roadmap.md)
 

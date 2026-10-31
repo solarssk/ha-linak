@@ -154,12 +154,12 @@ Karta wykrytego biurka pokazuje **LINAK · nazwę biurka**. Wewnętrzna domena i
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
-Wersja **0.1.0a3** uwierzytelnia połączenie przed odczytami. Konfiguracja rozróżnia błąd parowania, brak jego obsługi w proxy i zerwanie połączenia. Ta zmiana wymaga jeszcze testu na Malinie i proxy.
+Wersja **0.1.0a4** dodaje tymczasowego agenta parowania lokalnego BlueZ. Konfiguracja rozróżnia niedostępność lokalnego parowania, odrzucone uwierzytelnienie, brak obsługi parowania w proxy i zerwanie połączenia. Automatyczne pierwsze parowanie wymaga jeszcze testu na sprzęcie.
 
 Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a zwolnienie połączenia może potrwać kolejne **10 sekund**. Błąd pokazuje przyczynę i pozwala ponowić próbę. [Pierwsza konfiguracja i diagnostyka →](../docs/onboarding.md)
 
 > [!TIP]
-> Panel przyjmuje jedno połączenie Bluetooth naraz. Jeśli konfiguracja się nie udaje, sprawdź, czy nie jest połączona inna aplikacja. Lokalny adapter może też wymagać parowania na hoście HA.
+> Panel przyjmuje jedno połączenie Bluetooth naraz. Jeśli konfiguracja się nie udaje, sprawdź, czy nie jest połączona inna aplikacja. Lokalne parowanie odbywa się podczas konfiguracji; problem z usługą Bluetooth lub uprawnieniami D-Bus ma osobny komunikat.
 
 <details>
 <summary>O wersji alfa i wbudowanym wpisie LINAK</summary>
@@ -193,7 +193,8 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 - **Fizyczny DPG1C:** siedem zapytań odczytu sprawdzonych przez macOS CoreBluetooth.
 - **Home Assistant 2026.10.4 z symulowanym Bluetooth:** testy konfiguracji, czujników, utraty i odzyskania połączenia oraz wyładowania integracji.
-- **Malina i proxy ESPHome:** test działania integracji na rzeczywistym sprzęcie do wykonania.
+- **Malina:** zaobserwowano odczyty i ponowne połączenie po ręcznym parowaniu; automatyczne pierwsze parowanie wymaga jeszcze testu.
+- **Proxy ESPHome:** test sprzętowy do wykonania.
 
 To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](../docs/hardware-results.md)
 

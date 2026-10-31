@@ -1,5 +1,6 @@
 """Device-restricted BlueZ Just Works pairing on a temporary application bus."""
 
+from contextlib import ExitStack
 from typing import Any
 
 from bleak.exc import BleakError
@@ -70,43 +71,39 @@ async def pair_bluez(address: str) -> None:
     RequestDefaultAgent is deliberately never used. BlueZ may make its first
     registered agent a temporary fallback; other device paths are rejected.
     """
-    bus: MessageBus | None = None
     try:
-        bus = MessageBus(bus_type=BusType.SYSTEM)
-        await bus.connect()
-        objects = (
+        with ExitStack() as cleanup:
+            bus = MessageBus(bus_type=BusType.SYSTEM)
+            cleanup.callback(bus.disconnect)
+            await bus.connect()
+            objects = (
+                await _call(
+                    bus, "/", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects"
+                )
+            )[0]
+            candidates = [
+                (path, interfaces[DEVICE])
+                for path, interfaces in objects.items()
+                if DEVICE in interfaces
+                and interfaces[DEVICE].get("Address") is not None
+                and interfaces[DEVICE]["Address"].value.upper() == address.upper()
+                and interfaces[DEVICE].get("Connected") is not None
+                and interfaces[DEVICE]["Connected"].value
+            ]
+            if len(candidates) != 1:
+                raise BlueZAgentUnavailable("Cannot identify one connected BlueZ desk")
+            path, properties = candidates[0]
+            if properties.get("Paired") is not None and properties["Paired"].value:
+                return
+            bus.export(AGENT_PATH, DeskAgent(path))
             await _call(
-                bus, "/", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects"
+                bus,
+                "/org/bluez",
+                "org.bluez.AgentManager1",
+                "RegisterAgent",
+                signature="os",
+                body=[AGENT_PATH, "NoInputNoOutput"],
             )
-        )[0]
-        candidates = [
-            (path, interfaces[DEVICE])
-            for path, interfaces in objects.items()
-            if DEVICE in interfaces
-            and interfaces[DEVICE].get("Address") is not None
-            and interfaces[DEVICE]["Address"].value.upper() == address.upper()
-            and interfaces[DEVICE].get("Connected") is not None
-            and interfaces[DEVICE]["Connected"].value
-        ]
-        if len(candidates) != 1:
-            raise BlueZAgentUnavailable("Cannot identify one connected BlueZ desk")
-        path, properties = candidates[0]
-        if properties.get("Paired") is not None and properties["Paired"].value:
-            return
-        bus.export(AGENT_PATH, DeskAgent(path))
-        await _call(
-            bus,
-            "/org/bluez",
-            "org.bluez.AgentManager1",
-            "RegisterAgent",
-            signature="os",
-            body=[AGENT_PATH, "NoInputNoOutput"],
-        )
-        await _call(bus, path, DEVICE, "Pair")
+            await _call(bus, path, DEVICE, "Pair")
     except OSError, DBusFastError:
         raise BlueZAgentUnavailable("BlueZ pairing service unavailable") from None
-    finally:
-        # BlueZ removes application agents when their bus connection disappears,
-        # including failure, timeout and cancellation. No existing default is replaced.
-        if bus is not None:
-            bus.disconnect()

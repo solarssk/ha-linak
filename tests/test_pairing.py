@@ -182,9 +182,13 @@ async def test_timeout_closes_pairing_bus(bus):
         return await original(message)
 
     transport.call.side_effect = call
-    with pytest.raises(TimeoutError):
+
+    async def limited_pair():
         async with asyncio.timeout(0.01):
             await pair_bluez(ADDRESS)
+
+    with pytest.raises(TimeoutError):
+        await limited_pair()
     transport.disconnect.assert_called_once()
 
 

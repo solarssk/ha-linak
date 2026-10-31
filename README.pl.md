@@ -1,17 +1,15 @@
 ![LINAK](docs/assets/linak-logo.svg)
 
-# LINAK dla Home Assistant
+# Biurka LINAK w Home Assistant
 
-**Ustawiaj wysokość biurka w centymetrach z Home Assistanta.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
+Steruj biurkiem z regulacją wysokości i panelem LINAK **DPG1C** z Home Assistanta przez Bluetooth. Wybieraj wysokość w centymetrach, korzystaj z zapisanych pozycji i sprawdzaj ustawienia przypomnień.
 
 🇬🇧 [English](README.md) · 🇵🇱 **Polski**
 
-[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](hacs.json)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
-
-![Poglądowy układ czujników, przykładowe wartości](docs/assets/desk-overview-pl.svg)
 
 ## 📏 Co zobaczysz
 
@@ -51,15 +49,13 @@ Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka po
 
 ### Sterowanie
 
-| Typ encji | Nazwa w HA | Działanie |
-| --- | --- | --- |
-| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
-| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
-| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
+- 🎚️ **Wysokość zadana** (`number`, cm): wybierz wysokość biurka suwakiem
+- ⏹️ **Stop** (`button`): zatrzymaj bieżący ruch
+- 🔖 **Przejdź do zapisanej pozycji 1–4** (`button`): jedź do pozycji zapisanej na panelu
 
 Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a przyciskiem **Stop** zatrzymaj jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
 
-Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](docs/controls.md).
+Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](docs/controls.md).
 
 Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 
@@ -74,10 +70,10 @@ Integracja działa bezpośrednio na urządzeniu z HA. Nie wymaga Maca ani osobne
 ## 🚀 Instalacja i połączenie
 
 1. W HACS dodaj `https://github.com/solarssk/ha-linak` jako własne repozytorium typu **Integracja / Integration**.
-2. Pobierz **LINAK**, a następnie uruchom ponownie Home Assistant.
+2. Pobierz **LINAK Desks**, a następnie uruchom ponownie Home Assistant.
 3. Zamknij aplikacje telefonu połączone z biurkiem i wyłącz integrację Idasen używającą tego samego biurka.
 4. Włącz **parowanie Bluetooth** na panelu.
-5. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację**. Wyszukaj **LINAK**, wybierz tę integrację niestandardową (`ha_linak`), a następnie swoje biurko. Możesz też użyć karty wykrytego urządzenia.
+5. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację**. Wyszukaj **Biurka LINAK**, a następnie wybierz swoje biurko. Możesz też użyć karty wykrytego urządzenia.
 
 Konfiguracja łączy się, uwierzytelnia i odczytuje panel. Poczekaj do **60 sekund**, a po błędzie do kolejnych **10 sekund** na zwolnienie połączenia. Nieudana próba pokaże przyczynę i pozwoli spróbować ponownie.
 

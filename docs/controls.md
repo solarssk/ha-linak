@@ -6,7 +6,7 @@ The device page includes a height slider in centimeters, Stop and buttons for po
 
 New onboarding asks for the desk's measured minimum and maximum heights, then rechecks the desk before saving them. Use the same centimeter reference as the Height reading and compare it against the panel and a physical measurement. Do not infer the range from favourites or probe mechanical extremes automatically.
 
-For an existing installation, update through HACS, restart HA and open Settings → Devices & services → LINAK → Configure to fill in the range. Use the same page to change it later. There is no movement-enable switch or extra confirmation step. Saving the range does not move the desk or program firmware limits or offset.
+For an existing installation, update through HACS, restart HA and open Settings → Devices & services → LINAK Desks → Configure to fill in the range. Use the same page to change it later. There is no movement-enable switch or extra confirmation step. Saving the range does not move the desk or program firmware limits or offset.
 
 All control entities are registered by default. Stop works with a ready connection even before the range is filled in. The slider and saved-position travel need the range; on an older entry they remain unavailable until it is supplied. Empty memory slots are unavailable. Existing sensor, diagnostic and control unique IDs are preserved.
 

@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-<h1 align="center">LINAK for Home Assistant</h1>
+<h1 align="center">LINAK Desks for Home Assistant</h1>
 
 <p align="center">
   <strong>Your LINAK desk in Home Assistant.<br>Height control in centimeters, saved positions and reminders.</strong><br>
@@ -128,7 +128,7 @@ Enable optional entities under **Settings → Devices & services → Entities**,
 
 The slider shows the current desk height. Move it to choose a new height, and press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
 
-Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](../docs/controls.md).
+Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](../docs/controls.md).
 
 Offset changes, saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md). Offset is still read-only diagnostics.
 
@@ -156,7 +156,7 @@ Raspberry Pi and proxy validation are covered [separately](#validation).
    https://github.com/solarssk/ha-linak
    ```
 
-3. Download **LINAK** and restart Home Assistant.
+3. Download **LINAK Desks** and restart Home Assistant.
 
 <details>
 <summary>Prefer manual installation?</summary>
@@ -173,7 +173,7 @@ The discovery card shows **LINAK · your desk name**. The internal integration d
 
 1. Close the phone app. Disable any IKEA Idasen Desk integration using the same desk.
 2. Put the panel in **Bluetooth pairing mode**.
-3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
+3. Open **Settings → Devices & services → Add integration** and search for **LINAK Desks**, or use the discovered-device card.
 4. Select this custom integration, domain **`ha_linak`**, then choose your desk.
 
 Discovery uses the desk name and a short address suffix, such as **Office desk (EEFF)**, without a repeated LINAK prefix. If the name is not cached yet it shows **LINAK (EEFF)**. After connecting, its Bluetooth name can improve device metadata; a device name you set in HA takes precedence.

@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-<h1 align="center">LINAK dla Home Assistant</h1>
+<h1 align="center">Biurka LINAK w Home Assistant</h1>
 
 <p align="center">
   <strong>Twoje biurko LINAK w Home Assistant.<br>Aktualna wysokość w centymetrach, zapisane wysokości i przypomnienia.</strong><br>
@@ -128,7 +128,7 @@ Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**
 
 Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a przyciskiem **Stop** zatrzymaj jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
 
-Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
+Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
 
 Zmiana offsetu, zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md). Offset jest nadal wyłącznie odczytywany w diagnostyce.
 
@@ -156,7 +156,7 @@ Stan testów na Malinie i przez proxy opisujemy [osobno](#validation).
    https://github.com/solarssk/ha-linak
    ```
 
-3. Pobierz **LINAK** i uruchom ponownie Home Assistant.
+3. Pobierz **LINAK Desks** i uruchom ponownie Home Assistant.
 
 <details>
 <summary>Wolisz instalację ręczną?</summary>
@@ -173,7 +173,7 @@ Karta wykrytego biurka pokazuje **LINAK · nazwę biurka**. Wewnętrzna domena i
 
 1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka.
 2. Włącz **tryb parowania Bluetooth** na panelu.
-3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
+3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **Biurka LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
 Karta wykrywania używa nazwy biurka i krótkiej końcówki adresu, np. **Office desk (EEFF)**, zamiast powtórzonego LINAK. Gdy nazwa nie jest jeszcze dostępna, pokazuje **LINAK (EEFF)**. Po połączeniu może uzupełnić nazwę urządzenia z odczytu Bluetooth; nazwa urządzenia nadana przez Ciebie w HA ma pierwszeństwo.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Clarify required HA coroutine hooks and simplify test setup/assertions to address existing Sonar findings without changing device behavior.
 - Group sensors, diagnostics and controls in one entity section across GitHub/HACS READMEs; link the native HA test procedure.
 - Add a standalone supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions.
 - Record manufacturer settings/variant evidence, pinned community protocol candidates, protected offset calibration and post-install configuration requirements for the next control milestones.

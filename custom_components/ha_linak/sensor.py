@@ -2,7 +2,9 @@
 
 from datetime import datetime, timedelta
 
-from homeassistant.core import callback
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.components.sensor import (
     SensorEntity,
@@ -20,7 +22,10 @@ from .coordinator import LinakCoordinator
 from .entity import LinakEntity
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+# HA requires this coroutine hook even when constructing entities needs no I/O.
+async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
+    _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     coordinator = entry.runtime_data
     entities: list[SensorEntity] = [
         LinakSensor(coordinator, "height"),

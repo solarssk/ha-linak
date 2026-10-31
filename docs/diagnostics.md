@@ -35,3 +35,7 @@ Tests use synthetic Bluetooth, device/entity registries and failure/recovery in 
 - [Entity categories](https://contributors.home-assistant.io/core/quality-scale/entity-category/)
 - [Device registry](https://contributors.home-assistant.io/core/integrations/device-registry/)
 - [Bluetooth integration APIs](https://contributors.home-assistant.io/core/integrations/bluetooth/)
+
+## HA hook contract
+
+Home Assistant requires coroutine entry points for platform setup and diagnostic downloads even when they only construct entities or read cached coordinator data. These functions retain `async` without artificial I/O. The required hook declarations carry a narrow S7503 annotation; unused framework parameters use an underscore prefix. This does not disable analysis elsewhere or change Bluetooth behavior.

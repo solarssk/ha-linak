@@ -2,8 +2,14 @@
 
 from dataclasses import asdict
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 
-async def async_get_config_entry_diagnostics(hass, entry):
+
+# HA requires this coroutine hook even though diagnostics read only cached data.
+async def async_get_config_entry_diagnostics(  # NOSONAR(S7503) HA coroutine contract
+    _hass: HomeAssistant, entry: ConfigEntry
+) -> dict[str, object]:
     coordinator = entry.runtime_data
     # Omit entry data, title and BLE objects entirely: these contain identifiers.
     return {

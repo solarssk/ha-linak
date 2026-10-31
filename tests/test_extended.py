@@ -42,8 +42,10 @@ class ExtendedTests(unittest.TestCase):
             (protocol.decode_reminders, "010b20370a2d0f86880000"),
         ]
         for decoder, frame in cases:
-            with self.subTest(frame=frame), self.assertRaises(ValueError):
-                decoder(bytes.fromhex(frame))
+            with self.subTest(frame=frame):
+                payload = bytes.fromhex(frame)
+                with self.assertRaises(ValueError):
+                    decoder(payload)
 
 
 if __name__ == "__main__":

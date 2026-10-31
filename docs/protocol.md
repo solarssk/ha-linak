@@ -38,3 +38,13 @@ Do not treat a successful GATT write as a successful query. Correlate and valida
 Speed interpretation differs between community implementations. Preserve the raw word until direction, flags and units are verified against hardware.
 
 No public downloadable DESKLINE SDK or complete public GATT specification was found. SDK availability and open-source redistribution terms remain unknown.
+
+## Optional standard device metadata
+
+Version 0.1.0a6 can read GAP Device Name (`00002a00-0000-1000-8000-00805f9b34fb`)
+after pairing when the cached BLE name is only an address or generic fallback.
+The service inventory must expose that characteristic as readable. It is a normal
+GATT read, not an extended DPG command or a name/setting write. Missing or denied
+metadata keeps the fallback. Name bytes are decoded as printable UTF-8 and kept
+out of DeskState/downloaded diagnostics. Tests simulate this path; automatic
+name repair on the owner's installation remains to be checked.

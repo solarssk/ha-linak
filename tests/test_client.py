@@ -2,6 +2,7 @@
 
 import json
 import asyncio
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 import pytest
@@ -18,6 +19,7 @@ class FakeBleak:
     backend_id = "bleak_esphome"
 
     def __init__(self):
+        self.services = SimpleNamespace(get_characteristic=lambda _: None)
         self.is_connected = True
         self.callbacks = {}
         self.writes = []

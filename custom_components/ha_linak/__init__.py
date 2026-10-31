@@ -5,7 +5,7 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant
 
 from .coordinator import LinakCoordinator
-from .naming import desk_name
+from .naming import DEFAULT_NAME, desk_name
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -38,10 +38,18 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 def _repair_title(
     hass: HomeAssistant, entry: ConfigEntry, coordinator: LinakCoordinator
 ) -> None:
-    """Replace a title that was saved as the bare address."""
-    address = coordinator.address
-    if entry.title.upper() != address.upper() or coordinator.desk is None:
+    """Improve generated device metadata without guessing ownership of LINAK titles."""
+    if coordinator.desk is None:
         return
-    name = desk_name(address, coordinator.desk.device.name)
-    hass.config_entries.async_update_entry(entry, title=name)
-    coordinator.name = name
+    address = coordinator.address
+    name = desk_name(
+        address, coordinator.desk.device_name, coordinator.desk.device.name
+    )
+    if entry.title.upper() == address.upper():
+        hass.config_entries.async_update_entry(entry, title=name)
+        coordinator.name = name
+    elif entry.title == DEFAULT_NAME and name != DEFAULT_NAME:
+        # Older LINAK titles might have been explicitly chosen. Preserve the
+        # config-entry title, but improve the device's integration-supplied name.
+        # HA's device name_by_user always takes precedence over this metadata.
+        coordinator.name = name

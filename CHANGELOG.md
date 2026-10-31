@@ -28,6 +28,16 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
+## 0.1.0a6 — unpublished alpha
+
+- Show the native desk name with a short address suffix on discovery cards, using the same naming helper as HA Idasen and removing the repeated LINAK prefix.
+- Resolve cached discovery/device names consistently for cards, selection and entry titles; generic LINAK/address fallbacks do not hide native names.
+- Read optional standard GAP Device Name after pairing when cached naming is unavailable, and improve an existing fallback device name without changing user device names, existing LINAK entry titles, entity IDs or bonds.
+
+### Adopter action
+
+- Redownload and restart HA. Keep the existing integration and pairing; the device name can improve during setup. A discovery card can still use LINAK plus a short suffix until a native name is available. Physical naming behavior needs validation.
+
 ## 0.1.0a5 — unpublished alpha
 
 - Show stored heights and reminder profiles as regular desk sensors; retain height offset as a diagnostic parameter without changing existing entity IDs.

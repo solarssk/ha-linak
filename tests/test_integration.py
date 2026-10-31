@@ -337,7 +337,7 @@ async def test_discovery_requires_confirmation_before_connection(hass):
         assert result["type"] == "form"
         assert hass.config_entries.flow.async_get(result["flow_id"])["context"][
             "title_placeholders"
-        ] == {"name": "Desk"}
+        ] == {"name": "Desk (EEFF)"}
         connect.assert_not_awaited()
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_ADDRESS: ADDRESS}

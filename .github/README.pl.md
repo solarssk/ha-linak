@@ -163,6 +163,8 @@ Karta wykrytego biurka pokazuje **LINAK · nazwę biurka**. Wewnętrzna domena i
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
+Karta wykrywania używa nazwy biurka i krótkiej końcówki adresu, np. **Office desk (EEFF)**, zamiast powtórzonego LINAK. Gdy nazwa nie jest jeszcze dostępna, pokazuje **LINAK (EEFF)**. Po połączeniu może uzupełnić nazwę urządzenia z odczytu Bluetooth; nazwa urządzenia nadana przez Ciebie w HA ma pierwszeństwo.
+
 Wersja **0.1.0a4** dodaje tymczasowego agenta parowania lokalnego BlueZ. Konfiguracja rozróżnia niedostępność lokalnego parowania, odrzucone uwierzytelnienie, brak obsługi parowania w proxy i zerwanie połączenia. Automatyczne pierwsze parowanie wymaga jeszcze testu na sprzęcie.
 
 Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a zwolnienie połączenia może potrwać kolejne **10 sekund**. Błąd pokazuje przyczynę i pozwala ponowić próbę. [Pierwsza konfiguracja i diagnostyka →](../docs/onboarding.md)

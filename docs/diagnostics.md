@@ -49,7 +49,11 @@ loaded integration; first-onboarding failures still use the setup error/logs.
 
 ## Local identity and safe downloads
 
-The device registry contains its configured name and Bluetooth address. Separate
+The device registry contains its configured name and Bluetooth address. A native
+name obtained from cached HA metadata or the optional GAP Device Name read can
+replace an integration-supplied LINAK fallback. Explicit device name_by_user is
+preserved; an existing LINAK config-entry title is not assumed to be user-owned
+or automatically renamed. Separate
 name/MAC sensors would duplicate this metadata and create unnecessary history.
 The address supplements the existing device identifier without changing entity
 unique IDs. Local device metadata can therefore identify the desk to its owner.

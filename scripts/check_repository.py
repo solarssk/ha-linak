@@ -25,6 +25,7 @@ def main():
     )
     assert manifest["requirements"] == [
         "bleak-retry-connector>=4.7.1",
+        "bluetooth-data-tools>=1.29.24",
         "dbus-fast>=5.0.22",
     ]
     assert manifest["codeowners"] == ["@solarssk"]

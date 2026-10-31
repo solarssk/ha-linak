@@ -13,11 +13,27 @@
 5. Home Assistant then starts the entry, opens the runtime connection and loads
    the sensors. A transient failure here enters HA's setup-retry state.
 
-The entry is titled with the name the desk advertises. When Home Assistant only
-knows the Bluetooth address, which it then reports as the name, the setup flow
-uses the current device name and otherwise `LINAK`. An existing entry whose title
-is only the address is renamed once on the next setup; titles you chose yourself
-are never changed.
+Discovery uses the native name and a short address suffix, matching the Idasen
+presentation: `Office desk (EEFF)`. The flow checks current HA connectable metadata
+and BLEDevice names as well as the original discovery snapshot. Generic `LINAK`
+and address-only names do not hide a usable native name. Discovery does not
+connect, request an active scan or read GATT solely to obtain a card title. If no
+native name is cached yet, the card shows `LINAK (EEFF)`.
+
+During the already-authorized connection, after pairing, a desk whose cached name
+is still a fallback can supply its standard GAP Device Name characteristic
+(0x2A00). The client reads it once per connection only if it exists and is readable.
+Missing, denied or malformed names retain the fallback; transport loss and read
+timeout still invalidate the session. This optional metadata phase is named
+`device_name`, has the existing 10-second I/O limit inside the total 60-second
+attempt, and sends no DPG settings writes. Raw names are never put in logs or the
+diagnostic state object.
+
+A new entry uses the resolved native name after validation. Existing address-only
+entry titles are repaired as before. An older entry titled exactly `LINAK` retains
+its title because its origin may be ambiguous, while its device-registry name is
+improved when a native name is available. Other entry titles and HA's explicit
+device name_by_user are preserved. Existing entity IDs and bonds are unchanged.
 
 Discovery alone does not prove a usable GATT connection. The panel accepts one
 connection at a time; the phone app or another desk integration may hold it.
@@ -47,7 +63,7 @@ updated adapter/proxy information. Passive-only discovery is not accepted.
 ## Diagnosis
 
 A failed validation writes a `ha_linak` warning containing a stage and error code:
-`device_lookup`, `connection`, `pairing`, `notify_dpg`, `notify_height`, `extended_reads`, `position_read`, or `disconnect`.
+`device_lookup`, `connection`, `pairing`, `device_name`, `notify_dpg`, `notify_height`, `extended_reads`, `position_read`, or `disconnect`.
 Warnings for expected failures omit the desk name, Bluetooth address and raw
 exception message. The UI distinguishes timeout, connection failure, unsupported
 responses and unexpected errors. Unexpected errors retain a traceback for diagnosis.

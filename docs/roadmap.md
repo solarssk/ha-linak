@@ -7,5 +7,4 @@
 5. Later: device settings only with separate protocol evidence, preservation of unrelated bits and readback verification.
 6. First external alpha: hardware results, versioned GitHub Release, HACS installation verification and release milestone. No default-catalog or official quality-scale acceptance is claimed.
 
-The project adopts the playbook Tier 2 baseline. HACS is the distribution method;
-Home Assistant runs directly on the Raspberry Pi, without a Mac bridge.
+The project adopts the playbook Tier 2 baseline. HACS is the distribution method; Home Assistant runs directly on the Raspberry Pi, without a Mac bridge.

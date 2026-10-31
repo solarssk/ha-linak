@@ -74,38 +74,14 @@ Required regression cases include disconnect during each subscription, authentic
 
 ## Implemented follow-up (0.1.0a3)
 
-The client now explicitly pairs before subscribing, except on the public
-CoreBluetooth backend IDs where authentication is OS-managed. Pairing is bounded
-and failures are classified. HA's bluetooth_adapters dependency replaces the
-Bluetooth-only startup dependency. Pending I/O is cancelled on the current
-transport's disconnect callback; caller cancellation and transport cleanup remain
-separate. Simulated tests cover the changes. This implements the software part of
-step 2 above, without GATT-property preflight or application settings writes;
-hardware validation and any manufacturer-specific initialization remain open.
+The client now explicitly pairs before subscribing, except on the public CoreBluetooth backend IDs where authentication is OS-managed. Pairing is bounded and failures are classified. HA's bluetooth_adapters dependency replaces the Bluetooth-only startup dependency. Pending I/O is cancelled on the current transport's disconnect callback; caller cancellation and transport cleanup remain separate. Simulated tests cover the changes. This implements the software part of step 2 above, without GATT-property preflight or application settings writes; hardware validation and any manufacturer-specific initialization remain open.
 
-The [ESPHome backend pair implementation](https://github.com/bluetooth-devices/bleak-esphome/blob/main/src/bleak_esphome/backend/client.py)
-checks proxy pairing support and can raise NotImplementedError. That receives a
-specific setup error; the integration does not disable adapter routing globally.
+The [ESPHome backend pair implementation](https://github.com/bluetooth-devices/bleak-esphome/blob/main/src/bleak_esphome/backend/client.py) checks proxy pairing support and can raise NotImplementedError. That receives a specific setup error; the integration does not disable adapter routing globally.
 
 ## BlueZ agent follow-up (2026-10-31)
 
-Private HCI and host-log diagnostics identified a local pairing exchange rejected
-because BlueZ had no confirmation agent. Manual NoInputNoOutput pairing then
-allowed read-only HA operation. This establishes a local authentication problem;
-it does not explain every earlier proxy disconnection. See the sanitized outcome
-in [hardware results](hardware-results.md).
+Private HCI and host-log diagnostics identified a local pairing exchange rejected because BlueZ had no confirmation agent. Manual NoInputNoOutput pairing then allowed read-only HA operation. This establishes a local authentication problem; it does not explain every earlier proxy disconnection. See the sanitized outcome in [hardware results](hardware-results.md).
 
-The implementation in 0.1.0a4 follows the public BlueZ
-[AgentManager API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.AgentManager.rst)
-and [Agent API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.Agent.rst).
-The [agent implementation](https://github.com/bluez/bluez/blob/master/src/agent.c)
-selects an agent by caller identity, makes the first registered agent a default
-fallback, and removes agents on caller disconnect. The
-[device implementation](https://github.com/bluez/bluez/blob/master/src/device.c)
-selects that caller's agent for Pair and watches for requester exit to cancel
-unfinished bonding. Both registration and Pair therefore use the same short-lived
-bus. The agent rejects any other device path and does not call RequestDefaultAgent.
+The implementation in 0.1.0a4 follows the public BlueZ [AgentManager API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.AgentManager.rst) and [Agent API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.Agent.rst). The [agent implementation](https://github.com/bluez/bluez/blob/master/src/agent.c) selects an agent by caller identity, makes the first registered agent a default fallback, and removes agents on caller disconnect. The [device implementation](https://github.com/bluez/bluez/blob/master/src/device.c) selects that caller's agent for Pair and watches for requester exit to cancel unfinished bonding. Both registration and Pair therefore use the same short-lived bus. The agent rejects any other device path and does not call RequestDefaultAgent.
 
-This solution uses public D-Bus objects rather than private Bleak client fields.
-The dependency is HA-owned dbus-fast (tested at 5.0.22); no independent override of
-HA's pin is introduced. Physical testing of this automatic path is pending.
+This solution uses public D-Bus objects rather than private Bleak client fields. The dependency is HA-owned dbus-fast (tested at 5.0.22); no independent override of HA's pin is introduced. Physical testing of this automatic path is pending.

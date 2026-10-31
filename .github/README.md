@@ -163,6 +163,8 @@ The discovery card shows **LINAK · your desk name**. The internal integration d
 3. Open **Settings → Devices & services → Add integration** and search for **LINAK**, or use the discovered-device card.
 4. Select this custom integration, domain **`ha_linak`**, then choose your desk.
 
+Discovery uses the desk name and a short address suffix, such as **Office desk (EEFF)**, without a repeated LINAK prefix. If the name is not cached yet it shows **LINAK (EEFF)**. After connecting, its Bluetooth name can improve device metadata; a device name you set in HA takes precedence.
+
 Version **0.1.0a4** adds a temporary local BlueZ pairing agent. Setup distinguishes unavailable local pairing, rejected authentication, unsupported proxy pairing and lost connections. Automatic first pairing still needs hardware validation.
 
 After submitting, HA shows a progress screen. The attempt has a **60-second** limit; releasing the connection can take another **10 seconds**. A failed attempt shows a reason and lets you retry. [First setup and diagnosis →](../docs/onboarding.md)

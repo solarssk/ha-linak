@@ -2,8 +2,7 @@
 
 # LINAK for Home Assistant
 
-**Your desk height in centimeters, right in Home Assistant.**
-A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
+**Your desk height in centimeters, right in Home Assistant.** A native Bluetooth integration for LINAK **DPG1C**, installed through HACS.
 
 🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 
@@ -67,6 +66,8 @@ The integration runs directly on your HA host. No Mac or separate bridge is need
 5. Go to **Settings → Devices & services → Add integration**. Search for **LINAK** and select this custom integration (`ha_linak`), then choose your desk. You can also use its discovery card.
 
 Setup connects, authenticates and reads the panel. Allow up to **60 seconds**, plus **10 seconds** to release a failed connection. A failed attempt shows a reason and offers a retry.
+
+The discovery card shows the desk name and a short address suffix, such as **Office desk (EEFF)**. Without a cached name it shows **LINAK (EEFF)**. After connecting, the integration can read its Bluetooth name and improve the device name. A device name you set in HA takes precedence.
 
 There is no tagged release yet; HACS downloads the default branch. [Manual installation and detailed guide →](.github/README.md)
 

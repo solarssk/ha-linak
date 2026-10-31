@@ -2,8 +2,7 @@
 
 # LINAK dla Home Assistant
 
-**Wysokość biurka w centymetrach, bezpośrednio w Home Assistant.**
-Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
+**Wysokość biurka w centymetrach, bezpośrednio w Home Assistant.** Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
 
 🇬🇧 [English](README.md) · 🇵🇱 **Polski**
 
@@ -67,6 +66,8 @@ Integracja działa bezpośrednio na urządzeniu z HA. Nie wymaga Maca ani osobne
 5. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację**. Wyszukaj **LINAK**, wybierz tę integrację niestandardową (`ha_linak`), a następnie swoje biurko. Możesz też użyć karty wykrytego urządzenia.
 
 Konfiguracja łączy się, uwierzytelnia i odczytuje panel. Poczekaj do **60 sekund**, a po błędzie do kolejnych **10 sekund** na zwolnienie połączenia. Nieudana próba pokaże przyczynę i pozwoli spróbować ponownie.
+
+Karta wykrywania pokazuje nazwę biurka i krótką końcówkę adresu, np. **Office desk (EEFF)**. Jeśli nazwy jeszcze nie ma, używa **LINAK (EEFF)**. Po połączeniu integracja może odczytać nazwę Bluetooth i uzupełnić nazwę urządzenia. Nazwy ustawionej przez Ciebie w HA nie nadpisuje.
 
 Nie ma jeszcze wydania oznaczonego tagiem; HACS pobiera główną gałąź. [Instalacja ręczna i szczegółowy przewodnik →](.github/README.pl.md)
 

@@ -27,26 +27,16 @@ Public fixtures contain only configuration response bytes and unknown counters, 
 
 ## What the initial Mac test proves
 
-Extended read access works on this particular DPG1C. It does not yet prove compatibility with other firmware, setting persistence, movement behavior, Raspberry Pi pairing or ESPHome proxy operation. The later Raspberry Pi results below extend this initial evidence; automatic
-first pairing and proxy validation remain pending.
+Extended read access works on this particular DPG1C. It does not yet prove compatibility with other firmware, setting persistence, movement behavior, Raspberry Pi pairing or ESPHome proxy operation. The later Raspberry Pi results below extend this initial evidence; automatic first pairing and proxy validation remain pending.
 
 ## Raspberry Pi pairing investigation — 2026-10-31
 
-Environment reported during the supervised investigation: Raspberry Pi 4B,
-HAOS 18.4, Home Assistant Core 2026.10.4, local BlueZ, DPG1C. Private captures and
-identifiers are not included here.
+Environment reported during the supervised investigation: Raspberry Pi 4B, HAOS 18.4, Home Assistant Core 2026.10.4, local BlueZ, DPG1C. Private captures and identifiers are not included here.
 
 - HCI and host logs showed a local pairing failure with no confirmation agent.
-- Manual host pairing with a NoInputNoOutput agent completed; BlueZ reported
-  Paired/Bonded and HA subsequently loaded the desk's read-only sensors.
-- Following an HA Core restart, logs showed an automatic reconnect without
-  re-enabling pairing on the panel.
-- The owner then confirmed working sensors after a full Raspberry Pi restart.
-  Host logs after that reboot were not collected because SSH host-key verification
-  blocked access; persistence is owner-observed rather than trace-verified.
-- Some earlier connections disconnected and some motion-notification intervals
-  were irregular. Their causes remain unresolved; no stability guarantee follows.
+- Manual host pairing with a NoInputNoOutput agent completed; BlueZ reported Paired/Bonded and HA subsequently loaded the desk's read-only sensors.
+- Following an HA Core restart, logs showed an automatic reconnect without re-enabling pairing on the panel.
+- The owner then confirmed working sensors after a full Raspberry Pi restart. Host logs after that reboot were not collected because SSH host-key verification blocked access; persistence is owner-observed rather than trace-verified.
+- Some earlier connections disconnected and some motion-notification intervals were irregular. Their causes remain unresolved; no stability guarantee follows.
 
-These observations concern manual pairing with 0.1.0a3. They do not validate the
-new automatic application-agent path in 0.1.0a4, an unbonded first setup, other
-panels or ESPHome proxy behavior. No runtime movement feature was enabled.
+These observations concern manual pairing with 0.1.0a3. They do not validate the new automatic application-agent path in 0.1.0a4, an unbonded first setup, other panels or ESPHome proxy behavior. No runtime movement feature was enabled.

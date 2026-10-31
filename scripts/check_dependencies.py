@@ -34,7 +34,9 @@ def expected_audit(component_text: str) -> str:
     direct = [
         line
         for line in component_text.splitlines()
-        if line.startswith(("bleak-retry-connector==", "dbus-fast=="))
+        if line.startswith(
+            ("bleak-retry-connector==", "bluetooth-data-tools==", "dbus-fast==")
+        )
     ]
     return (
         "# Generated direct dependency audit scope; not the complete HA dependency graph.\n-r ../requirements-tools.txt\n-r requirements-locker.txt\n"

@@ -13,6 +13,7 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
+from .naming import DEFAULT_NAME, desk_name
 from .pairing import BlueZAgentUnavailable, pair_bluez
 from .protocol import (
     DPG_UUID,
@@ -37,6 +38,7 @@ REFRESH_TIMEOUT = 60
 IO_TIMEOUT = 10
 QUERY_TIMEOUT = 8
 PAIR_TIMEOUT = 30
+DEVICE_NAME_UUID = "00002a00-0000-1000-8000-00805f9b34fb"
 
 
 class DeskLinkLost(ConnectionError):
@@ -86,6 +88,7 @@ class DeskClient:
         changed: Callable[[], None],
         device_callback: Callable[[], BLEDevice] | None = None,
     ) -> None:
+        self.device_name: str | None = None
         self.device = device
         self.device_callback = device_callback
         self.stage = "idle"
@@ -208,6 +211,34 @@ class DeskClient:
         except BleakError:
             raise DeskAuthenticationError("Bluetooth authentication failed") from None
 
+    async def _read_device_name(self) -> None:
+        """Read optional GAP metadata only when cached naming is a fallback."""
+        assert self.client is not None
+        cached = desk_name(self.device.address, self.device.name)
+        self.device_name = cached if cached != DEFAULT_NAME else None
+        if self.device_name is not None:
+            return
+        try:
+            characteristic = self.client.services.get_characteristic(DEVICE_NAME_UUID)
+            if characteristic is None or "read" not in characteristic.properties:
+                return
+            self._set_stage("device_name")
+            raw = await self._io(
+                self.client.read_gatt_char(DEVICE_NAME_UUID), IO_TIMEOUT
+            )
+        except BleakError:
+            # Missing/denied metadata is optional. Link loss and timeout still
+            # invalidate the session through _io/refresh, rather than being hidden.
+            _LOGGER.debug("Optional Bluetooth device name could not be read")
+            return
+        try:
+            name = bytes(raw).decode("utf-8").strip("\x00 \t\r\n")
+        except UnicodeDecodeError:
+            return
+        if name and name.isprintable():
+            resolved = desk_name(self.device.address, name)
+            self.device_name = resolved if resolved != DEFAULT_NAME else None
+
     async def _query(self, command: ReadCommand, response_type: int) -> bytes:
         assert self.client is not None
         self._pending = asyncio.get_running_loop().create_future()
@@ -269,6 +300,7 @@ class DeskClient:
                 ble_device_callback=self.device_callback,
             )
             await self._pair()
+            await self._read_device_name()
             self._set_stage("notify_dpg")
             await self._io(
                 self.client.start_notify(

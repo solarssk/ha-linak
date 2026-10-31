@@ -23,7 +23,10 @@ def main():
     assert list(manifest) == ["domain", "name"] + sorted(
         set(manifest) - {"domain", "name"}
     )
-    assert manifest["requirements"] == ["bleak-retry-connector>=4.7.1"]
+    assert manifest["requirements"] == [
+        "bleak-retry-connector>=4.7.1",
+        "dbus-fast>=5.0.22",
+    ]
     assert manifest["codeowners"] == ["@solarssk"]
     assert manifest["documentation"] == "https://github.com/solarssk/ha-linak"
     assert manifest["issue_tracker"] == manifest["documentation"] + "/issues"

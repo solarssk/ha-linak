@@ -61,9 +61,10 @@ Bluetooth addresses and other private identifiers before posting.
 Tests run in real in-process HA with simulated Bluetooth. They cover manual and
 Bluetooth-discovered setup, user confirmation, progress revisits, retry, abort,
 updated device selection, phase timeouts and HA's initial setup-retry state.
-Real Raspberry Pi 4 Bluetooth onboarding has not yet been reproduced locally.
-These changes fix known waiting/feedback weaknesses; they do not establish the
-cause of a particular Raspberry Pi connection failure without its logs.
+Raspberry Pi 4 reads and reconnect after an HA Core restart were observed after
+manual host pairing. The owner also confirmed working sensors after a full host
+restart. Automatic first pairing in 0.1.0a4 is not yet hardware-validated.
+See hardware-results.md for the distinction between these results.
 
 The implementation follows HA's [config flow](https://contributors.home-assistant.io/core/integrations/config-flow/),
 [progress steps](https://contributors.home-assistant.io/core/integrations/flow-steps/#show-progress)
@@ -89,5 +90,45 @@ failure. Authentication failure, pairing_timeout and pairing_unsupported have
 separate translated UI errors. The full-attempt budget can expire before a phase's
 individual limit; its stage is retained in logs.
 
-These paths are tested with simulated local/proxy/CoreBluetooth backends. A
-successful Raspberry Pi or ESPHome hardware onboarding is not yet established.
+These paths were tested with simulated local/proxy/CoreBluetooth backends.
+The local BlueZ first-pairing failure was subsequently traced to missing agent
+confirmation; the follow-up below replaces that local pairing path. ESPHome
+first pairing and long-term stability remain unverified.
+
+## Local BlueZ pairing in 0.1.0a4
+
+HA and bleak-retry-connector still choose and open the connection. For the public
+`bluez_dbus` backend only, the integration resolves one connected BlueZ Device1
+object matching the chosen address; it never assumes hci0. No match or multiple
+connected matches fail rather than selecting an arbitrary adapter.
+
+An existing Paired property skips pairing without resetting keys. Otherwise a
+private system D-Bus connection exports a NoInputNoOutput Agent1 and calls both
+RegisterAgent and Device1.Pair on that same connection. This matters because
+BlueZ associates an application agent with the caller's bus identity. Registering
+an agent on one connection and calling Bleak.pair() on another would still use
+the host default. Only the selected device path is accepted; PIN/passkey entry
+and service authorization are not provided.
+
+The integration never requests default-agent status or replaces an existing
+default. BlueZ itself makes the first registered agent a fallback if none exists;
+during this bounded interval, requests for other devices are rejected. Closing
+the private bus removes the agent on success, failure, timeout or cancellation.
+BlueZ also cancels unfinished bonding when its requesting application exits.
+No shell process, permanent agent, adapter scan-mode change, Trusted-property
+change or DPG settings write is used. The pairing phase keeps its 30-second
+limit inside the 60-second complete attempt.
+
+ESPHome and other non-BlueZ backends continue through their own pair method;
+CoreBluetooth remains OS-managed. A local agent preparation failure has the
+translated error pairing_agent_unavailable; rejected Device1.Pair remains
+authentication_failed. These messages omit raw D-Bus errors and identifiers.
+
+Initial position notifications update internal state but do not publish an
+unavailable coordinator update before the initial full read completes. Invalid
+positions and disconnections after readiness still make sensors unavailable.
+
+The automated tests simulate D-Bus and BLE. A fresh, unbonded Raspberry Pi
+onboarding test is still required; the existing working bond must not be removed
+without an agreed hardware-test scope. Connection deadlines are unchanged:
+rare advertisements and intermittent disconnections need separate evidence.

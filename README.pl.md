@@ -12,13 +12,13 @@ Natywna integracja Bluetooth dla panelu LINAK **DPG1C**, instalowana przez HACS.
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-> **Wersja alfa, tylko odczyt.** Odczyty sprawdzono na jednym DPG1C przy użyciu Maca. Weryfikacja całej integracji na Malinie i przez proxy nadal trwa. Ruch, Stop i zmiana ustawień panelu nie są jeszcze dostępne.
+> **Wersja alfa, tylko odczyt.** Odczyty sprawdzono na jednym DPG1C przy użyciu Maca. Odczyty na Malinie działały po ręcznym sparowaniu. Automatyczne pierwsze parowanie i proxy wymagają jeszcze testów. Ruch, Stop i zmiana ustawień panelu nie są jeszcze dostępne.
 
 ![Poglądowy układ czujników, przykładowe wartości](docs/assets/desk-overview-pl.svg)
 
 ## 📏 Co zobaczysz
 
-- **Czytelny pomiar wysokości:** centymetry od podłogi, z korektą zapisaną na panelu.
+- **Czytelny pomiar wysokości:** centymetry z uwzględnieniem punktu odniesienia zapisanego na panelu.
 - **Twoje zapisane pozycje:** podgląd wysokości zapamiętanych na biurku.
 - **Ustawienia przypomnień w jednym miejscu:** wybrany profil i ustawione odstępy czasu.
 
@@ -70,7 +70,7 @@ Sprawdź komunikat błędu i dziennik `ha_linak`. W zgłoszeniu podaj wersję HA
 
 **DPG1C jest pierwszym obsługiwanym panelem.** Siedem rozszerzonych zapytań odczytu sprawdzono na jednym fizycznym panelu przez macOS CoreBluetooth. Konfigurację, czujniki, błędy parowania i odzyskiwanie połączenia testujemy też wewnątrz HA z symulowanym Bluetooth.
 
-Weryfikacja na prawdziwej Malinie i przez proxy ESPHome nadal trwa. Zielony badge CI potwierdza testy oprogramowania, nie działanie każdego biurka i adaptera. [Wyniki testów sprzętowych →](docs/hardware-results.md)
+Na Malinie zaobserwowano odczyty i ponowne połączenia po ręcznym sparowaniu hosta. Nowe automatyczne pierwsze parowanie i proxy ESPHome wymagają jeszcze testów. Zielony badge CI potwierdza testy oprogramowania, nie działanie każdego biurka i adaptera. [Wyniki testów sprzętowych →](docs/hardware-results.md)
 
 Kolejny etap to stabilne sterowanie wysokością w **centymetrach**, Stop i wybór zapisanych pozycji po testach sprzętowych pod nadzorem. Te funkcje nie są jeszcze częścią wersji alfa. [Zobacz plan rozwoju →](docs/roadmap.md)
 

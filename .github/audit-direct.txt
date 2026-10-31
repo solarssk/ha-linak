@@ -2,3 +2,4 @@
 -r ../requirements-tools.txt
 -r requirements-locker.txt
 bleak-retry-connector==4.7.1
+dbus-fast==5.0.22

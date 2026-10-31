@@ -26,7 +26,8 @@
       "pairing_timeout": "Bluetooth pairing did not finish in time. Enable pairing on the panel and try again.",
       "authentication_failed": "Bluetooth authentication failed. Enable pairing on the panel and close connected desk apps, then try again.",
       "pairing_unsupported": "The selected Bluetooth adapter or proxy does not support explicit pairing. Use a compatible adapter or updated proxy.",
-      "connection_lost": "The Bluetooth connection was lost while checking the desk. Enable pairing on the panel and try again."
+      "connection_lost": "The Bluetooth connection was lost while checking the desk. Enable pairing on the panel and try again.",
+      "pairing_agent_unavailable": "Home Assistant could not prepare local Bluetooth pairing. Check the host Bluetooth service and D-Bus permissions, then try again."
     },
     "abort": {
       "already_configured": "This desk is already configured.",

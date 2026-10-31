@@ -2,7 +2,7 @@
 
 Reviewed: 2026-10-30. This is an evidence review and implementation plan, not a claim that Raspberry Pi onboarding is fixed. Upstream branch links are mutable; the Idasen helper comparison below uses its 3.0.1 tag.
 
-## What the current failure establishes
+## Initial failure report (before the agent diagnosis)
 
 User-supplied Raspberry Pi traces show connection through local BlueZ, successful return from DPG notification setup, then a pending height subscription. The transport disconnects about 2–3 seconds later; the integration eventually reports its 10-second notification deadline. The same sequence occurs with the user reporting only the Pi adapter enabled. Do not infer that multiple adapters caused the failure. Do not publish the private traces, device address or advertised desk name.
 
@@ -45,7 +45,7 @@ The original [DPG1C discussion #32](https://github.com/rhyst/linak-controller/is
 
 Follow [HA Bluetooth guidance](https://contributors.home-assistant.io/core/integrations/bluetooth/): HA owns scanning and adapter selection; use connectable BLEDevice objects, fresh clients and bleak-retry-connector. Add bluetooth_adapters as the startup dependency when implementing the handshake change so remote adapters are available before connection. Do not pin a user's installation to hci0 or shell out to bluetoothctl as the normal transport.
 
-[Deprecation-free Bleak APIs](https://bleak.readthedocs.io/en/latest/api/client.html) distinguish pairing from connection. macOS can initiate authentication automatically for protected characteristics; that successful test does not validate Linux bonding behavior. The missing explicit authentication phase in 0.1.0a2 is a plausible gap. It remains unproven as the cause until tested on the Pi. Proxy pairing behavior must be checked against the HA-pinned backend as well.
+[Deprecation-free Bleak APIs](https://bleak.readthedocs.io/en/latest/api/client.html) distinguish pairing from connection. macOS can initiate authentication automatically for protected characteristics; that successful test does not validate Linux bonding behavior. The missing explicit authentication phase in 0.1.0a2 is a plausible gap. The later Pi investigation below identifies the missing BlueZ confirmation agent. Proxy pairing behavior must be checked separately against the HA-pinned backend.
 
 Keep protocol decoding, transport lifecycle and HA entities separate. Preserve centimeters and the panel's offset rather than Idasen's fixed minimum-height assumption. Never publish stale data as current after a lost session. Serialize DPG queries: memory responses do not contain a slot identifier, so a timed-out session must be discarded.
 
@@ -86,3 +86,26 @@ hardware validation and any manufacturer-specific initialization remain open.
 The [ESPHome backend pair implementation](https://github.com/bluetooth-devices/bleak-esphome/blob/main/src/bleak_esphome/backend/client.py)
 checks proxy pairing support and can raise NotImplementedError. That receives a
 specific setup error; the integration does not disable adapter routing globally.
+
+## BlueZ agent follow-up (2026-10-31)
+
+Private HCI and host-log diagnostics identified a local pairing exchange rejected
+because BlueZ had no confirmation agent. Manual NoInputNoOutput pairing then
+allowed read-only HA operation. This establishes a local authentication problem;
+it does not explain every earlier proxy disconnection. See the sanitized outcome
+in [hardware results](hardware-results.md).
+
+The implementation in 0.1.0a4 follows the public BlueZ
+[AgentManager API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.AgentManager.rst)
+and [Agent API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.Agent.rst).
+The [agent implementation](https://github.com/bluez/bluez/blob/master/src/agent.c)
+selects an agent by caller identity, makes the first registered agent a default
+fallback, and removes agents on caller disconnect. The
+[device implementation](https://github.com/bluez/bluez/blob/master/src/device.c)
+selects that caller's agent for Pair and watches for requester exit to cancel
+unfinished bonding. Both registration and Pair therefore use the same short-lived
+bus. The agent rejects any other device path and does not call RequestDefaultAgent.
+
+This solution uses public D-Bus objects rather than private Bleak client fields.
+The dependency is HA-owned dbus-fast (tested at 5.0.22); no independent override of
+HA's pin is introduced. Physical testing of this automatic path is pending.

@@ -99,7 +99,7 @@ Software tests cover entities, session ownership, interruption and unloading. Ph
 
 ## 📚 Learn more
 
-[User guide](.github/README.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
+[Documentation map](docs/README.md) · [User guide](.github/README.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
 
 [Protocol research](docs/protocol.md) · [Bluetooth investigation](docs/bluetooth-research.md) · [Quality and governance](docs/governance.md)
 

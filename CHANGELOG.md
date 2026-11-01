@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a documentation index with task-based entry points and a purpose for each reference.
 - Separate consecutive stored-position replies with validated read barriers to prevent duplicate BlueZ notifications from shifting memory slots.
 - Name the integration LINAK Desks, fix the HACS badge link transformation, remove the illustrative dashboard graphic and use readable control lists in HACS.
 - Clarify required HA coroutine hooks and simplify test setup/assertions to address existing Sonar findings without changing device behavior.

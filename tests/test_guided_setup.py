@@ -2,6 +2,8 @@
 
 from unittest.mock import AsyncMock, patch
 
+from homeassistant.helpers import device_registry as dr
+
 import pytest
 
 from custom_components.ha_linak.control_settings import ControlSettings
@@ -136,6 +138,11 @@ async def test_options_can_rename_only_in_home_assistant(hass, desk_transport):
         )
         assert result["type"] == "create_entry"
         assert entry.title == "Study desk"
+        device = dr.async_get(hass).async_get_device_by_identifier(
+            ("ha_linak", entry.data["address"]), entry.entry_id
+        )
+        assert device.name_by_user == "Study desk"
+        assert entry.runtime_data.name == "Study desk"
         assert fake.writes == before
         await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(entry.entry_id)
@@ -214,4 +221,42 @@ async def test_measurement_page_reports_connection_loss_instead_of_bad_measureme
     assert result["description_placeholders"]["height"] == "?"
     assert not writes(desk_transport)
     hass.config_entries.options.async_abort(result["flow_id"])
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_offline_entry_can_be_renamed_without_bluetooth(hass, desk_transport):
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(
+        domain="ha_linak", title="Old name", data={"address": "AA:BB:CC:DD:EE:FF"}
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "name"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"name": "Office"}
+    )
+    assert result["type"] == "create_entry"
+    assert entry.title == "Office"
+    assert entry.data["name"] == "Office"
+    assert not desk_transport.writes
+    await hass.async_block_till_done()
+
+
+async def test_options_correct_height_does_not_write_panel_settings(
+    hass, desk_transport
+):
+    entry = await setup_calibration_entry(hass, desk_transport)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "height"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"height_correct": True}
+    )
+    assert result["type"] == "create_entry"
+    assert not writes(desk_transport)
+    await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(entry.entry_id)

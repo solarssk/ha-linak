@@ -432,6 +432,17 @@ class DeskClient:
         if verified != identity[:2] + b"\x01" + identity[3:]:
             raise ValueError("Client activation was not verified")
 
+    def _calibration_transport(self) -> BleakClient:
+        """Require the read/write operations used by confirmed preparation."""
+        client = self.client
+        if client is None:
+            raise MotionError("Calibration requires a connection")
+        for uuid, operation in ((DPG_UUID, "write"), (HEIGHT_UUID, "read")):
+            characteristic = client.services.get_characteristic(uuid)
+            if characteristic is None or operation not in characteristic.properties:
+                raise MotionError("Calibration Bluetooth operation is unavailable")
+        return client
+
     async def calibrate_height(
         self, proposal: HeightCalibration, *, activate_client: bool = False
     ) -> DeskState:
@@ -442,29 +453,16 @@ class DeskClient:
         try:
             async with self._lock, asyncio.timeout(REFRESH_TIMEOUT):
                 self._set_stage("calibration_check")
-                assert self.client is not None
-                for uuid, operation in ((DPG_UUID, "write"), (HEIGHT_UUID, "read")):
-                    characteristic = self.client.services.get_characteristic(uuid)
-                    if (
-                        characteristic is None
-                        or operation not in characteristic.properties
-                    ):
-                        raise MotionError(
-                            "Calibration Bluetooth operation is unavailable"
-                        )
+                client = self._calibration_transport()
                 first = decode_position(
                     bytes(
-                        await self._io(
-                            self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
-                        )
+                        await self._io(client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT)
                     )
                 )
                 offset = decode_offset(await self._query(ReadCommand.OFFSET, 3))
                 second = decode_position(
                     bytes(
-                        await self._io(
-                            self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
-                        )
+                        await self._io(client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT)
                     )
                 )
                 if (
@@ -485,7 +483,7 @@ class DeskClient:
                     fresh_position = decode_position(
                         bytes(
                             await self._io(
-                                self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
+                                client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
                             )
                         )
                     )

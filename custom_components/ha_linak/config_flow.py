@@ -9,13 +9,14 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import (
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlowWithReload,
 )
 from homeassistant.const import CONF_ADDRESS, CONF_NAME
-from homeassistant.core import callback
-from homeassistant.helpers import selector
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import selector, device_registry as dr
 
 from .client import (
     DeskClient,
@@ -419,16 +420,15 @@ class LinakOptionsFlow(OptionsFlowWithReload):
             step_id="init", menu_options=["name", "connect", "height", "range"]
         )
 
-    async def async_step_name(self, user_input=None) -> ConfigFlowResult:
+    # Named HA flow steps must be coroutines; renaming only updates HA registries.
+    async def async_step_name(
+        self, user_input=None
+    ) -> ConfigFlowResult:  # NOSONAR(S7503) HA flow contract
         errors = {}
         if user_input is not None:
             name = str(user_input.get(CONF_NAME, self.config_entry.title)).strip()
             if name and len(name) <= 80 and name.isprintable():
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    title=name,
-                    data={**self.config_entry.data, CONF_NAME: name},
-                )
+                _rename_ha_device(self.hass, self.config_entry, name)
                 return self.async_create_entry(
                     title="", data=dict(self.config_entry.options)
                 )
@@ -689,3 +689,19 @@ async def _guide_measure(flow, user_input, state, next_step) -> ConfigFlowResult
         errors=errors,
         description_placeholders=_height_placeholders(state),
     )
+
+
+def _rename_ha_device(hass: HomeAssistant, entry: ConfigEntry, name: str) -> None:
+    """Apply an explicit HA name without reconnecting or changing Bluetooth."""
+    hass.config_entries.async_update_entry(
+        entry, title=name, data={**entry.data, CONF_NAME: name}
+    )
+    coordinator = getattr(entry, "runtime_data", None)
+    if coordinator is not None:
+        coordinator.name = name
+    registry = dr.async_get(hass)
+    device = registry.async_get_device_by_identifier(
+        (DOMAIN, entry.data[CONF_ADDRESS]), entry.entry_id
+    )
+    if device is not None:
+        registry.async_update_device(device.id, name_by_user=name)

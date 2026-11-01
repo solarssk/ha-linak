@@ -46,6 +46,11 @@ async def guide_to_range(hass, result):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"height_correct": True}
         )
+    for _ in range(3):
+        if result["type"] != "progress":
+            break
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
     return result
 
 
@@ -60,10 +65,7 @@ async def finish_progress(hass, result):
         )
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
-        if result.get("step_id") == "height":
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"], {"height_correct": True}
-            )
+        result = await guide_to_range(hass, result)
     return result
 
 

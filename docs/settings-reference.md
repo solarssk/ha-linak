@@ -1,6 +1,6 @@
 # DPG1C settings and implementation reference
 
-Reviewed 2026-10-31. This is a research inventory and product plan, not a list of enabled controls. Runtime 0.1.0a7 adds native slider/button movement; panel-settings writes remain unimplemented. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
+Reviewed 2026-11-02. This inventory distinguishes implemented features from research candidates. Native slider/button movement, protected client activation and confirmed height calibration are implemented; other panel-setting writes remain planned. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
 
 ## Evidence levels
 
@@ -44,7 +44,7 @@ O4 distinguishes Owner and Guest storage/transfer behavior, describes settings f
 | Target height and Stop | O3, C3, S | Native number in cm and Stop button | Registered by default. Target height needs a configured travel range; Stop works with a ready connection. Simulated HA coverage, physical movement/Stop evidence pending. |
 | Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Drive buttons re-read the selected slot; drive not physically verified. Respect configured/available slots. |
 | Save/replace favourite | O4, C1 | Separate explicit save operation | Write payload, slot identity and persistence unverified; read back the exact slot. |
-| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Read and protected confirmed calibration flow implemented. Write/readback, failures and cancellation have simulated tests; physical write/persistence validation is pending. |
+| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Read and protected confirmed calibration flow implemented. Activation and offset write/readback were verified on one DPG1C and persisted across a separate Bluetooth connection. Failures/cancellation have simulated tests; power-cycle persistence remains unverified. |
 | Panel display units | O1, O2, C2 | Configuration choice if verified | Preserve the integration's centimeter interface; changing panel units must not reinterpret raw positions or cause motion. |
 | Active reminder profile / off | O3, H, C2 | Configuration select after write validation | Profile read works; confirm the encoding/meaning of the off state before writing. |
 | Sitting/standing duration per profile | O3/O4, H, C2 | Configuration values with validated ranges | Three profiles read; units, encoding limits and write persistence require validation. |
@@ -70,7 +70,7 @@ Existing UUIDs and parsing are recorded in [protocol.md](protocol.md). The suffi
 | DPG channel | `99fa0011` | H reads; serialize requests. |
 | Height feedback | `99fa0021`, position and unclassified speed/flags | H reads; relative position units used by current decoder. |
 | Capabilities | `0x80` | H read; capability flags are not settings acknowledgements. |
-| Offset | `0x81` | H read; C1 names a setting candidate, but no validated setter here. |
+| Offset | `0x81` | Protected setter implemented and physically verified on one DPG1C with client activation, acknowledgement and readback. |
 | User ID | `0x86` | Confirmed calibration activates the existing identifier only when inactive; no identifier replacement. |
 | Reminder time | `0x87` | C1 candidate; distinct from the implemented `0x88` query. |
 | Reminder settings | `0x88` | H read; C2 exposes light/wake/automatic-up/down/units/profile candidates. |

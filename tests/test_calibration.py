@@ -238,6 +238,11 @@ async def submit_range(hass, result, values, options=False):
         result = await manager.async_configure(
             result["flow_id"], {MEASURED_HEIGHT: values[MEASURED_HEIGHT]}
         )
+    for _ in range(3):
+        if result["type"] != "progress":
+            break
+        await hass.async_block_till_done()
+        result = await manager.async_configure(result["flow_id"])
     return result
 
 

@@ -165,9 +165,7 @@ class DeskClient:
         pending = self._pending
         if pending is not None and not pending.done() and len(data) >= 2:
             if self._response_type == 0 and len(data) == 2 and data[0] != 1:
-                pending.set_exception(
-                    SettingRejected(f"Panel setting status {data[0]:02x}")
-                )
+                pending.set_exception(SettingRejected(data[0]))
             elif data[0] == 1 and data[1] == self._response_type:
                 pending.set_result(bytes(data))
 

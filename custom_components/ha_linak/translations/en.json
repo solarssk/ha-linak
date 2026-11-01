@@ -80,7 +80,8 @@
       "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again.",
       "invalid_name": "Enter a readable name between 1 and 80 characters.",
       "connection_unavailable": "The desk connection is unavailable. Retry after it reconnects.",
-      "client_preparation_failed": "The panel could not be prepared. Check Bluetooth connectivity and continue to check again. No movement command was sent."
+      "client_preparation_failed": "The panel could not be prepared. Check Bluetooth connectivity and continue to check again. No movement command was sent.",
+      "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -209,7 +210,7 @@
       },
       "height": {
         "title": "Check the height",
-        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. If the reading is correct, continue to the travel range. Otherwise, enter your tape measurement in the next step.",
+        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. If the reading is correct, continue. Otherwise, enter your tape measurement in the next step.",
         "data": {
           "height_correct": "The height is correct"
         }
@@ -247,7 +248,10 @@
       "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically.",
       "connection_unavailable": "The desk connection is unavailable. Retry after it reconnects.",
       "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again.",
-      "invalid_name": "Enter a readable name between 1 and 80 characters."
+      "invalid_name": "Enter a readable name between 1 and 80 characters.",
+      "desk_not_stationary": "Wait until the desk stops and a current height reading is available, then try again.",
+      "range_required": "Save the lowest and highest desktop heights first. Then choose the height check in Configure.",
+      "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status."
     },
     "progress": {
       "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."

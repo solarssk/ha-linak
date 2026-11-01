@@ -14,7 +14,7 @@ During the already-authorized connection, after pairing, a desk whose cached nam
 
 A new entry uses the resolved native name after validation. Existing address-only entry titles are repaired as before. An older entry titled exactly `LINAK` retains its title because its origin may be ambiguous, while its device-registry name is improved when a native name is available. Other entry titles and HA's explicit device name_by_user are preserved. Existing entity IDs and bonds are unchanged.
 
-Discovery alone does not prove a usable GATT connection. The panel accepts one connection at a time; the phone app or another desk integration may hold it. Pairing/authentication on the local Bluetooth host can also be necessary. This integration does not reset the panel or change a Bluetooth user-ID setting.
+Discovery alone does not prove a usable GATT connection. The panel accepts one connection at a time; the phone app or another desk integration may hold it. Pairing/authentication on the local Bluetooth host can also be necessary. Discovery, bonding and background reads do not reset the panel or change the user-ID setting. Explicit setup preparation and confirmed calibration can activate the existing client without replacing its identifier.
 
 ## Waiting and cancellation
 
@@ -81,3 +81,5 @@ After discovery and read validation, setup asks for a name in Home Assistant. Co
 Next, enter measured lowest/highest heights. Physical panel movement while measuring those bounds is expected. The guide then refreshes the current reading before asking whether its height is correct. A wrong reading opens a separate measurement screen and confirmation. Keep the desk still through those final steps. Correct readings skip offset writes. This order prevents a measurement captured before checking travel bounds from becoming the calibration baseline.
 
 Configure opens a menu for the HA name, explicit connection preparation, height checking/correction and travel bounds. Height correction uses existing bounds and prompts for revised bounds if the corrected reference makes them invalid. Sensor states use whole centimeters; calibration inputs and all internal checks retain precision. No previous measurement is replayed after cancellation or restart.
+
+On the height-correct path, setup performs another bounded read-only validation before saving travel bounds. Movement while the height question is open therefore cannot validate bounds against the older preview. In Configure, height checking/correction is offered after both travel bounds have been stored.

@@ -260,3 +260,86 @@ async def test_options_correct_height_does_not_write_panel_settings(
     assert not writes(desk_transport)
     await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_preparation_while_moving_stays_on_form_and_can_retry(
+    hass, desk_transport
+):
+    entry = await setup_calibration_entry(hass, desk_transport)
+    coordinator = entry.runtime_data
+    coordinator.desk.state.position = PositionSample(1438, 1)
+    coordinator._changed()
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "connect"}
+    )
+    before = list(desk_transport.writes)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    assert result["step_id"] == "connect"
+    assert result["errors"] == {"base": "desk_not_stationary"}
+    assert desk_transport.writes == before
+    coordinator.desk.state.position = PositionSample(1438, 0)
+    coordinator._changed()
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    result = await complete_progress(hass, result, options=True)
+    assert result["type"] == "create_entry"
+    assert not writes(desk_transport)
+    await hass.async_block_till_done()
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_height_correction_is_not_offered_without_bounds(hass, desk_transport):
+    entry = await setup_calibration_entry(hass, desk_transport)
+    hass.config_entries.async_update_entry(entry, options={})
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert "height" not in result["menu_options"]
+    assert "range" in result["menu_options"]
+    assert not writes(desk_transport)
+    hass.config_entries.options.async_abort(result["flow_id"])
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_final_height_confirmation_rechecks_bounds_after_movement(
+    hass, desk_transport
+):
+    result = await initial_form(hass, desk_transport)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"minimum_height": 70, "maximum_height": 125}
+    )
+    result = await complete_progress(hass, result)
+    assert result["step_id"] == "height"
+    desk_transport.position = 6000
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"height_correct": True}
+    )
+    assert result["type"] == "progress"
+    result = await complete_progress(hass, result)
+    assert result["step_id"] == "finish"
+    assert result["errors"] == {"base": "invalid_limits"}
+    assert not hass.config_entries.async_entries("ha_linak")
+    assert not writes(desk_transport)
+    hass.config_entries.flow.async_abort(result["flow_id"])
+
+
+async def test_rejected_setting_logs_status_without_identifier(
+    hass, desk_transport, caplog
+):
+    entry = await setup_calibration_entry(hass, desk_transport)
+    desk_transport.activation = 0
+    desk_transport.reject_setting = True
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "connect"}
+    )
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    result = await complete_progress(hass, result, options=True)
+    assert result["errors"] == {"base": "setting_rejected"}
+    messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "custom_components.ha_linak.config_flow"
+    ]
+    assert any("status=0b" in message for message in messages)
+    assert all(desk_transport.identity.hex() not in message for message in messages)
+    hass.config_entries.options.async_abort(result["flow_id"])
+    assert await hass.config_entries.async_unload(entry.entry_id)

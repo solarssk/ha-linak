@@ -85,8 +85,9 @@ def writes(fake):
     "value", [float("nan"), float("inf"), True, -1, 0, "75", 1, 1000]
 )
 def test_invalid_or_unrepresentable_measurements(value):
+    position = PositionSample(1438, 0)
     with pytest.raises(ValueError):
-        HeightCalibration.prepare(PositionSample(1438, 0), 6800, value)
+        HeightCalibration.prepare(position, 6800, value)
 
 
 def test_measurement_and_wire_encoding_are_independent_of_travel_bounds():
@@ -183,8 +184,9 @@ async def test_disconnect_cancels_owned_calibration_without_motion_or_retry():
     count = len(fake.writes)
     assert await desk.refresh() is desk.state
     assert len(fake.writes) == count
+    settings = ControlSettings.from_options(BOUNDS)
     with pytest.raises(MotionError):
-        await desk.move_to_cm(80, ControlSettings.from_options(BOUNDS))
+        await desk.move_to_cm(80, settings)
     with pytest.raises(MotionError):
         await desk.calibrate_height(proposal)
     await desk.disconnect()

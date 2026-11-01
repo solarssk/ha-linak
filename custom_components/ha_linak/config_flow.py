@@ -245,36 +245,13 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         errors = {"base": self._error} if self._error else {}
         if user_input is not None:
-            errors = {}
-            try:
-                if ControlSettings.from_options(user_input) is None:
-                    raise ValueError("A height range is required")
-            except ValueError:
-                errors["base"] = "invalid_limits"
-            else:
-                self._pending_range = _range_options(user_input)
-                if MEASURED_HEIGHT in user_input:
-                    try:
-                        self._calibration = _prepare_calibration(
-                            self._validated_state, user_input[MEASURED_HEIGHT]
-                        )
-                    except ValueError:
-                        errors["base"] = "invalid_measurement"
-                    else:
-                        if self._calibration.changed:
-                            return await self.async_step_calibration_confirm()
-                if errors:
-                    return self.async_show_form(
-                        step_id="finish",
-                        data_schema=_range_schema(user_input),
-                        errors=errors,
-                        description_placeholders=_height_placeholders(
-                            self._validated_state
-                        ),
-                    )
+            error = self._prepare_finish(user_input)
+            errors = {"base": error} if error else {}
+            if not errors:
+                if self._calibration is not None and self._calibration.changed:
+                    return await self.async_step_calibration_confirm()
                 self._validation_task = None
                 self._error = None
-                # Reconnect/read under the same bounded progress UI as initial setup.
                 return await self.async_step_connect()
         options = user_input or self._pending_range or {}
         return self.async_show_form(
@@ -283,6 +260,23 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders=_height_placeholders(self._validated_state),
         )
+
+    def _prepare_finish(self, user_input: dict[str, Any]) -> str | None:
+        self._calibration = None
+        try:
+            if ControlSettings.from_options(user_input) is None:
+                raise ValueError("A height range is required")
+        except ValueError:
+            return "invalid_limits"
+        self._pending_range = _range_options(user_input)
+        if MEASURED_HEIGHT in user_input:
+            try:
+                self._calibration = _prepare_calibration(
+                    self._validated_state, user_input[MEASURED_HEIGHT]
+                )
+            except ValueError:
+                return "invalid_measurement"
+        return None
 
     async def async_step_calibration_confirm(self, user_input=None) -> ConfigFlowResult:
         assert self._calibration is not None
@@ -369,17 +363,8 @@ class LinakOptionsFlow(OptionsFlowWithReload):
         self._calibration_error = None
         if user_input is not None:
             try:
-                coordinator = getattr(self.config_entry, "runtime_data", None)
-                if coordinator is None or not coordinator.last_update_success:
-                    raise ValueError("A current height reading is required")
-                self._pending_range = _range_options(user_input)
-                if MEASURED_HEIGHT in user_input:
-                    self._calibration = _prepare_calibration(
-                        coordinator.data, user_input[MEASURED_HEIGHT]
-                    )
-                    if self._calibration.changed:
-                        return await self.async_step_calibration_confirm()
-                _validate_range(user_input, coordinator.data)
+                if self._prepare_options(user_input):
+                    return await self.async_step_calibration_confirm()
                 return self.async_create_entry(title="", data=self._pending_range)
             except InvalidMeasurement:
                 errors["base"] = "invalid_measurement"
@@ -398,6 +383,21 @@ class LinakOptionsFlow(OptionsFlowWithReload):
                 getattr(getattr(self.config_entry, "runtime_data", None), "data", None)
             ),
         )
+
+    def _prepare_options(self, user_input: dict[str, Any]) -> bool:
+        coordinator = getattr(self.config_entry, "runtime_data", None)
+        if coordinator is None or not coordinator.last_update_success:
+            raise ValueError("A current height reading is required")
+        self._calibration = None
+        self._pending_range = _range_options(user_input)
+        if MEASURED_HEIGHT in user_input:
+            self._calibration = _prepare_calibration(
+                coordinator.data, user_input[MEASURED_HEIGHT]
+            )
+            if self._calibration.changed:
+                return True
+        _validate_range(user_input, coordinator.data)
+        return False
 
     async def async_step_calibration_confirm(self, user_input=None) -> ConfigFlowResult:
         assert self._calibration is not None

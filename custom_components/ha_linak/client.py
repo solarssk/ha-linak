@@ -343,6 +343,16 @@ class DeskClient:
         if state.capabilities.memory_slots > 4:
             raise ValueError("Unsupported number of memory slots")
         for command in list(ReadCommand)[3 : 3 + state.capabilities.memory_slots]:
+            if state.memories:
+                # Memory replies have no slot ID. BlueZ can deliver a burst of
+                # duplicate Value signals across the next request boundary.
+                # A different response type is an ordered read-only barrier;
+                # identical saved positions must not be deduplicated by value.
+                capabilities = decode_capabilities(
+                    await self._query(ReadCommand.CAPABILITIES, 2)
+                )
+                if capabilities != state.capabilities:
+                    raise ValueError("Desk capabilities changed during memory reads")
             state.memories.append(decode_stored_position(await self._query(command, 7)))
         state.reminders = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
         self._set_stage("position_read")

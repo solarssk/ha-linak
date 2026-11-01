@@ -46,3 +46,12 @@ No public downloadable DESKLINE SDK or complete public GATT specification was fo
 ## Optional standard device metadata
 
 Version 0.1.0a6 can read GAP Device Name (`00002a00-0000-1000-8000-00805f9b34fb`) after pairing when the cached BLE name is only an address or generic fallback. The service inventory must expose that characteristic as readable. It is a normal GATT read, not an extended DPG command or a name/setting write. Missing or denied metadata keeps the fallback. Name bytes are decoded as printable UTF-8 and kept out of DeskState/downloaded diagnostics. Tests simulate this path; automatic name repair on the owner's installation remains to be checked.
+
+
+## Duplicate memory responses on BlueZ
+
+On 2026-11-01, a passive radio capture showed one response per stored-position query while a separate system-bus observer received 24 PropertiesChanged signals with distinct serial numbers for each response. The downloaded integration state duplicated the first memory and shifted later slots. A synthetic duplicate-burst regression reproduces this failure in the previous client. This is evidence for a response-assignment bug; the cause of the BlueZ signal multiplication itself remains unknown.
+
+Memory responses all use response type 7 without a slot identifier. Consecutive memory reads now have an intervening capabilities query, whose response type is 2. On an ordered response stream this forms a read-only barrier: copies of the previous memory reply are ignored while awaiting capabilities, and copies of the capabilities reply cannot satisfy the next memory request. Capabilities are decoded and compared with the initial snapshot; a change invalidates the session. Equal saved positions remain valid and are never removed by payload deduplication. There is no arbitrary inter-request sleep, movement command or panel-setting write.
+
+This adds three queries when all four memories exist and retains the existing per-query and total-refresh deadlines. It does not supply firmware travel limits, remove the current range prerequisite, repair lost radio links or prove physical Stop behavior. Hardware validation of the corrected client is still pending. Private captures remain outside the repository.

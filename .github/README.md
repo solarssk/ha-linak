@@ -241,6 +241,7 @@ Software tests cover entities, session ownership, interruption and unloading. Ph
 - **Something isn't working?** [Report a bug](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
 - **Follow development:** [Changelog](../CHANGELOG.md) · [Roadmap](../docs/roadmap.md).
 - **Want to contribute?** [Contributing](../CONTRIBUTING.md) · [Agent instructions](../AGENTS.md).
+- **Documentation map:** [Choose a guide or reference](../docs/README.md).
 - **Technical details:** [Protocol](../docs/protocol.md) · [Architecture](../docs/architecture.md) · [Movement plan](../docs/movement.md).
 - **Security:** [Private reporting](../SECURITY.md) · [Tier 2 maintenance baseline](../docs/governance.md). Diagnostics omit device identifiers.
 

@@ -195,7 +195,7 @@ async def test_invalid_optional_gap_names_do_not_block_readings(payload):
         await desk.refresh()
     assert desk.connected
     assert desk.device_name is None
-    assert len(fake.writes) == 7
+    assert len(fake.writes) == 10
     await desk.disconnect()
 
 

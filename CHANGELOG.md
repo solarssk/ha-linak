@@ -2,13 +2,14 @@
 
 ## Unreleased
 
+- Add a documentation index with task-based entry points and a purpose for each reference.
+- Separate consecutive stored-position replies with validated read barriers to prevent duplicate BlueZ notifications from shifting memory slots.
 - Name the integration LINAK Desks, fix the HACS badge link transformation, remove the illustrative dashboard graphic and use readable control lists in HACS.
 - Clarify required HA coroutine hooks and simplify test setup/assertions to address existing Sonar findings without changing device behavior.
 - Group sensors, diagnostics and controls in one entity section across GitHub/HACS READMEs; link the native HA test procedure.
 - Add a standalone supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions.
 - Record manufacturer settings/variant evidence, pinned community protocol candidates, protected offset calibration and post-install configuration requirements for the next control milestones.
 - Standardize Markdown prose and list-item paragraphs on single source lines; document the authoring convention while preserving structural markup and rendered content.
-
 - Use a readable desk name instead of the Bluetooth address when Home Assistant has no advertised name, and replace an existing address-only entry title on the next setup.
 - Preserve the GitHub presentation in .github/README files and provide separate HACS product descriptions with portable Markdown and artwork.
 - Consolidate repository labels into four change types plus dependency and security markers.

@@ -241,6 +241,7 @@ Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i
 - **Coś nie działa?** [Zgłoś błąd](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
 - **Śledź rozwój:** [Lista zmian](../CHANGELOG.md) · [Plan rozwoju](../docs/roadmap.md).
 - **Chcesz pomóc?** [Contributing](../CONTRIBUTING.md) · [Instrukcje dla agentów](../AGENTS.md).
+- **Mapa dokumentacji:** [Wybierz instrukcję lub dokument techniczny](../docs/README.md).
 - **Szczegóły techniczne:** [Protokół](../docs/protocol.md) · [Architektura](../docs/architecture.md) · [Plan sterowania](../docs/movement.md).
 - **Bezpieczeństwo:** [Prywatne zgłaszanie podatności](../SECURITY.md) · [Utrzymanie według Tier 2](../docs/governance.md). Diagnostyka pomija identyfikatory urządzenia.
 

@@ -85,3 +85,8 @@ Private HCI and host-log diagnostics identified a local pairing exchange rejecte
 The implementation in 0.1.0a4 follows the public BlueZ [AgentManager API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.AgentManager.rst) and [Agent API](https://github.com/bluez/bluez/blob/master/doc/org.bluez.Agent.rst). The [agent implementation](https://github.com/bluez/bluez/blob/master/src/agent.c) selects an agent by caller identity, makes the first registered agent a default fallback, and removes agents on caller disconnect. The [device implementation](https://github.com/bluez/bluez/blob/master/src/device.c) selects that caller's agent for Pair and watches for requester exit to cancel unfinished bonding. Both registration and Pair therefore use the same short-lived bus. The agent rejects any other device path and does not call RequestDefaultAgent.
 
 This solution uses public D-Bus objects rather than private Bleak client fields. The dependency is HA-owned dbus-fast (tested at 5.0.22); no independent override of HA's pin is introduced. Physical testing of this automatic path is pending.
+
+
+## Communication reuse review
+
+See [the installed-library comparison and state lifecycle review](communication-review.md) for the verified HA → idasen-ha → idasen dependency chain, centimeter-interface separation, command differences and the required persistent-settings/freshness model. The duplicate-memory repair does not implement that broader redesign.

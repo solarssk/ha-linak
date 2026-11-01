@@ -99,7 +99,7 @@ Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i
 
 ## 📚 Więcej informacji
 
-[Przewodnik użytkownika](.github/README.pl.md) · [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md) · [Współpraca](CONTRIBUTING.md)
+[Mapa dokumentacji](docs/README.md) · [Przewodnik użytkownika](.github/README.pl.md) · [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md) · [Współpraca](CONTRIBUTING.md)
 
 [Badania protokołu](docs/protocol.md) · [Badania Bluetooth](docs/bluetooth-research.md) · [Jakość i utrzymanie](docs/governance.md)
 

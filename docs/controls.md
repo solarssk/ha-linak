@@ -55,3 +55,5 @@ Review the separate confirmation page: it shows the old and proposed height/refe
 If verification fails or saving is cancelled, the write may already have reached the panel. There is no automatic retry or rollback. Check the current panel reading before submitting a new correction. Options never store a measured-height input or replay calibration on restart. A 1 mm displayed bound can round up to half a display step below wire position zero; that rounding maps to zero, while larger inconsistencies remain errors. This does not discover or program firmware limits.
 
 The payload follows the pinned community implementation recorded in the settings reference. Physical write/persistence validation on DPG1C is pending; simulated tests establish software behavior.
+
+Calibration allows one raw position quantum (0.1 mm) between the measurement preview and fresh checks. Both immediate position reads must still match exactly and report zero speed; offset changes and larger position differences reject the write. Readback position verification remains exact. A rejected preflight reports that no correction was sent, separately from an uncertain write.

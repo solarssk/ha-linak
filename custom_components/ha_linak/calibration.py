@@ -7,6 +7,12 @@ import struct
 from .protocol import DISPLAY_HALF_STEP_RAW, PositionSample
 
 MEASURED_HEIGHT = "measured_height"
+# One position encoding quantum is 0.1 mm; only the old preview may differ.
+PREVIEW_TOLERANCE_RAW = 1
+
+
+class CalibrationSnapshotChanged(ValueError):
+    """Fresh preflight data rejected the proposal before any setting write."""
 
 
 class InvalidMeasurement(ValueError):

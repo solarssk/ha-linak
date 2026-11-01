@@ -46,7 +46,8 @@
       "pairing_agent_unavailable": "Home Assistant could not prepare local Bluetooth pairing. Check the host Bluetooth service and D-Bus permissions, then try again.",
       "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again.",
       "invalid_measurement": "Check the current height measurement. The desk must be stationary with a valid panel reading.",
-      "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically."
+      "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically.",
+      "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -167,7 +168,8 @@
       "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again.",
       "invalid_measurement": "Check the current height measurement. The desk must be stationary with a valid panel reading.",
       "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically.",
-      "connection_unavailable": "The desk is disconnected. Retry after the connection is restored."
+      "connection_unavailable": "The desk is disconnected. Retry after the connection is restored.",
+      "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again."
     },
     "progress": {
       "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."

@@ -26,7 +26,12 @@ from .client import (
     DeskPairingTimeout,
     DeskPairingAgentError,
 )
-from .calibration import HeightCalibration, InvalidMeasurement, MEASURED_HEIGHT
+from .calibration import (
+    HeightCalibration,
+    InvalidMeasurement,
+    MEASURED_HEIGHT,
+    CalibrationSnapshotChanged,
+)
 from .motion import MotionError, _drain_cleanup
 from .control_settings import (
     ControlSettings,
@@ -299,6 +304,8 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             await desk.refresh()
             assert self._calibration is not None
             self._validated_state = await desk.calibrate_height(self._calibration)
+        except CalibrationSnapshotChanged:
+            error = "calibration_snapshot_changed"
         except (
             BleakError,
             ConnectionError,
@@ -432,6 +439,8 @@ class LinakOptionsFlow(OptionsFlowWithReload):
                 raise ValueError("A current connection is required")
             await coordinator.desk.calibrate_height(self._calibration)
             return None
+        except CalibrationSnapshotChanged:
+            return "calibration_snapshot_changed"
         except BleakError, ConnectionError, TimeoutError, ValueError, MotionError:
             return "calibration_failed"
         finally:

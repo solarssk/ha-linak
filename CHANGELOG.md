@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Accept a single 0.1 mm position quantum between the calibration preview and fresh stationary checks; distinguish rejected preflight checks from uncertain writes.
 - Recover fresh readings after failed calibration without replaying writes, hide disconnected cached heights and reject oversized measurements before conversion.
 - Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.
 - Add a documentation index with task-based entry points and a purpose for each reference.

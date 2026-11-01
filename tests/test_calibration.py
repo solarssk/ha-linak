@@ -294,7 +294,7 @@ async def test_position_change_after_confirmation_preview_rejects_write(hass):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
-        assert result["errors"] == {"base": "calibration_failed"}
+        assert result["errors"] == {"base": "calibration_snapshot_changed"}
         assert not writes(fake)
         assert not hass.config_entries.async_entries("ha_linak")
         hass.config_entries.flow.async_abort(result["flow_id"])
@@ -678,3 +678,22 @@ async def test_onboarding_recovers_after_delivered_write_without_replaying(hass)
         assert result["type"] == "create_entry"
         assert len(writes(fake)) == 1
         await hass.async_block_till_done()
+
+
+@pytest.mark.parametrize("delta", [-2, -1, 1, 2])
+async def test_preview_quantization_keeps_fresh_stationary_checks_strict(delta):
+    desk, fake = await ready()
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.5
+    )
+    fake.position += delta
+    if abs(delta) == 1:
+        state = await desk.calibrate_height(proposal)
+        assert state.offset_raw == proposal.new_offset_raw
+        assert state.height_cm == pytest.approx(75.5 + delta / 100)
+        assert writes(fake) == [proposal.write_request()]
+    else:
+        with pytest.raises(ValueError):
+            await desk.calibrate_height(proposal)
+        assert not writes(fake)
+    await desk.disconnect()

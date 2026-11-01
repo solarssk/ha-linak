@@ -13,7 +13,11 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
-from .calibration import HeightCalibration
+from .calibration import (
+    HeightCalibration,
+    CalibrationSnapshotChanged,
+    PREVIEW_TOLERANCE_RAW,
+)
 from .control_settings import ControlSettings
 from .motion import (
     BleakMotionTransport,
@@ -423,10 +427,11 @@ class DeskClient:
                 if (
                     first != second
                     or first.speed_raw != 0
-                    or first.position_raw != proposal.position_raw
+                    or abs(first.position_raw - proposal.position_raw)
+                    > PREVIEW_TOLERANCE_RAW
                     or offset != proposal.old_offset_raw
                 ):
-                    raise ValueError(
+                    raise CalibrationSnapshotChanged(
                         "Desk position or reference changed; measure again"
                     )
                 if proposal.changed:

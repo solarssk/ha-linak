@@ -82,7 +82,7 @@ def writes(fake):
 
 
 @pytest.mark.parametrize(
-    "value", [float("nan"), float("inf"), True, -1, 0, "75", 1, 1000]
+    "value", [float("nan"), float("inf"), True, -1, 0, "75", 1, 1000, 1e308]
 )
 def test_invalid_or_unrepresentable_measurements(value):
     position = PositionSample(1438, 0)
@@ -611,3 +611,70 @@ async def test_changed_reference_disables_unrepresentable_bounds_but_keeps_senso
 def test_calibration_plan_rejects_invalid_wire_words(values):
     with pytest.raises(ValueError):
         HeightCalibration(*values)
+
+
+async def test_calibration_notifications_publish_only_verified_reference():
+    desk, fake = await ready()
+    published = []
+    desk.changed = lambda: published.append(desk.state.height_cm)
+    original = fake.write_gatt_char
+
+    async def notify_during_write(uuid, data, response):
+        await original(uuid, data, response)
+        if data[2] == 0x80:
+            desk._position(
+                desk._generation, bytearray(struct.pack("<HH", fake.position, 0))
+            )
+            assert not published
+
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.6
+    )
+    with patch.object(fake, "write_gatt_char", side_effect=notify_during_write):
+        await desk.calibrate_height(proposal)
+    assert published
+    assert all(height == 75.6 for height in published)
+    await desk.disconnect()
+
+
+async def test_onboarding_recovers_after_delivered_write_without_replaying(hass):
+    fake = CalibrationBleak()
+    original = fake.write_gatt_char
+
+    async def lose_confirmation(uuid, data, response):
+        await original(uuid, data, response)
+        if data[2] == 0x80:
+            raise ConnectionError("Simulated acknowledgement loss")
+
+    with (
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_ble_device_from_address",
+            return_value=DEVICE,
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=fake.reconnect,
+        ),
+        patch.object(fake, "write_gatt_char", side_effect=lose_confirmation),
+        patch("custom_components.ha_linak.async_setup_entry", return_value=True),
+    ):
+        result = await initial_form(hass, fake)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
+        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["type"] == "form"
+        assert result["step_id"] == "finish"
+        assert result["errors"] == {"base": "calibration_failed"}
+        assert result["description_placeholders"]["height"] == "75.6"
+        assert len(writes(fake)) == 1
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
+        )
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["type"] == "create_entry"
+        assert len(writes(fake)) == 1
+        await hass.async_block_till_done()

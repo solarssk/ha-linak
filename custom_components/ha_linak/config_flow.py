@@ -319,6 +319,10 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 await _drain_cleanup(settled)
                 if isinstance(settled.result()[0], Exception):
                     error = "calibration_failed"
+        if error:
+            # Read-only recovery cannot replay the uncertain setting write.
+            self._validated_state = None
+            await self._validate()
         return error
 
     async def async_step_calibration_apply(self, user_input=None) -> ConfigFlowResult:
@@ -366,6 +370,8 @@ class LinakOptionsFlow(OptionsFlowWithReload):
                 if self._prepare_options(user_input):
                     return await self.async_step_calibration_confirm()
                 return self.async_create_entry(title="", data=self._pending_range)
+            except ConnectionError:
+                errors["base"] = "connection_unavailable"
             except InvalidMeasurement:
                 errors["base"] = "invalid_measurement"
             except ValueError:
@@ -379,24 +385,27 @@ class LinakOptionsFlow(OptionsFlowWithReload):
             step_id="init",
             data_schema=_range_schema(options),
             errors=errors,
-            description_placeholders=_height_placeholders(
-                getattr(getattr(self.config_entry, "runtime_data", None), "data", None)
-            ),
+            description_placeholders=_height_placeholders(self._current_state()),
         )
 
-    def _prepare_options(self, user_input: dict[str, Any]) -> bool:
+    def _current_state(self) -> DeskState | None:
+        """Hide cached height when the latest connection update failed."""
         coordinator = getattr(self.config_entry, "runtime_data", None)
         if coordinator is None or not coordinator.last_update_success:
-            raise ValueError("A current height reading is required")
+            return None
+        return coordinator.data
+
+    def _prepare_options(self, user_input: dict[str, Any]) -> bool:
+        state = self._current_state()
+        if state is None:
+            raise ConnectionError("A current height reading is required")
         self._calibration = None
         self._pending_range = _range_options(user_input)
         if MEASURED_HEIGHT in user_input:
-            self._calibration = _prepare_calibration(
-                coordinator.data, user_input[MEASURED_HEIGHT]
-            )
+            self._calibration = _prepare_calibration(state, user_input[MEASURED_HEIGHT])
             if self._calibration.changed:
                 return True
-        _validate_range(user_input, coordinator.data)
+        _validate_range(user_input, state)
         return False
 
     async def async_step_calibration_confirm(self, user_input=None) -> ConfigFlowResult:

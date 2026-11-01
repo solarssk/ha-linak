@@ -169,7 +169,7 @@ class DeskClient:
             self.state.position = decode_position(bytes(data))
         except ValueError:
             self._ready = False
-        if was_ready:
+        if was_ready and self._calibration_task is None:
             self.changed()
 
     async def _io[T](self, operation: Coroutine[Any, Any, T], budget: float) -> T:

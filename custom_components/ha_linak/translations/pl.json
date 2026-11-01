@@ -166,7 +166,8 @@
     "error": {
       "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie.",
       "invalid_measurement": "Sprawdź pomiar aktualnej wysokości. Biurko musi być nieruchome, a odczyt panelu aktualny.",
-      "calibration_failed": "Nie potwierdzono korekty. Ustawienie mogło się zmienić. Sprawdź wskazanie panelu przed kolejną próbą; zapis nie zostanie automatycznie ponowiony."
+      "calibration_failed": "Nie potwierdzono korekty. Ustawienie mogło się zmienić. Sprawdź wskazanie panelu przed kolejną próbą; zapis nie zostanie automatycznie ponowiony.",
+      "connection_unavailable": "Biurko jest rozłączone. Spróbuj ponownie po przywróceniu połączenia."
     },
     "progress": {
       "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."

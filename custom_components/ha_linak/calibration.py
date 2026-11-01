@@ -40,6 +40,8 @@ class HeightCalibration:
             raise InvalidMeasurement(
                 "Measure a stationary desk with a valid current reading"
             )
+        if measured_cm > (0xFFFE + position.position_raw) / 100:
+            raise InvalidMeasurement("Measurement is outside the reference encoding")
         reference = round(measured_cm * 100) - position.position_raw
         if abs(reference - offset_raw) <= DISPLAY_HALF_STEP_RAW:
             reference = offset_raw

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Recover fresh readings after failed calibration without replaying writes, hide disconnected cached heights and reject oversized measurements before conversion.
 - Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.
 - Add a documentation index with task-based entry points and a purpose for each reference.
 - Separate consecutive stored-position replies with validated read barriers to prevent duplicate BlueZ notifications from shifting memory slots.

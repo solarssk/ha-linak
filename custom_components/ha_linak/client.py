@@ -432,7 +432,9 @@ class DeskClient:
         if verified != identity[:2] + b"\x01" + identity[3:]:
             raise ValueError("Client activation was not verified")
 
-    async def calibrate_height(self, proposal: HeightCalibration) -> DeskState:
+    async def calibrate_height(
+        self, proposal: HeightCalibration, *, activate_client: bool = False
+    ) -> DeskState:
         """Apply one explicitly confirmed offset, verify it, never move or retry."""
         if self.control_busy or self._lock.locked() or not self.connected:
             raise MotionError("Calibration requires an idle ready connection")
@@ -475,7 +477,7 @@ class DeskClient:
                     raise CalibrationSnapshotChanged(
                         "Desk position or reference changed; measure again"
                     )
-                if proposal.changed:
+                if proposal.changed or activate_client:
                     await self._activate_calibration_client()
                     fresh_offset = decode_offset(
                         await self._query(ReadCommand.OFFSET, 3)
@@ -494,6 +496,7 @@ class DeskClient:
                         raise CalibrationSnapshotChanged(
                             "Position or reference changed during activation"
                         )
+                if proposal.changed:
                     self._set_stage("calibration_write")
                     await self._write_setting(proposal.write_request())
                 # Full refresh starts with a different response type before offset

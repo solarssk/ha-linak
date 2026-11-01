@@ -53,11 +53,13 @@ The device information contains its name and Bluetooth address. Downloaded diagn
 - ⏹️ **Stop** (`button`): stop the current movement
 - 🔖 **Go to stored position 1–4** (`button`): move to a position saved on the panel
 
-The slider shows the current desk height. Move it to choose a new height, and press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
+The slider selects a whole-centimeter target inside your measured range. Press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel.
 
-Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
+Setup guides you through a name in HA, connection preparation, measured travel bounds and a current-height check. No phone app is needed. Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
 
-If the panel height is wrong, enter the current floor-to-desktop measurement in **Current measured height** during setup or Configure. Review and confirm the correction before it is saved to the panel. Calibration does not move the desk. Calibration confirmation also activates an inactive panel client while preserving its existing identifier. Background reads never perform this write. The offset sensor remains read-only; saving memories and changing reminders remain in the [settings plan](docs/settings-reference.md).
+If the panel height is wrong, enter the current floor-to-desktop measurement in **Height measured with a tape** when the guide asks for it. Review and confirm the correction before it is saved to the panel. Calibration does not move the desk. Setup prepares an inactive panel client after confirmation, preserving its existing identifier. Background reads never perform this write. The offset sensor remains read-only; saving memories and changing reminders remain in the [settings plan](docs/settings-reference.md).
+
+Height sensors and history use whole centimeters. The slider uses 1 cm targets within your measured bounds. Tape measurements, Bluetooth readings and movement calculations retain their original precision. The name entered in setup belongs to HA.
 
 ## 📋 What you need
 

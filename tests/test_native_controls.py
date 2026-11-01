@@ -23,6 +23,7 @@ from custom_components.ha_linak.motion import (
 )
 from custom_components.ha_linak.protocol import DPG_UUID, HEIGHT_UUID
 from test_client import FakeBleak
+from test_integration import guide_to_range
 
 ADDRESS = "AA:BB:CC:DD:EE:FF"
 DEVICE = BLEDevice(ADDRESS, "Test desk", {})
@@ -41,7 +42,7 @@ class MotionBleak(FakeBleak):
             get_characteristic=lambda uuid: SimpleNamespace(
                 properties=["read"]
                 if uuid == HEIGHT_UUID
-                else ["write-without-response"]
+                else (["write"] if uuid == DPG_UUID else ["write-without-response"])
             )
         )
 
@@ -211,7 +212,7 @@ async def test_native_number_buttons_and_service_errors(hass):
     assert len(numbers) == 1
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     target = numbers[0]
-    assert target.state == "82.38"
+    assert target.state == "82"
     assert target.attributes["unit_of_measurement"] == "cm"
     assert target.attributes["mode"] == "slider"
     assert target.attributes["min"] == 70
@@ -223,7 +224,7 @@ async def test_native_number_buttons_and_service_errors(hass):
         {"entity_id": target.entity_id, "value": 83},
         blocking=True,
     )
-    assert hass.states.get(target.entity_id).state == "83.0"
+    assert hass.states.get(target.entity_id).state == "83"
     assert entry.runtime_data.data.height_cm == 83
     stop = next(
         s for s in hass.states.async_all("button") if s.entity_id.endswith("_stop")
@@ -244,6 +245,9 @@ async def test_options_flow_updates_height_range_without_switches(hass):
         new=AsyncMock(return_value=True),
     ):
         result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "range"}
+        )
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], OPTIONS | {"minimum_height": 90}
         )
@@ -344,6 +348,9 @@ async def test_options_reject_range_when_current_height_is_unavailable(hass):
     entry, fake = await setup_entry(hass)
     entry.runtime_data.last_update_success = False
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "range"}
+    )
     assert result["description_placeholders"]["height"] == "?"
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], OPTIONS
@@ -484,6 +491,9 @@ async def test_real_options_reload_sets_range_without_moving(hass):
     ):
         result = await hass.config_entries.options.async_init(entry.entry_id)
         result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "range"}
+        )
+        result = await hass.config_entries.options.async_configure(
             result["flow_id"], OPTIONS
         )
         assert result["type"] == "create_entry"
@@ -501,7 +511,7 @@ async def test_slider_follows_physical_height_changes(hass):
     target_id = hass.states.async_all("number")[0].entity_id
     fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1600, 0)))
     await hass.async_block_till_done()
-    assert hass.states.get(target_id).state == "84.0"
+    assert hass.states.get(target_id).state == "84"
     assert hass.states.get(target_id).attributes["mode"] == "slider"
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     await hass.config_entries.async_unload(entry.entry_id)
@@ -539,6 +549,7 @@ async def test_onboarding_collects_range_before_creating_entry(hass):
         )
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await guide_to_range(hass, result)
         assert result["step_id"] == "finish"
         assert not hass.config_entries.async_entries(DOMAIN)
         initial_writes = list(fake.writes)
@@ -556,6 +567,7 @@ async def test_onboarding_collects_range_before_creating_entry(hass):
         assert result["type"] == "progress"
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await guide_to_range(hass, result)
         assert result["errors"] == {"base": "invalid_limits"}
         assert not hass.config_entries.async_entries(DOMAIN)
         updated_range = OPTIONS | {"maximum_height": 130}
@@ -565,6 +577,7 @@ async def test_onboarding_collects_range_before_creating_entry(hass):
         assert result["type"] == "progress"
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await guide_to_range(hass, result)
         assert result["type"] == "create_entry"
         assert result["options"] == updated_range
         assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
@@ -579,7 +592,7 @@ async def test_stalled_move_preserves_measured_sensor_and_slider_height(hass):
     operation = asyncio.create_task(entry.runtime_data.async_move_to_cm(83))
     await fake.target_written.wait()
     assert entry.runtime_data.data.height_cm == before
-    assert float(hass.states.get(target_id).state) == before
+    assert float(hass.states.get(target_id).state) == round(before)
     await entry.runtime_data.async_stop()
     with pytest.raises(HomeAssistantError):
         await operation
@@ -636,6 +649,7 @@ async def test_failed_fresh_range_read_does_not_create_entry(hass):
         )
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await guide_to_range(hass, result)
         assert result["step_id"] == "finish"
         fake.fail_command = 0x80
         result = await hass.config_entries.flow.async_configure(
@@ -644,6 +658,7 @@ async def test_failed_fresh_range_read_does_not_create_entry(hass):
         assert result["type"] == "progress"
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await guide_to_range(hass, result)
         assert result["step_id"] == "finish"
         assert result["errors"] == {"base": "cannot_connect"}
         assert not hass.config_entries.async_entries(DOMAIN)

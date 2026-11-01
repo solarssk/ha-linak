@@ -19,7 +19,7 @@ from homeassistant.const import (
 )
 
 from .coordinator import LinakCoordinator
-from .entity import LinakEntity
+from .entity import LinakEntity, whole_centimeters
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
@@ -57,7 +57,7 @@ class LinakSensor(LinakEntity, SensorEntity):
         if key in ("height", "offset") or key.startswith("memory_"):
             self._attr_device_class = SensorDeviceClass.DISTANCE
             self._attr_native_unit_of_measurement = UnitOfLength.CENTIMETERS
-            self._attr_suggested_display_precision = 1
+            self._attr_suggested_display_precision = 0
         elif key != "reminder_profile":
             self._attr_device_class = SensorDeviceClass.DURATION
             self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
@@ -68,15 +68,23 @@ class LinakSensor(LinakEntity, SensorEntity):
     def native_value(self):
         state = self.coordinator.data
         if self.key == "height":
-            return state.height_cm
+            return whole_centimeters(state.height_cm)
         if self.key == "offset":
-            return state.offset_raw / 100 if state.offset_raw is not None else None
+            return (
+                whole_centimeters(state.offset_raw / 100)
+                if state.offset_raw is not None
+                else None
+            )
         if self.key.startswith("memory_"):
             index = int(self.key.split("_")[1]) - 1
             if index >= len(state.memories) or state.offset_raw is None:
                 return None
             raw = state.memories[index].position_raw
-            return (raw + state.offset_raw) / 100 if raw is not None else None
+            return (
+                whole_centimeters((raw + state.offset_raw) / 100)
+                if raw is not None
+                else None
+            )
         if state.reminders is None:
             return None
         if self.key == "reminder_profile":

@@ -1,5 +1,7 @@
 """Shared identity for LINAK entities, including local Bluetooth metadata."""
 
+import math
+
 from homeassistant.helpers.device_registry import (
     CONNECTION_BLUETOOTH,
     DeviceInfo,
@@ -25,3 +27,8 @@ class LinakEntity(CoordinatorEntity[LinakCoordinator]):
             manufacturer="LINAK",
             model="DPG",
         )
+
+
+def whole_centimeters(value: float | None) -> int | None:
+    """Round only HA-facing heights; protocol and movement retain exact values."""
+    return math.floor(value + 0.5) if value is not None else None

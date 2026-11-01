@@ -1,7 +1,7 @@
 """Native LINAK integration with explicitly configured movement controls."""
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform, CONF_NAME
 from homeassistant.core import HomeAssistant
 
 from .coordinator import LinakCoordinator
@@ -39,6 +39,9 @@ def _repair_title(
     hass: HomeAssistant, entry: ConfigEntry, coordinator: LinakCoordinator
 ) -> None:
     """Improve generated device metadata without guessing ownership of LINAK titles."""
+    if CONF_NAME in entry.data:
+        coordinator.name = entry.title
+        return
     if coordinator.desk is None:
         return
     address = coordinator.address

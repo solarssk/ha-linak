@@ -72,3 +72,12 @@ In the 2026-11-01 follow-up, system metadata and a direct GAP read agreed on the
 After a failed calibration, setup performs one bounded read-only recovery before returning to the measurement form. It never repeats the setting write or skips confirmation. If recovery fails, the current height is unknown. Configure also hides cached heights after a failed update and reports connection failures separately from invalid bounds.
 
 The calibration confirmation covers activation of an inactive panel client while preserving its existing identifier. Activation is checked and verified inside the reserved calibration operation, not during ordinary discovery, pairing or background reads. A rejected setting response aborts without retry.
+
+
+## Guided setup and later changes
+
+After discovery and read validation, setup asks for a name in Home Assistant. Continuing explicitly prepares the existing panel client for HA control, preserving its identifier and skipping an already active client. Preparation does not move the desk or alter its height. The name is stored in HA and does not rename the Bluetooth panel. An unsuccessful preparation returns to the name/preparation screen without creating an entry.
+
+Next, enter measured lowest/highest heights. Physical panel movement while measuring those bounds is expected. The guide then refreshes the current reading before asking whether its height is correct. A wrong reading opens a separate measurement screen and confirmation. Keep the desk still through those final steps. Correct readings skip offset writes. This order prevents a measurement captured before checking travel bounds from becoming the calibration baseline.
+
+Configure opens a menu for the HA name, explicit connection preparation, height checking/correction and travel bounds. Height correction uses existing bounds and prompts for revised bounds if the corrected reference makes them invalid. Sensor states use whole centimeters; calibration inputs and all internal checks retain precision. No previous measurement is replayed after cancellation or restart.

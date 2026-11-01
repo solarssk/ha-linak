@@ -18,20 +18,50 @@
         "description": "Keep the desk within Bluetooth range, enable pairing on the panel and close other connected desk apps. Submit to try again."
       },
       "finish": {
-        "title": "Height calibration and range",
-        "description": "Panel reading: {height} cm. If incorrect, measure the current height from the floor to the top of the desktop and enter it in the first field. Then enter the actual height range. A correction requires separate confirmation. Keep the desk still until saving finishes.",
+        "title": "2. Set the travel range",
+        "description": "Enter the lowest and highest desktop heights measured from the floor. If needed, use the physical panel to check both ends, then leave the desk still. These bounds limit commands from HA. Keep the measurement precision; do not round bounds outward.",
         "data": {
-          "measured_height": "Current measured height (optional)",
-          "minimum_height": "Minimum height (cm)",
-          "maximum_height": "Maximum height (cm)"
+          "minimum_height": "Lowest desktop height",
+          "maximum_height": "Highest desktop height"
+        },
+        "data_description": {
+          "minimum_height": "Floor to the top of the desktop at its lowest position.",
+          "maximum_height": "Floor to the top of the desktop at its highest position."
         }
       },
       "calibration_confirm": {
         "title": "Confirm height correction",
-        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still. If the panel client is inactive, confirmation also activates it while preserving its existing identifier. This step may be stored in the panel memory."
+        "description": "**{desk_name}**\n\n- Height: {old_height} cm → {measured_height} cm\n- Travel range: {minimum_height}–{maximum_height} cm\n\nThe correction will be saved to the panel and verified. Displayed saved heights will also change; their mechanism positions stay the same. If needed, the panel connection will be prepared for HA. This step may be stored in the panel memory. Keep the desk still; confirmation will not move it."
       },
       "calibration_apply": {
-        "title": "Saving height correction"
+        "title": "Preparing and checking your desk"
+      },
+      "name": {
+        "title": "1. Name and connect your desk",
+        "description": "Choose the name shown in Home Assistant. Continuing prepares the panel for HA control and may save a connection setting in its memory. The desk will not move. No phone app is needed.",
+        "data": {
+          "name": "Name in Home Assistant"
+        },
+        "data_description": {
+          "name": "For example: Office desk."
+        }
+      },
+      "height": {
+        "title": "3. Check the current height",
+        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. If it is correct, finish adding the desk. Otherwise, enter the current measurement in the next step. From now on, keep the desk still.",
+        "data": {
+          "height_correct": "The height is correct"
+        }
+      },
+      "measure": {
+        "title": "3. Enter the current measurement",
+        "description": "Keep the desk still. Measure from the floor to the top of the desktop and enter the result in centimeters. Enter the actual measurement directly. You will review and confirm the correction before it is saved.",
+        "data": {
+          "measured_height": "Height measured with a tape"
+        },
+        "data_description": {
+          "measured_height": "You can enter an exact measurement, such as 75.5 cm."
+        }
       }
     },
     "error": {
@@ -47,7 +77,10 @@
       "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again.",
       "invalid_measurement": "Check the current height measurement. The desk must be stationary with a valid panel reading.",
       "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically.",
-      "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again."
+      "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again.",
+      "invalid_name": "Enter a readable name between 1 and 80 characters.",
+      "connection_unavailable": "The desk connection is unavailable. Retry after it reconnects.",
+      "client_preparation_failed": "The panel could not be prepared. Check Bluetooth connectivity and continue to check again. No movement command was sent."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -56,7 +89,7 @@
     },
     "progress": {
       "connect": "Connecting to your desk, authenticating Bluetooth and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup.",
-      "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."
+      "calibrate": "Checking the connection and panel client. If you confirmed a height correction, it will be saved and verified. Keep the desk still. Cancellation cannot undo a write already delivered to the panel."
     }
   },
   "entity": {
@@ -148,28 +181,73 @@
   "options": {
     "step": {
       "init": {
-        "title": "Height calibration and range",
-        "description": "Panel reading: {height} cm. If incorrect, measure the current height from the floor to the top of the desktop and enter it in the first field. Then enter the actual height range. A correction requires separate confirmation. Keep the desk still until saving finishes.",
-        "data": {
-          "measured_height": "Current measured height (optional)",
-          "minimum_height": "Minimum height (cm)",
-          "maximum_height": "Maximum height (cm)"
+        "title": "Desk settings",
+        "description": "Choose what to change. Height correction and travel range have separate guided steps.",
+        "menu_options": {
+          "name": "Name in Home Assistant",
+          "height": "Check or correct the height",
+          "range": "Travel range",
+          "connect": "Prepare desk control"
         }
       },
       "calibration_confirm": {
         "title": "Confirm height correction",
-        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still. If the panel client is inactive, confirmation also activates it while preserving its existing identifier. This step may be stored in the panel memory."
+        "description": "**{desk_name}**\n\n- Height: {old_height} cm → {measured_height} cm\n- Travel range: {minimum_height}–{maximum_height} cm\n\nThe correction will be saved to the panel and verified. Displayed saved heights will also change; their mechanism positions stay the same. If needed, the panel connection will be prepared for HA. This step may be stored in the panel memory. Keep the desk still; confirmation will not move it."
       },
       "calibration_apply": {
         "title": "Saving height correction"
+      },
+      "name": {
+        "title": "Name in Home Assistant",
+        "description": "Choose the name shown in Home Assistant. Keep the discovered name or enter your own.",
+        "data": {
+          "name": "Name in Home Assistant"
+        },
+        "data_description": {
+          "name": "For example: Office desk."
+        }
+      },
+      "height": {
+        "title": "Check the height",
+        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. If the reading is correct, continue to the travel range. Otherwise, enter your tape measurement in the next step.",
+        "data": {
+          "height_correct": "The height is correct"
+        }
+      },
+      "measure": {
+        "title": "Enter your tape measurement",
+        "description": "Keep the desk still. Measure from the floor to the top of the desktop and enter the result in centimeters. Enter the actual measurement directly. You will review and confirm the correction before it is saved.",
+        "data": {
+          "measured_height": "Height measured with a tape"
+        },
+        "data_description": {
+          "measured_height": "You can enter an exact measurement, such as 75.5 cm."
+        }
+      },
+      "range": {
+        "title": "Travel range",
+        "description": "Enter the lowest and highest desktop heights measured from the floor. If needed, use the physical panel to check both ends, then leave the desk still. These bounds limit commands from HA. Keep the measurement precision; do not round bounds outward.",
+        "data": {
+          "minimum_height": "Lowest desktop height",
+          "maximum_height": "Highest desktop height"
+        },
+        "data_description": {
+          "minimum_height": "Floor to the top of the desktop at its lowest position.",
+          "maximum_height": "Floor to the top of the desktop at its highest position."
+        }
+      },
+      "connect": {
+        "title": "Prepare desk control",
+        "description": "Continuing prepares the panel for HA control. If needed, a connection setting will be saved in the panel memory. Height and position will not change."
       }
     },
     "error": {
       "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again.",
       "invalid_measurement": "Check the current height measurement. The desk must be stationary with a valid panel reading.",
       "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically.",
-      "connection_unavailable": "The desk is disconnected. Retry after the connection is restored.",
-      "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again."
+      "connection_unavailable": "The desk connection is unavailable. Retry after it reconnects.",
+      "calibration_snapshot_changed": "The position or height reference changed since the measurement. No correction was sent. Keep the desk still, check the current measurement and try again.",
+      "invalid_name": "Enter a readable name between 1 and 80 characters."
     },
     "progress": {
       "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."

@@ -42,6 +42,8 @@
 
 ## 0.1.0a9 (unpublished alpha)
 
+- Guide setup through naming and explicit client preparation, measured travel bounds, then a fresh height check and optional correction. Add focused post-install settings and preserve names chosen in HA.
+- Record height, saved-height and offset sensor states in whole centimeters and use 1 cm slider targets inside the exact measured bounds; keep protocol, calibration and movement calculations precise.
 - Activate an inactive client only during confirmed calibration, preserve its identifier, require application acknowledgements and verify activation before the offset write.
 - Record successful DPG1C activation, measured-height correction and persistence across a separate Bluetooth connection; physical movement and power-cycle persistence remain unverified.
 

@@ -19,7 +19,13 @@ class FakeBleak:
     backend_id = "bleak_esphome"
 
     def __init__(self):
-        self.services = SimpleNamespace(get_characteristic=lambda _: None)
+        self.services = SimpleNamespace(
+            get_characteristic=lambda uuid: (
+                SimpleNamespace(properties=["read", "write"])
+                if uuid in (DPG_UUID, HEIGHT_UUID)
+                else None
+            )
+        )
         self.is_connected = True
         self.callbacks = {}
         self.writes = []
@@ -43,7 +49,12 @@ class FakeBleak:
         assert data[2] == 0
         if data[1] == self.fail_command:
             raise ConnectionError("simulated link loss")
-        self.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE[f"{data[1]:02x}"]))
+        if data[1] == 0x86:
+            self.callbacks[DPG_UUID](
+                None, bytearray(b"\x01\x11\x01" + bytes(range(16)))
+            )
+        else:
+            self.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE[f"{data[1]:02x}"]))
 
     async def read_gatt_char(self, uuid):
         assert uuid == HEIGHT_UUID

@@ -14,6 +14,7 @@ from custom_components.ha_linak.control_settings import ControlSettings
 from custom_components.ha_linak.motion import MotionError
 from custom_components.ha_linak.protocol import DPG_UUID, HEIGHT_UUID, PositionSample
 from test_client import FakeBleak
+from test_integration import prepare_setup
 
 ADDRESS = "AA:BB:CC:DD:EE:FF"
 DEVICE = BLEDevice(ADDRESS, "Test desk", {})
@@ -215,7 +216,32 @@ async def test_disconnect_cancels_owned_calibration_without_motion_or_retry():
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
 
 
-async def initial_form(hass, fake):
+async def submit_range(hass, result, values, options=False):
+    """Follow the focused screens without bypassing HA schema validation."""
+    manager = hass.config_entries.options if options else hass.config_entries.flow
+    bounds = {key: value for key, value in values.items() if key != MEASURED_HEIGHT}
+    if result["type"] == "menu":
+        step = "height" if MEASURED_HEIGHT in values else "range"
+        result = await manager.async_configure(
+            result["flow_id"], {"next_step_id": step}
+        )
+    if result.get("step_id") in ("finish", "range"):
+        result = await manager.async_configure(result["flow_id"], bounds)
+        if result["type"] == "progress":
+            await hass.async_block_till_done()
+            result = await manager.async_configure(result["flow_id"])
+    if result.get("step_id") == "height":
+        result = await manager.async_configure(
+            result["flow_id"], {"height_correct": MEASURED_HEIGHT not in values}
+        )
+    if result.get("step_id") == "measure":
+        result = await manager.async_configure(
+            result["flow_id"], {MEASURED_HEIGHT: values[MEASURED_HEIGHT]}
+        )
+    return result
+
+
+async def initial_form(hass, fake, *, guide=True):
     from homeassistant.const import CONF_ADDRESS
     from custom_components.ha_linak.const import DOMAIN
 
@@ -237,7 +263,8 @@ async def initial_form(hass, fake):
         result["flow_id"], {CONF_ADDRESS: ADDRESS}
     )
     await hass.async_block_till_done()
-    return await hass.config_entries.flow.async_configure(result["flow_id"])
+    result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    return await prepare_setup(hass, result) if guide else result
 
 
 async def test_onboarding_calibrates_before_validating_measured_bounds(hass):
@@ -254,9 +281,7 @@ async def test_onboarding_calibrates_before_validating_measured_bounds(hass):
         patch("custom_components.ha_linak.async_setup_entry", return_value=True),
     ):
         result = await initial_form(hass, fake)
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
-        )
+        result = await submit_range(hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6})
         assert result["step_id"] == "calibration_confirm"
         assert result["description_placeholders"]["old_height"] == "82.4"
         assert not writes(fake)
@@ -284,9 +309,7 @@ async def test_aborting_calibration_confirmation_never_writes(hass):
         ),
     ):
         result = await initial_form(hass, fake)
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
-        )
+        result = await submit_range(hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6})
         hass.config_entries.flow.async_abort(result["flow_id"])
     assert not writes(fake)
 
@@ -304,9 +327,7 @@ async def test_position_change_after_confirmation_preview_rejects_write(hass):
         ),
     ):
         result = await initial_form(hass, fake)
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
-        )
+        result = await submit_range(hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6})
         fake.position += 50
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
         await hass.async_block_till_done()
@@ -345,8 +366,8 @@ async def test_options_calibration_refreshes_reference_without_storing_write_inp
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
+        result = await submit_range(
+            hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6}, options=True
         )
         assert result["step_id"] == "calibration_confirm"
         assert not writes(fake)
@@ -357,7 +378,7 @@ async def test_options_calibration_refreshes_reference_without_storing_write_inp
         result = await hass.config_entries.options.async_configure(result["flow_id"])
         assert result["type"] == "create_entry"
         await hass.async_block_till_done()
-        assert dict(entry.options) == BOUNDS
+        assert dict(entry.options) == {"minimum_height": 70, "maximum_height": 125}
         assert entry.runtime_data.data.offset_raw == 6122
         assert len(writes(fake)) == 1
         assert await hass.config_entries.async_unload(entry.entry_id)
@@ -411,9 +432,7 @@ async def test_onboarding_rejects_bad_measurement_without_confirming_or_writing(
         ),
     ):
         result = await initial_form(hass, fake)
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 1}
-        )
+        result = await submit_range(hass, result, BOUNDS | {MEASURED_HEIGHT: 1})
         assert result["errors"] == {"base": "invalid_measurement"}
         assert not writes(fake)
         hass.config_entries.flow.async_abort(result["flow_id"])
@@ -445,13 +464,11 @@ async def test_display_rounding_does_not_require_a_pointless_write(hass):
         patch("custom_components.ha_linak.async_setup_entry", return_value=True),
     ):
         result = await initial_form(hass, fake)
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
+        result = await submit_range(
+            hass,
+            result,
             {"minimum_height": 70, "maximum_height": 125, MEASURED_HEIGHT: 82.4},
         )
-        assert result["type"] == "progress"
-        await hass.async_block_till_done()
-        result = await hass.config_entries.flow.async_configure(result["flow_id"])
         assert result["type"] == "create_entry"
         assert not writes(fake)
         assert MEASURED_HEIGHT not in result["options"]
@@ -489,12 +506,12 @@ async def test_options_reports_measurement_error_and_failed_verification(hass):
     ):
         entry = await setup_calibration_entry(hass, fake)
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 1}
+        result = await submit_range(
+            hass, result, BOUNDS | {MEASURED_HEIGHT: 1}, options=True
         )
         assert result["errors"] == {"base": "invalid_measurement"}
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
+        result = await submit_range(
+            hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6}, options=True
         )
         fake.ignore_write = True
         result = await hass.config_entries.options.async_configure(
@@ -502,7 +519,7 @@ async def test_options_reports_measurement_error_and_failed_verification(hass):
         )
         await hass.async_block_till_done()
         result = await hass.config_entries.options.async_configure(result["flow_id"])
-        assert result["step_id"] == "init"
+        assert result["step_id"] == "height"
         assert result["errors"] == {"base": "calibration_failed"}
         assert len(writes(fake)) == 1
         assert entry.options["minimum_height"] == 70
@@ -523,9 +540,15 @@ async def test_verified_calibration_does_not_save_invalid_range_or_repeat_write(
         ),
     ):
         entry = await setup_calibration_entry(hass, fake)
+        hass.config_entries.async_update_entry(
+            entry, options={"minimum_height": 70, "maximum_height": 74}
+        )
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], BOUNDS | {"maximum_height": 74, MEASURED_HEIGHT: 75.6}
+        result = await submit_range(
+            hass,
+            result,
+            BOUNDS | {"maximum_height": 74, MEASURED_HEIGHT: 75.6},
+            options=True,
         )
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {}
@@ -558,8 +581,8 @@ async def test_options_abort_drains_an_ambiguous_write_without_replay(hass):
     ):
         entry = await setup_calibration_entry(hass, fake)
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
+        result = await submit_range(
+            hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6}, options=True
         )
         fake.hang_write = True
         result = await hass.config_entries.options.async_configure(
@@ -593,8 +616,8 @@ async def test_changed_reference_disables_unrepresentable_bounds_but_keeps_senso
     ):
         entry = await setup_calibration_entry(hass, fake)
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 85.6}
+        result = await submit_range(
+            hass, result, BOUNDS | {MEASURED_HEIGHT: 85.6}, options=True
         )
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {}
@@ -676,22 +699,16 @@ async def test_onboarding_recovers_after_delivered_write_without_replaying(hass)
         patch("custom_components.ha_linak.async_setup_entry", return_value=True),
     ):
         result = await initial_form(hass, fake)
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
-        )
+        result = await submit_range(hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6})
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
         assert result["type"] == "form"
-        assert result["step_id"] == "finish"
+        assert result["step_id"] == "height"
         assert result["errors"] == {"base": "calibration_failed"}
-        assert result["description_placeholders"]["height"] == "75.6"
+        assert result["description_placeholders"]["height"] == "76"
         assert len(writes(fake)) == 1
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], BOUNDS | {MEASURED_HEIGHT: 75.6}
-        )
-        await hass.async_block_till_done()
-        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await submit_range(hass, result, BOUNDS | {MEASURED_HEIGHT: 75.6})
         assert result["type"] == "create_entry"
         assert len(writes(fake)) == 1
         await hass.async_block_till_done()

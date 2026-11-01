@@ -72,7 +72,7 @@ async def test_complete_refresh_and_physical_height_update():
     assert desk.connected
     assert state.height_cm == 82.38
     assert len(state.memories) == 4
-    assert len(fake.writes) == 7
+    assert len(fake.writes) == 10
     fake.callbacks[HEIGHT_UUID](None, bytearray.fromhex("e8030000"))
     assert desk.state.height_cm == 78
     assert changes
@@ -573,3 +573,74 @@ async def test_bluez_agent_failure_is_distinct_and_releases_transport():
     assert not fake.is_connected
     assert fake.writes == []
     fake.pair.assert_not_awaited()
+
+
+async def test_duplicate_memory_notifications_do_not_shift_slots():
+    class DuplicateNotifications(FakeBleak):
+        previous = None
+
+        async def write_gatt_char(self, uuid, data, response):
+            if self.previous is not None:
+                # Delayed copies of a completed reply arrive while the next
+                # request owns the callback, as observed on the owner's BlueZ.
+                for _ in range(24):
+                    self.callbacks[DPG_UUID](None, self.previous)
+                    await asyncio.sleep(0)
+            await super().write_gatt_char(uuid, data, response)
+            self.previous = bytearray.fromhex(CAPTURE[f"{data[1]:02x}"])
+
+    fake = DuplicateNotifications()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", return_value=fake
+    ):
+        state = await desk.refresh()
+    from custom_components.ha_linak.protocol import decode_stored_position
+
+    expected = [
+        decode_stored_position(bytes.fromhex(CAPTURE[f"{command:02x}"]))
+        for command in range(0x89, 0x8D)
+    ]
+    assert state.memories == expected
+    await desk.disconnect()
+
+
+async def test_equal_saved_positions_are_preserved_with_read_barriers():
+    class EqualMemories(FakeBleak):
+        async def write_gatt_char(self, uuid, data, response):
+            if 0x89 <= data[1] <= 0x8C:
+                self.writes.append((uuid, bytes(data)))
+                self.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE["89"]))
+            else:
+                await super().write_gatt_char(uuid, data, response)
+
+    fake = EqualMemories()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", return_value=fake
+    ):
+        state = await desk.refresh()
+    assert len(state.memories) == 4
+    assert all(memory == state.memories[0] for memory in state.memories)
+    await desk.disconnect()
+
+
+async def test_changed_capabilities_at_memory_barrier_discards_session():
+    class ChangedCapabilities(FakeBleak):
+        async def write_gatt_char(self, uuid, data, response):
+            if data[1] == 0x80 and self.writes:
+                payload = bytearray.fromhex(CAPTURE["80"])
+                payload[2] ^= 0x20
+                self.callbacks[DPG_UUID](None, payload)
+            else:
+                await super().write_gatt_char(uuid, data, response)
+
+    fake = ChangedCapabilities()
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", return_value=fake
+    ):
+        with pytest.raises(ValueError, match="capabilities changed"):
+            await desk.refresh()
+    assert not desk.connected
+    assert fake.disconnected.is_set()

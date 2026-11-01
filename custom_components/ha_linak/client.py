@@ -15,9 +15,11 @@ from bleak_retry_connector import BleakClientWithServiceCache, establish_connect
 
 from .calibration import (
     HeightCalibration,
+    SettingRejected,
     CalibrationSnapshotChanged,
     PREVIEW_TOLERANCE_RAW,
 )
+from .protocol import activation_request
 from .control_settings import ControlSettings
 from .motion import (
     BleakMotionTransport,
@@ -162,7 +164,11 @@ class DeskClient:
             return
         pending = self._pending
         if pending is not None and not pending.done() and len(data) >= 2:
-            if data[0] == 1 and data[1] == self._response_type:
+            if self._response_type == 0 and len(data) == 2 and data[0] != 1:
+                pending.set_exception(
+                    SettingRejected(f"Panel setting status {data[0]:02x}")
+                )
+            elif data[0] == 1 and data[1] == self._response_type:
                 pending.set_result(bytes(data))
 
     def _position(self, generation: int, data: bytearray) -> None:
@@ -391,6 +397,41 @@ class DeskClient:
                 raise MotionError("The required Bluetooth operation is unavailable")
         return client
 
+    async def _write_setting(self, payload: bytes) -> None:
+        """Send one allowlisted setting and require the application ACK, no retry."""
+        if not (
+            (payload[:4] == b"\x7f\x81\x80\x01" and len(payload) == 6)
+            or (payload[:4] == b"\x7f\x86\x80\x01" and len(payload) == 20)
+        ):
+            raise ValueError("Unsupported setting request")
+        await self._query(ReadCommand.CAPABILITIES, 2)
+        self._pending = asyncio.get_running_loop().create_future()
+        self._response_type = 0
+        try:
+            await self._io(self._exchange_setting(payload), QUERY_TIMEOUT)
+        finally:
+            self._pending.cancel()
+            self._pending = None
+            self._response_type = None
+
+    async def _exchange_setting(self, payload: bytes) -> bytes:
+        assert self.client is not None and self._pending is not None
+        await self.client.write_gatt_char(DPG_UUID, payload, response=True)
+        return await self._pending
+
+    async def _activate_calibration_client(self) -> None:
+        """Only a confirmed calibration may activate the existing panel identity."""
+        self._set_stage("calibration_activation_check")
+        identity = await self._query(ReadCommand.USER_ID, 17)
+        payload = activation_request(identity)
+        if payload is None:
+            return
+        self._set_stage("calibration_activation_write")
+        await self._write_setting(payload)
+        verified = await self._query(ReadCommand.USER_ID, 17)
+        if verified != identity[:2] + b"\x01" + identity[3:]:
+            raise ValueError("Client activation was not verified")
+
     async def calibrate_height(self, proposal: HeightCalibration) -> DeskState:
         """Apply one explicitly confirmed offset, verify it, never move or retry."""
         if self.control_busy or self._lock.locked() or not self.connected:
@@ -435,13 +476,26 @@ class DeskClient:
                         "Desk position or reference changed; measure again"
                     )
                 if proposal.changed:
-                    self._set_stage("calibration_write")
-                    await self._io(
-                        self.client.write_gatt_char(
-                            DPG_UUID, proposal.write_request(), response=True
-                        ),
-                        IO_TIMEOUT,
+                    await self._activate_calibration_client()
+                    fresh_offset = decode_offset(
+                        await self._query(ReadCommand.OFFSET, 3)
                     )
+                    fresh_position = decode_position(
+                        bytes(
+                            await self._io(
+                                self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
+                            )
+                        )
+                    )
+                    if (
+                        fresh_position != first
+                        or fresh_offset != proposal.old_offset_raw
+                    ):
+                        raise CalibrationSnapshotChanged(
+                            "Position or reference changed during activation"
+                        )
+                    self._set_stage("calibration_write")
+                    await self._write_setting(proposal.write_request())
                 # Full refresh starts with a different response type before offset
                 # readback, so a setting echo cannot stand in for verification.
                 state = await self._refresh()

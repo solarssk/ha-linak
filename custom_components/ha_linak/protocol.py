@@ -20,6 +20,7 @@ class ReadCommand(IntEnum):
     MEMORY_2 = 0x8A
     MEMORY_3 = 0x8B
     MEMORY_4 = 0x8C
+    USER_ID = 0x86
 
 
 def read_request(command: ReadCommand) -> bytes:
@@ -124,3 +125,17 @@ def decode_reminders(payload: bytes) -> ReminderSettings:
         tuple((payload[i], payload[i + 1]) for i in (3, 5, 7)),
         struct.unpack("<I", payload[9:13])[0],
     )
+
+
+def activation_request(payload: bytes) -> bytes | None:
+    """Activate the existing identity only; never generate or replace its bytes."""
+    _frame(payload, 17, 19)
+    if (
+        payload[2] not in (0, 1)
+        or not any(payload[3:])
+        or all(b == 255 for b in payload[3:])
+    ):
+        raise ValueError("Unsupported client identity")
+    if payload[2] == 1:
+        return None
+    return b"\x7f\x86\x80\x01" + payload[3:]

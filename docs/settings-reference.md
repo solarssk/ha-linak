@@ -71,7 +71,7 @@ Existing UUIDs and parsing are recorded in [protocol.md](protocol.md). The suffi
 | Height feedback | `99fa0021`, position and unclassified speed/flags | H reads; relative position units used by current decoder. |
 | Capabilities | `0x80` | H read; capability flags are not settings acknowledgements. |
 | Offset | `0x81` | H read; C1 names a setting candidate, but no validated setter here. |
-| User ID | `0x86` | C1 only; ownership/persistence research required. |
+| User ID | `0x86` | Confirmed calibration activates the existing identifier only when inactive; no identifier replacement. |
 | Reminder time | `0x87` | C1 candidate; distinct from the implemented `0x88` query. |
 | Reminder settings | `0x88` | H read; C2 exposes light/wake/automatic-up/down/units/profile candidates. |
 | Memory 1–4 | `0x89`–`0x8c` | H reads; C1 proposes get/set operations. |
@@ -122,4 +122,13 @@ The pinned community [send_desk_height implementation](https://github.com/anetcz
 
 Calibration proposes `round(measured_cm * 100) - position_raw`, treats differences up to half a 1 mm display step as unchanged, checks encoding bounds and requires a stationary snapshot. The confirmed operation owns the same client lock as reads and movement, rechecks position twice and validates the original reference before writing once. A full refresh begins with capabilities before offset readback so an offset echo cannot satisfy verification. Updated height and saved-height conversions are published together. Failed, timed-out or cancelled operations discard the session; they do not retry or restore a previous reference.
 
-The calibration operation has a 60-second budget plus bounded disconnect cleanup. First-time setup also opens and validates a connection before that operation. Calibration input is transient and is never stored as a startup action. This is community protocol evidence plus simulated validation, not an official public GATT specification or a completed physical calibration test.
+The calibration operation has a 60-second budget plus bounded disconnect cleanup. First-time setup also opens and validates a connection before that operation. Calibration input is transient and is never stored as a startup action. This is community protocol evidence plus simulated validation, not an official public GATT specification. The subsequent activation experiment below records physical calibration evidence.
+
+
+## Confirmed client activation (0.1.0a9)
+
+The supervised DPG1C experiment returned `0b 00` for an offset-only write while the USER_ID response reported an inactive status. After changing only that status byte from 0 to 1 and preserving the existing 16 identifier bytes, the panel acknowledged activation and calibration with `01 00`. Three reads returned the requested offset, with unchanged mechanism position. A separate connection verified active status and the corrected height. Power-cycle persistence and other firmware remain unverified.
+
+The [idasen wakeup implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py) and its [upstream DPG1C discussion](https://github.com/rhyst/linak-controller/issues/32#issuecomment-1784055470) document this initialization requirement. Here the confirmed calibration reads `7f 86 00`, validates the `01 11 <status> <16-byte identifier>` response, skips active clients, and writes `7f 86 80 01 <same identifier>` once for an inactive client. It verifies status and identifier before calibration. Identifier bytes are neither generated nor replaced, stored in HA options, or included in integration logs. Redact them from low-level Bluetooth traces before sharing.
+
+Neither polling nor reconnect performs activation. Confirmation explains the possible persistent panel change. Each setting requires an application acknowledgement, separately from the Bluetooth transport acknowledgement. A non-success two-byte response aborts without retry; `0b` has been observed but its detailed vendor meaning is not established. A read barrier precedes each setting exchange, and offset readback remains mandatory.

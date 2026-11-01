@@ -40,3 +40,8 @@ Environment reported during the supervised investigation: Raspberry Pi 4B, HAOS 
 - Some earlier connections disconnected and some motion-notification intervals were irregular. Their causes remain unresolved; no stability guarantee follows.
 
 These observations concern manual pairing with 0.1.0a3. They do not validate the new automatic application-agent path in 0.1.0a4, an unbonded first setup, other panels or ESPHome proxy behavior. No runtime movement feature was enabled.
+
+
+## Supervised activation and calibration, 2026-11-01
+
+The owner authorized one activation preserving the existing identifier followed by one current-height correction, with no motion. Before activation, the offset write returned `0b 00` and three readbacks retained the old reference. USER_ID reported inactive status. Activation returned `01 00`, readback reported active status with unchanged identifier, and the offset write then returned `01 00`. Three reference reads matched the correction and the relative position and zero speed remained unchanged. A separate connection confirmed the corrected height and active status. This validates the sequence on one DPG1C, not all panels or power-cycle persistence. Captures and identifiers remain private.

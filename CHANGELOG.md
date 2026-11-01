@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Activate an inactive panel client only during confirmed calibration, preserving its identifier and verifying the status before the offset write. Require the panel acknowledgement and report rejected setting statuses.
 - Accept a single 0.1 mm position quantum between the calibration preview and fresh stationary checks; distinguish rejected preflight checks from uncertain writes.
 - Recover fresh readings after failed calibration without replaying writes, hide disconnected cached heights and reject oversized measurements before conversion.
 - Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.
@@ -38,6 +39,11 @@
 - **Visible test reports:** Codecov and Sonar receive integration coverage and test results separately from required CI checks.
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
+
+## 0.1.0a9 (unpublished alpha)
+
+- Activate an inactive client only during confirmed calibration, preserve its identifier, require application acknowledgements and verify activation before the offset write.
+- Record successful DPG1C activation, measured-height correction and persistence across a separate Bluetooth connection; physical movement and power-cycle persistence remain unverified.
 
 ## 0.1.0a8 (unpublished alpha)
 

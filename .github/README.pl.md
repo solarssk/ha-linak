@@ -130,7 +130,7 @@ Suwak pokazuje bieżącą wysokość biurka. Przesuń go do wybranej pozycji, a 
 
 Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
 
-Jeśli panel pokazuje błędną wysokość, podczas dodawania lub w Konfiguruj wpisz aktualny pomiar od podłogi do góry blatu w **Aktualna wysokość z miarki**. Osobny ekran pozwala sprawdzić i potwierdzić korektę przed zapisem w panelu. Kalibracja nie porusza biurkiem. Czujnik offsetu pozostaje tylko do odczytu; zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md).
+Jeśli panel pokazuje błędną wysokość, podczas dodawania lub w Konfiguruj wpisz aktualny pomiar od podłogi do góry blatu w **Aktualna wysokość z miarki**. Osobny ekran pozwala sprawdzić i potwierdzić korektę przed zapisem w panelu. Kalibracja nie porusza biurkiem. Potwierdzenie kalibracji aktywuje również nieaktywnego klienta panelu, zachowując istniejący identyfikator. Odczyty w tle nie wykonują tego zapisu. Czujnik offsetu pozostaje tylko do odczytu; zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md).
 
 <a id="requirements"></a>
 

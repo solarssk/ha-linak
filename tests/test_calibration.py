@@ -26,6 +26,9 @@ class CalibrationBleak(FakeBleak):
         self.position = 1438
         self.speed = 0
         self.offset = 6800
+        self.activation = 1
+        self.identity = bytes(range(16))
+        self.reject_setting = False
         self.ignore_write = False
         self.echo_write = False
         self.move_after_write = False
@@ -44,7 +47,21 @@ class CalibrationBleak(FakeBleak):
     async def write_gatt_char(self, uuid, data, response):
         assert uuid == DPG_UUID
         assert response
-        if data[2] == 0x80:
+        if data[1] == 0x86:
+            self.writes.append((uuid, bytes(data)))
+            if data[2] == 0:
+                reply = b"\x01\x11" + bytes([self.activation]) + self.identity
+            else:
+                assert data == b"\x7f\x86\x80\x01" + self.identity
+                if not self.reject_setting:
+                    self.activation = 1
+                reply = b"\x0b\x00" if self.reject_setting else b"\x01\x00"
+            self.callbacks[DPG_UUID](None, bytearray(reply))
+        elif data[2] == 0x80:
+            if self.reject_setting:
+                self.writes.append((uuid, bytes(data)))
+                self.callbacks[DPG_UUID](None, bytearray(b"\x0b\x00"))
+                return
             assert bytes(data[:4]) == b"\x7f\x81\x80\x01"
             assert len(data) == 6
             self.writes.append((uuid, bytes(data)))
@@ -696,4 +713,143 @@ async def test_preview_quantization_keeps_fresh_stationary_checks_strict(delta):
         with pytest.raises(ValueError):
             await desk.calibrate_height(proposal)
         assert not writes(fake)
+    await desk.disconnect()
+
+
+async def test_confirmed_guest_activation_preserves_identity_and_precedes_offset():
+    desk, fake = await ready()
+    fake.activation = 0
+    before = fake.identity
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.5
+    )
+    state = await desk.calibrate_height(proposal)
+    assert writes(fake) == [b"\x7f\x86\x80\x01" + before, proposal.write_request()]
+    assert fake.identity == before
+    assert fake.activation == 1
+    assert state.height_cm == 75.5
+    await desk.disconnect()
+
+
+@pytest.mark.parametrize("active", [0, 1])
+async def test_panel_rejection_discards_session_without_retry(active):
+    from custom_components.ha_linak.calibration import SettingRejected
+
+    desk, fake = await ready()
+    fake.activation = active
+    fake.reject_setting = True
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.5
+    )
+    with pytest.raises(SettingRejected, match="0b"):
+        await desk.calibrate_height(proposal)
+    assert len(writes(fake)) == 1
+    assert fake.offset == 6800
+    assert not desk.connected
+
+
+async def test_activation_readback_must_preserve_identity():
+    desk, fake = await ready()
+    fake.activation = 0
+    original = fake.write_gatt_char
+
+    async def change_identity(uuid, data, response):
+        await original(uuid, data, response)
+        if data[:3] == b"\x7f\x86\x80":
+            fake.identity = bytes(reversed(fake.identity))
+
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.5
+    )
+    with patch.object(fake, "write_gatt_char", side_effect=change_identity):
+        with pytest.raises(ValueError, match="activation was not verified"):
+            await desk.calibrate_height(proposal)
+    assert len(writes(fake)) == 1
+    assert fake.offset == 6800
+    assert not desk.connected
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"",
+        b"\x01\x11\x00" + bytes(16),
+        b"\x01\x11\x02" + bytes(range(16)),
+        b"\x01\x11\x00" + b"\xff" * 16,
+    ],
+)
+def test_activation_rejects_unusable_identity(payload):
+    from custom_components.ha_linak.protocol import activation_request
+
+    with pytest.raises(ValueError):
+        activation_request(payload)
+
+
+async def test_refresh_and_unchanged_calibration_do_not_activate_guest():
+    desk, fake = await ready()
+    fake.activation = 0
+    await desk.refresh()
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, desk.state.height_cm
+    )
+    await desk.calibrate_height(proposal)
+    assert not writes(fake)
+    assert fake.activation == 0
+    await desk.disconnect()
+
+
+async def test_cancelled_activation_is_not_replayed_or_followed_by_offset():
+    desk, fake = await ready()
+    fake.activation = 0
+    started = asyncio.Event()
+    original = fake.write_gatt_char
+
+    async def hang_after_activation(uuid, data, response):
+        await original(uuid, data, response)
+        if data[:3] == b"\x7f\x86\x80":
+            started.set()
+            await asyncio.Future()
+
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.5
+    )
+    with patch.object(fake, "write_gatt_char", side_effect=hang_after_activation):
+        task = asyncio.create_task(desk.calibrate_height(proposal))
+        await started.wait()
+        await desk.disconnect()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    assert fake.activation == 1
+    assert fake.offset == 6800
+    assert len(writes(fake)) == 1
+    assert not desk.connected
+
+
+async def test_position_change_during_activation_prevents_offset_write():
+    desk, fake = await ready()
+    fake.activation = 0
+    original = fake.write_gatt_char
+
+    async def move_after_activation(uuid, data, response):
+        await original(uuid, data, response)
+        if data[:3] == b"\x7f\x86\x80":
+            fake.position += 1
+
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.5
+    )
+    with patch.object(fake, "write_gatt_char", side_effect=move_after_activation):
+        with pytest.raises(ValueError, match="during activation"):
+            await desk.calibrate_height(proposal)
+    assert len(writes(fake)) == 1
+    assert fake.offset == 6800
+    assert not desk.connected
+
+
+async def test_setting_transport_rejects_non_allowlisted_payload():
+    desk, fake = await ready()
+    before = len(fake.writes)
+    with pytest.raises(ValueError, match="Unsupported setting"):
+        await desk._write_setting(b"\x7f\x89\x80\x01\x00\x00")
+    assert len(fake.writes) == before
     await desk.disconnect()

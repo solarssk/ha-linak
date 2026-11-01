@@ -28,7 +28,7 @@
       },
       "calibration_confirm": {
         "title": "Potwierdź korektę wysokości",
-        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem."
+        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem. Jeżeli klient panelu jest nieaktywny, potwierdzenie również go aktywuje z zachowaniem istniejącego identyfikatora. Ten krok może zostać zapisany w pamięci panelu."
       },
       "calibration_apply": {
         "title": "Zapisywanie korekty wysokości"
@@ -158,7 +158,7 @@
       },
       "calibration_confirm": {
         "title": "Potwierdź korektę wysokości",
-        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem."
+        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem. Jeżeli klient panelu jest nieaktywny, potwierdzenie również go aktywuje z zachowaniem istniejącego identyfikatora. Ten krok może zostać zapisany w pamięci panelu."
       },
       "calibration_apply": {
         "title": "Zapisywanie korekty wysokości"

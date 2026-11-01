@@ -28,7 +28,7 @@
       },
       "calibration_confirm": {
         "title": "Confirm height correction",
-        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still."
+        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still. If the panel client is inactive, confirmation also activates it while preserving its existing identifier. This step may be stored in the panel memory."
       },
       "calibration_apply": {
         "title": "Saving height correction"
@@ -158,7 +158,7 @@
       },
       "calibration_confirm": {
         "title": "Confirm height correction",
-        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still."
+        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still. If the panel client is inactive, confirmation also activates it while preserving its existing identifier. This step may be stored in the panel memory."
       },
       "calibration_apply": {
         "title": "Saving height correction"

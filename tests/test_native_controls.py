@@ -344,10 +344,11 @@ async def test_options_reject_range_when_current_height_is_unavailable(hass):
     entry, fake = await setup_entry(hass)
     entry.runtime_data.last_update_success = False
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["description_placeholders"]["height"] == "?"
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], OPTIONS
     )
-    assert result["errors"] == {"base": "invalid_limits"}
+    assert result["errors"] == {"base": "connection_unavailable"}
     await hass.config_entries.async_unload(entry.entry_id)
 
 

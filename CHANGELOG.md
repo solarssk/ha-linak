@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Recover fresh readings after failed calibration without replaying writes, hide disconnected cached heights and reject oversized measurements before conversion.
 - Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.
 - Add a documentation index with task-based entry points and a purpose for each reference.
 - Separate consecutive stored-position replies with validated read barriers to prevent duplicate BlueZ notifications from shifting memory slots.
@@ -36,6 +37,11 @@
 - **Visible test reports:** Codecov and Sonar receive integration coverage and test results separately from required CI checks.
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
+
+## 0.1.0a8 (unpublished alpha)
+
+- Add confirmed measured-height calibration during setup and in Configure, with a stationary-position check, offset-only write, full readback and no automatic retry.
+- Apply corrected height conversion before validating measured bounds; account for half-step display rounding at the zero wire position.
 
 ## 0.1.0a7 (unpublished alpha)
 

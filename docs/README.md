@@ -18,7 +18,7 @@ Technical documentation is in English. User guides and the HA interface also hav
 | --- | --- |
 | [Onboarding](onboarding.md) | How discovery, connection, authentication, retry and setup errors work |
 | [Diagnostics](diagnostics.md) | What diagnostic entities and downloads contain, freshness limits and privacy |
-| [Controls](controls.md) | How to configure and test native height, Stop and saved-position controls |
+| [Controls](controls.md) | How to calibrate height and configure/test native height, Stop and saved-position controls |
 | [Hardware results](hardware-results.md) | Which observations came from a physical desk and what still needs verification |
 
 ## Understanding or changing the implementation

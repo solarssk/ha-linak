@@ -44,7 +44,7 @@ O4 distinguishes Owner and Guest storage/transfer behavior, describes settings f
 | Target height and Stop | O3, C3, S | Native number in cm and Stop button | Registered by default. Target height needs a configured travel range; Stop works with a ready connection. Simulated HA coverage, physical movement/Stop evidence pending. |
 | Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Drive buttons re-read the selected slot; drive not physically verified. Respect configured/available slots. |
 | Save/replace favourite | O4, C1 | Separate explicit save operation | Write payload, slot identity and persistence unverified; read back the exact slot. |
-| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Offset read works. Write, persistence and relationship to displayed calibration need verification. |
+| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Read and protected confirmed calibration flow implemented. Write/readback, failures and cancellation have simulated tests; physical write/persistence validation is pending. |
 | Panel display units | O1, O2, C2 | Configuration choice if verified | Preserve the integration's centimeter interface; changing panel units must not reinterpret raw positions or cause motion. |
 | Active reminder profile / off | O3, H, C2 | Configuration select after write validation | Profile read works; confirm the encoding/meaning of the off state before writing. |
 | Sitting/standing duration per profile | O3/O4, H, C2 | Configuration values with validated ranges | Three profiles read; units, encoding limits and write persistence require validation. |
@@ -95,7 +95,7 @@ The latest owner decision supersedes a general proposal to expose offset as an e
 7. If the result is uncertain, report it and read state again through a healthy session. Do not silently retry or blindly restore an old value that another controller might have changed.
 8. On startup/reconnect, read panel state. Stored HA options must not cause automatic replay of a calibration write.
 
-No offset-write service or unrestricted dashboard control is part of the initial design. The final implementation still depends on validating that the wire-level offset corresponds to the manufacturer's displayed-height correction on this firmware.
+The offset sensor remains read-only. Setup and Configure implement the protected calibration flow, not an unrestricted service or dashboard setter. Physical validation must still confirm that the wire-level reference matches displayed-height correction and persists on this firmware.
 
 ## Post-install settings and reconfiguration
 
@@ -114,3 +114,12 @@ Questions to retain for LINAK or the desk OEM: exact SKU/firmware and Full/Limit
 ## Delivery order
 
 Native slider/Stop and favourite-drive entities support the first supervised HA tests. Record physical movement/Stop evidence before claiming hardware validation or recommending unattended use. Verify memory/offset/reminder writes separately while designing post-install configuration alongside the control work. This reference does not enable a runtime feature or authorize hardware writes. Keep detailed private progress and captures in the local handoff/research workspace.
+
+
+## Implemented height-calibration payload (0.1.0a8)
+
+The pinned community [send_desk_height implementation](https://github.com/anetczuk/linak_bt_desk/blob/7ac5fe1b69638976326842b27d76e52f0cc958fd/linak_dpg_bt/linak_device.py#L507) subtracts the relative mechanism position from the measured height and writes a validity byte followed by the offset. Its [position encoder](https://github.com/anetczuk/linak_bt_desk/blob/7ac5fe1b69638976326842b27d76e52f0cc958fd/linak_dpg_bt/datatype/desk_position.py#L62) uses a little-endian unsigned 16-bit word, with 100 raw units per centimeter. Combined with its write framing, the allowlisted request is `7f 81 80 01 <offset-low> <offset-high>`. The implementation here is independent and does not add a generic setting-write API.
+
+Calibration proposes `round(measured_cm * 100) - position_raw`, treats differences up to half a 1 mm display step as unchanged, checks encoding bounds and requires a stationary snapshot. The confirmed operation owns the same client lock as reads and movement, rechecks position twice and validates the original reference before writing once. A full refresh begins with capabilities before offset readback so an offset echo cannot satisfy verification. Updated height and saved-height conversions are published together. Failed, timed-out or cancelled operations discard the session; they do not retry or restore a previous reference.
+
+The calibration operation has a 60-second budget plus bounded disconnect cleanup. First-time setup also opens and validates a connection before that operation. Calibration input is transient and is never stored as a startup action. This is community protocol evidence plus simulated validation, not an official public GATT specification or a completed physical calibration test.

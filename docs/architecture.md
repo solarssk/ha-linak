@@ -16,7 +16,7 @@ DPG1C is the initial supported device. Keep protocol parsing independent of HA e
 | Memory 1–4 buttons | Re-read the selected slot before moving; unavailable when empty |
 | Stored-height sensors | Device-stored positions with offset, read-only initially |
 | Reminder configuration | Read-only initially; later select/number entities for verified settings |
-| Offset | Read-only diagnostic/configuration initially; do not expose a write control before verification |
+| Offset | Read-only diagnostic sensor; protected measured-height calibration in setup/Configure with confirmation and readback |
 | Connection binary sensor | Diagnostic ready-session state; off after link loss, independent of coordinator read availability |
 | Signal strength / backend sensors | Optional, default-disabled diagnostics from HA's advertisement cache / active client's public backend category |
 
@@ -65,3 +65,8 @@ DeviceInfo uses the existing domain/address identifier and also a Bluetooth conn
 Onboarding collects host-side centimeter bounds. Options Flow changes them later and reloads the entry. No target is restored or sent from configuration. Client movement reserves a single task before its first await, shares the existing connection and lock with extended queries, and rejects competing targets. Fresh offset and selected-memory reads are serialized before motion. Periodic polling yields without disconnecting a moving desk when advertisements expire. Height feedback continues to publish actual position.
 
 Stop has a separate shared task and bypasses the polling lock. Movement cancellation settles final Stop before discarding the connection; unload waits for the same cleanup. A Stop transmission is not proof of physical stopping, and a failed cleanup is propagated to the Stop action. Number state follows measured height after setup, physical panel changes and movement feedback. Saving options never executes a target.
+
+
+## Height calibration ownership
+
+Confirmed calibration reserves the current client and query lock. Another calibration or movement is rejected while it owns the session; polling returns existing state. Unload/disconnect cancels and drains the calibration task before releasing the transport. The command changes only the panel reference, then refreshes height, saved-height conversions and settings. No measured-height input is persisted for replay. Hardware write validation remains distinct from simulated HA tests.

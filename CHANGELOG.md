@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.
 - Add a documentation index with task-based entry points and a purpose for each reference.
 - Separate consecutive stored-position replies with validated read barriers to prevent duplicate BlueZ notifications from shifting memory slots.
 - Name the integration LINAK Desks, fix the HACS badge link transformation, remove the illustrative dashboard graphic and use readable control lists in HACS.

@@ -46,16 +46,18 @@ def test_generic_and_address_names_do_not_hide_native_names():
 
 
 @pytest.mark.parametrize(
-    "advertised,device_name,current_name,latest_name,expected",
+    "advertised,device_name,current_name,latest_name,system_name,expected",
     [
-        (ADDRESS, ADDRESS, None, "Office desk", "Office desk"),
-        ("LINAK", "Office desk", None, None, "Office desk"),
-        (ADDRESS, ADDRESS, "Office desk", None, "Office desk"),
-        (ADDRESS, ADDRESS, None, None, "LINAK"),
+        (ADDRESS, ADDRESS, None, "Office desk", None, "Office desk"),
+        ("LINAK", "Office desk", None, None, None, "Office desk"),
+        (ADDRESS, ADDRESS, "Office desk", None, None, "Office desk"),
+        (ADDRESS, ADDRESS, None, None, None, "LINAK"),
+        (ADDRESS, ADDRESS, None, None, "Panel name", "Panel name"),
+        (ADDRESS, ADDRESS, None, "Fresh name", "Cached name", "Fresh name"),
     ],
 )
 async def test_discovery_uses_cached_native_name_without_connecting(
-    hass, advertised, device_name, current_name, latest_name, expected
+    hass, advertised, device_name, current_name, latest_name, system_name, expected
 ):
     info = SimpleNamespace(
         address=ADDRESS,
@@ -70,6 +72,11 @@ async def test_discovery_uses_cached_native_name_without_connecting(
         else None
     )
     with (
+        patch(
+            "custom_components.ha_linak.config_flow.cached_bluez_names",
+            new_callable=AsyncMock,
+            return_value={ADDRESS: system_name} if system_name else {},
+        ),
         patch(
             "custom_components.ha_linak.config_flow.bluetooth.async_last_service_info",
             return_value=latest,
@@ -351,3 +358,80 @@ def test_missing_runtime_desk_does_not_change_a_saved_title(hass):
     coordinator = SimpleNamespace(desk=None)
     _repair_title(hass, entry, coordinator)
     assert entry.title == "LINAK"
+
+
+@pytest.mark.parametrize(
+    "platform,failed", [("linux", False), ("linux", True), ("darwin", False)]
+)
+async def test_optional_bluez_metadata_is_local_and_nonfatal(platform, failed):
+    from custom_components.ha_linak.naming import cached_bluez_names
+
+    adapter = SimpleNamespace(
+        load=AsyncMock(side_effect=OSError("private details") if failed else None),
+        history={
+            ADDRESS.lower(): SimpleNamespace(
+                advertisement_data=SimpleNamespace(local_name="Panel name")
+            ),
+            "11:22:33:44:55:66": SimpleNamespace(
+                advertisement_data=SimpleNamespace(local_name="LINAK")
+            ),
+            "11:22:33:44:55:77": SimpleNamespace(
+                advertisement_data=SimpleNamespace(local_name="bad\x01name")
+            ),
+        },
+    )
+    with (
+        patch("custom_components.ha_linak.naming.sys.platform", platform),
+        patch(
+            "custom_components.ha_linak.naming.bluetooth_adapters.BlueZDBusObjects",
+            return_value=adapter,
+        ),
+    ):
+        result = await cached_bluez_names()
+    assert result == (
+        {ADDRESS: "Panel name"} if platform == "linux" and not failed else {}
+    )
+    if platform != "linux":
+        adapter.load.assert_not_awaited()
+
+
+async def test_bluez_metadata_preserves_external_cancellation():
+    import asyncio
+    from custom_components.ha_linak.naming import cached_bluez_names
+
+    with (
+        patch("custom_components.ha_linak.naming.sys.platform", "linux"),
+        patch(
+            "custom_components.ha_linak.naming.bluetooth_adapters.BlueZDBusObjects"
+        ) as objects,
+    ):
+        objects.return_value.load = AsyncMock(side_effect=asyncio.CancelledError)
+        with pytest.raises(asyncio.CancelledError):
+            await cached_bluez_names()
+
+
+def test_connector_wrapped_timeout_keeps_timeout_reason():
+    from bleak_retry_connector import BleakNotFoundError
+    from custom_components.ha_linak.config_flow import _validation_error
+
+    timeout = TimeoutError()
+    wrapped = BleakNotFoundError("private address and backend details")
+    wrapped.__cause__ = timeout
+    assert _validation_error(wrapped, "connection") == "timeout"
+    assert (
+        _validation_error(BleakNotFoundError("private details"), "connection")
+        == "cannot_connect"
+    )
+
+
+def test_connector_timeout_unwrap_is_bounded_and_handles_nested_causes():
+    from bleak_retry_connector import BleakNotFoundError
+    from custom_components.ha_linak.config_flow import _validation_error
+
+    middle = RuntimeError("private details")
+    middle.__cause__ = TimeoutError()
+    wrapped = BleakNotFoundError("private details")
+    wrapped.__cause__ = middle
+    assert _validation_error(wrapped, "connection") == "timeout"
+    middle.__cause__ = middle
+    assert _validation_error(wrapped, "connection") == "cannot_connect"

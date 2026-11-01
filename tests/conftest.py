@@ -20,3 +20,15 @@ def bluetooth_history(mock_bluetooth):
         return_value={},
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def cached_system_names():
+    from unittest.mock import AsyncMock, patch
+
+    with patch(
+        "custom_components.ha_linak.config_flow.cached_bluez_names",
+        new_callable=AsyncMock,
+        return_value={},
+    ):
+        yield

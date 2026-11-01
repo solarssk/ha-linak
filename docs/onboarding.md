@@ -59,3 +59,12 @@ ESPHome and other non-BlueZ backends continue through their own pair method; Cor
 Initial position notifications update internal state but do not publish an unavailable coordinator update before the initial full read completes. Invalid positions and disconnections after readiness still make sensors unavailable.
 
 The automated tests simulate D-Bus and BLE. A fresh, unbonded Raspberry Pi onboarding test is still required; the existing working bond must not be removed without an agreed hardware-test scope. Connection deadlines are unchanged: rare advertisements and intermittent disconnections need separate evidence.
+
+
+## Cached local name and connector timeouts
+
+On Linux, discovery can fall back to the local BlueZ device name through the public bluetooth-adapters metadata API when advertisements contain only an address or a generic LINAK label. The lookup has a two-second deadline, runs once per flow and does not connect, request a scan, change an alias or write panel settings. Missing system metadata remains optional for remote proxies and other platforms. A later GAP read can still resolve a previously unknown name after connection. Names remain excluded from downloaded diagnostics.
+
+The connector can wrap exhausted connection timeouts in BleakNotFoundError. Setup now follows its exception-cause chain to retain the timeout reason without inspecting or exposing backend error text. A connection timeout must not be described as a failed panel-data decode.
+
+In the 2026-11-01 follow-up, system metadata and a direct GAP read agreed on the panel name, but HA discovery displayed a generic fallback. A passive capture during failed connection attempts contained no advertisements from the desk. Connection and read-only validation succeeded after the owner enabled pairing mode again. A separate four-attempt diagnostic connection completed after 67 seconds while pairing mode changed during the experiment; this does not establish that a longer budget alone repairs reconnection. No connection-budget change, bond reset, movement or panel-setting write is included in this name/error repair.

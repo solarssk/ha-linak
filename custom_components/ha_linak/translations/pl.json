@@ -18,12 +18,20 @@
         "description": "Zbliż biurko do adaptera Bluetooth, włącz parowanie na panelu i zamknij inne aplikacje połączone z biurkiem. Zatwierdź, aby spróbować ponownie."
       },
       "finish": {
-        "title": "Zakres wysokości biurka",
-        "description": "Podaj zmierzoną minimalną i maksymalną wysokość biurka w cm, zgodną z odczytem panelu. Suwak będzie działał w tym zakresie. Zapis nie porusza biurkiem.",
+        "title": "Kalibracja i zakres wysokości",
+        "description": "Odczyt panelu: {height} cm. Jeśli jest błędny, zmierz aktualną wysokość od podłogi do góry blatu i wpisz ją w pierwszym polu. Następnie podaj rzeczywisty zakres wysokości. Korekta wymaga osobnego potwierdzenia. Nie ruszaj biurkiem do zakończenia zapisu.",
         "data": {
+          "measured_height": "Aktualna wysokość z miarki (opcjonalnie)",
           "minimum_height": "Minimalna wysokość (cm)",
           "maximum_height": "Maksymalna wysokość (cm)"
         }
+      },
+      "calibration_confirm": {
+        "title": "Potwierdź korektę wysokości",
+        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem."
+      },
+      "calibration_apply": {
+        "title": "Zapisywanie korekty wysokości"
       }
     },
     "error": {
@@ -36,7 +44,9 @@
       "pairing_unsupported": "Wybrany adapter lub proxy Bluetooth nie obsługuje jawnego parowania. Użyj zgodnego adaptera lub zaktualizowanego proxy.",
       "connection_lost": "Połączenie Bluetooth zostało zerwane podczas sprawdzania biurka. Włącz parowanie na panelu i spróbuj ponownie.",
       "pairing_agent_unavailable": "Home Assistant nie mógł przygotować lokalnego parowania Bluetooth. Sprawdź usługę Bluetooth hosta i uprawnienia D-Bus, a następnie spróbuj ponownie.",
-      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie."
+      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie.",
+      "invalid_measurement": "Sprawdź pomiar aktualnej wysokości. Biurko musi być nieruchome, a odczyt panelu aktualny.",
+      "calibration_failed": "Nie potwierdzono korekty. Ustawienie mogło się zmienić. Sprawdź wskazanie panelu przed kolejną próbą; zapis nie zostanie automatycznie ponowiony."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
@@ -44,7 +54,8 @@
       "not_connectable": "Urządzenie zostało wykryte, ale nie można nawiązać z nim aktywnego połączenia Bluetooth. Sprawdź lokalny adapter lub aktywne proxy."
     },
     "progress": {
-      "connect": "Łączenie z biurkiem, uwierzytelnianie Bluetooth i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację."
+      "connect": "Łączenie z biurkiem, uwierzytelnianie Bluetooth i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację.",
+      "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."
     }
   },
   "entity": {
@@ -136,16 +147,29 @@
   "options": {
     "step": {
       "init": {
-        "title": "Zakres wysokości biurka",
-        "description": "Zmień zakres wysokości używany przez suwak i przyciski pozycji. Te wartości nie zmieniają ograniczeń zapisanych w panelu ani korekty wysokości.",
+        "title": "Kalibracja i zakres wysokości",
+        "description": "Odczyt panelu: {height} cm. Jeśli jest błędny, zmierz aktualną wysokość od podłogi do góry blatu i wpisz ją w pierwszym polu. Następnie podaj rzeczywisty zakres wysokości. Korekta wymaga osobnego potwierdzenia. Nie ruszaj biurkiem do zakończenia zapisu.",
         "data": {
+          "measured_height": "Aktualna wysokość z miarki (opcjonalnie)",
           "minimum_height": "Minimalna wysokość (cm)",
           "maximum_height": "Maksymalna wysokość (cm)"
         }
+      },
+      "calibration_confirm": {
+        "title": "Potwierdź korektę wysokości",
+        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem."
+      },
+      "calibration_apply": {
+        "title": "Zapisywanie korekty wysokości"
       }
     },
     "error": {
-      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie."
+      "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie.",
+      "invalid_measurement": "Sprawdź pomiar aktualnej wysokości. Biurko musi być nieruchome, a odczyt panelu aktualny.",
+      "calibration_failed": "Nie potwierdzono korekty. Ustawienie mogło się zmienić. Sprawdź wskazanie panelu przed kolejną próbą; zapis nie zostanie automatycznie ponowiony."
+    },
+    "progress": {
+      "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."
     }
   },
   "exceptions": {

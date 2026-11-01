@@ -43,4 +43,15 @@ Download diagnostics after a failure. `stage` can show movement_prepare, movemen
 
 ## Validation status
 
-Software tests run in real in-process HA with synthetic Bluetooth. Physical DPG1C movement and Stop tests remain pending. This alpha does not write offset, memories, reminder settings or user ID. Record the supervised outcomes above before recommending unattended automations.
+Software tests run in real in-process HA with synthetic Bluetooth. Physical DPG1C movement and Stop tests remain pending. Only the separately confirmed height-reference calibration writes a panel setting. Memories, reminder settings and user ID are not written. Record the supervised outcomes above before recommending unattended automations.
+
+
+## Calibrate a wrong height reading
+
+Keep the desk stationary. In setup or Configure, enter the current measured floor-to-top-of-desktop height in **Current measured height**, followed by the measured minimum and maximum heights. Leave the optional current-height field empty when the panel reading is already correct. A difference within half a 1 mm display step does not trigger a setting write. Do not alter tape measurements to match an incorrect panel reading.
+
+Review the separate confirmation page: it shows the old and proposed height/reference and explains that displayed saved heights also change. Confirm only when the measurement corresponds to the same stationary position. The integration re-reads position and reference, sends the offset-only setting, then verifies a full readback before checking the measured range. A moving desk or changed reference rejects the proposal. No movement, wake, saved-position or user-ID write is part of calibration.
+
+If verification fails or saving is cancelled, the write may already have reached the panel. There is no automatic retry or rollback. Check the current panel reading before submitting a new correction. Options never store a measured-height input or replay calibration on restart. A 1 mm displayed bound can round up to half a display step below wire position zero; that rounding maps to zero, while larger inconsistencies remain errors. This does not discover or program firmware limits.
+
+The payload follows the pinned community implementation recorded in the settings reference. Physical write/persistence validation on DPG1C is pending; simulated tests establish software behavior.

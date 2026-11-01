@@ -130,7 +130,7 @@ The slider shows the current desk height. Move it to choose a new height, and pr
 
 Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](../docs/controls.md).
 
-Offset changes, saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md). Offset is still read-only diagnostics.
+If the panel height is wrong, enter the current floor-to-desktop measurement in **Current measured height** during setup or Configure. Review and confirm the correction before it is saved to the panel. Calibration does not move the desk. The offset sensor remains read-only; saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md).
 
 <a id="requirements"></a>
 

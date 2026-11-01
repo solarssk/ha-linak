@@ -37,6 +37,11 @@
 - **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
 - **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
 
+## 0.1.0a8 (unpublished alpha)
+
+- Add confirmed measured-height calibration during setup and in Configure, with a stationary-position check, offset-only write, full readback and no automatic retry.
+- Apply corrected height conversion before validating measured bounds; account for half-step display rounding at the zero wire position.
+
 ## 0.1.0a7 (unpublished alpha)
 
 - Recheck the desk on range submission and keep disconnected readings unavailable during control cleanup; test stalled feedback and both connections during range reload.

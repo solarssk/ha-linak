@@ -13,6 +13,7 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
+from .calibration import HeightCalibration
 from .control_settings import ControlSettings
 from .motion import (
     BleakMotionTransport,
@@ -115,6 +116,7 @@ class DeskClient:
         self._closing = False
         self._ready = False
         self._generation = 0
+        self._calibration_task: asyncio.Task[Any] | None = None
         self._motion_task: asyncio.Task[None] | None = None
         self._stop_task: asyncio.Task[None] | None = None
         self.last_control_result = "not_requested"
@@ -366,8 +368,10 @@ class DeskClient:
 
     @property
     def control_busy(self) -> bool:
-        return self._motion_task is not None or (
-            self._stop_task is not None and not self._stop_task.done()
+        return (
+            self._calibration_task is not None
+            or self._motion_task is not None
+            or (self._stop_task is not None and not self._stop_task.done())
         )
 
     def _check_control_properties(self, target: bool = False) -> BleakClient:
@@ -382,6 +386,76 @@ class DeskClient:
             if characteristic is None or operation not in characteristic.properties:
                 raise MotionError("The required Bluetooth operation is unavailable")
         return client
+
+    async def calibrate_height(self, proposal: HeightCalibration) -> DeskState:
+        """Apply one explicitly confirmed offset, verify it, never move or retry."""
+        if self.control_busy or self._lock.locked() or not self.connected:
+            raise MotionError("Calibration requires an idle ready connection")
+        self._calibration_task = asyncio.current_task()
+        try:
+            async with self._lock, asyncio.timeout(REFRESH_TIMEOUT):
+                self._set_stage("calibration_check")
+                assert self.client is not None
+                for uuid, operation in ((DPG_UUID, "write"), (HEIGHT_UUID, "read")):
+                    characteristic = self.client.services.get_characteristic(uuid)
+                    if (
+                        characteristic is None
+                        or operation not in characteristic.properties
+                    ):
+                        raise MotionError(
+                            "Calibration Bluetooth operation is unavailable"
+                        )
+                first = decode_position(
+                    bytes(
+                        await self._io(
+                            self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
+                        )
+                    )
+                )
+                offset = decode_offset(await self._query(ReadCommand.OFFSET, 3))
+                second = decode_position(
+                    bytes(
+                        await self._io(
+                            self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
+                        )
+                    )
+                )
+                if (
+                    first != second
+                    or first.speed_raw != 0
+                    or first.position_raw != proposal.position_raw
+                    or offset != proposal.old_offset_raw
+                ):
+                    raise ValueError(
+                        "Desk position or reference changed; measure again"
+                    )
+                if proposal.changed:
+                    self._set_stage("calibration_write")
+                    await self._io(
+                        self.client.write_gatt_char(
+                            DPG_UUID, proposal.write_request(), response=True
+                        ),
+                        IO_TIMEOUT,
+                    )
+                # Full refresh starts with a different response type before offset
+                # readback, so a setting echo cannot stand in for verification.
+                state = await self._refresh()
+                if (
+                    state.offset_raw != proposal.new_offset_raw
+                    or state.position != first
+                ):
+                    raise ValueError(
+                        "Calibration readback did not match; do not retry automatically"
+                    )
+                self.changed()
+                return state
+        except BaseException:
+            settled = asyncio.gather(self._disconnect_link(), return_exceptions=True)
+            await _drain_cleanup(settled)
+            raise
+        finally:
+            self._calibration_task = None
+            self.changed()
 
     async def move_to_cm(self, height_cm: float, settings: ControlSettings) -> None:
         await self._start_move(height_cm, settings)
@@ -516,6 +590,10 @@ class DeskClient:
             self.changed()
 
     async def disconnect(self) -> None:
+        calibration = self._calibration_task
+        if calibration is not None and calibration is not asyncio.current_task():
+            calibration.cancel()
+            await _drain_cleanup(asyncio.gather(calibration, return_exceptions=True))
         try:
             if self.control_busy:
                 await self.stop()

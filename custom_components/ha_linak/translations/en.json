@@ -18,12 +18,20 @@
         "description": "Keep the desk within Bluetooth range, enable pairing on the panel and close other connected desk apps. Submit to try again."
       },
       "finish": {
-        "title": "Desk height range",
-        "description": "Enter the measured minimum and maximum desk heights in cm, matching the panel reading. The slider will use this range. Saving does not move the desk.",
+        "title": "Height calibration and range",
+        "description": "Panel reading: {height} cm. If incorrect, measure the current height from the floor to the top of the desktop and enter it in the first field. Then enter the actual height range. A correction requires separate confirmation. Keep the desk still until saving finishes.",
         "data": {
+          "measured_height": "Current measured height (optional)",
           "minimum_height": "Minimum height (cm)",
           "maximum_height": "Maximum height (cm)"
         }
+      },
+      "calibration_confirm": {
+        "title": "Confirm height correction",
+        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still."
+      },
+      "calibration_apply": {
+        "title": "Saving height correction"
       }
     },
     "error": {
@@ -36,7 +44,9 @@
       "pairing_unsupported": "The selected Bluetooth adapter or proxy does not support explicit pairing. Use a compatible adapter or updated proxy.",
       "connection_lost": "The Bluetooth connection was lost while checking the desk. Enable pairing on the panel and try again.",
       "pairing_agent_unavailable": "Home Assistant could not prepare local Bluetooth pairing. Check the host Bluetooth service and D-Bus permissions, then try again.",
-      "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again."
+      "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again.",
+      "invalid_measurement": "Check the current height measurement. The desk must be stationary with a valid panel reading.",
+      "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -44,7 +54,8 @@
       "not_connectable": "The device was discovered, but an active Bluetooth connection is not available. Check your local adapter or active proxy."
     },
     "progress": {
-      "connect": "Connecting to your desk, authenticating Bluetooth and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup."
+      "connect": "Connecting to your desk, authenticating Bluetooth and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup.",
+      "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."
     }
   },
   "entity": {
@@ -136,16 +147,29 @@
   "options": {
     "step": {
       "init": {
-        "title": "Desk height range",
-        "description": "Change the height range used by the slider and stored-position buttons. These values do not change panel firmware limits or the height offset.",
+        "title": "Height calibration and range",
+        "description": "Panel reading: {height} cm. If incorrect, measure the current height from the floor to the top of the desktop and enter it in the first field. Then enter the actual height range. A correction requires separate confirmation. Keep the desk still until saving finishes.",
         "data": {
+          "measured_height": "Current measured height (optional)",
           "minimum_height": "Minimum height (cm)",
           "maximum_height": "Maximum height (cm)"
         }
+      },
+      "calibration_confirm": {
+        "title": "Confirm height correction",
+        "description": "The reading will change from {old_height} cm to {measured_height} cm. Panel reference: {old_offset} cm → {new_offset} cm. Displayed saved heights will also change. Submit to write the correction to the Bluetooth panel and verify readback. This does not move the desk or change the saved mechanism positions. Keep the desk still."
+      },
+      "calibration_apply": {
+        "title": "Saving height correction"
       }
     },
     "error": {
-      "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again."
+      "invalid_limits": "Enter valid height bounds containing the current reading. Check the desk height and try again.",
+      "invalid_measurement": "Check the current height measurement. The desk must be stationary with a valid panel reading.",
+      "calibration_failed": "The correction could not be verified. The setting may have changed. Check the panel reading before trying again; the write will not be retried automatically."
+    },
+    "progress": {
+      "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."
     }
   },
   "exceptions": {

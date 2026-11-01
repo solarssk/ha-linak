@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import math
 from typing import Any
 
-from .motion import TravelLimits
+from .motion import TravelLimits, DISPLAY_HALF_STEP_RAW
 
 MINIMUM_HEIGHT = "minimum_height"
 MAXIMUM_HEIGHT = "maximum_height"
@@ -26,8 +26,13 @@ class ControlSettings:
         return cls(float(minimum), float(maximum))
 
     def limits(self, offset_raw: int) -> TravelLimits:
+        minimum = round(self.minimum_cm * 100) - offset_raw
+        # A 1 mm UI value can round just below the zero wire position after
+        # calibration. This is display rounding, not an inferred travel limit.
+        if -DISPLAY_HALF_STEP_RAW <= minimum < 0:
+            minimum = 0
         return TravelLimits(
-            round(self.minimum_cm * 100) - offset_raw,
+            minimum,
             round(self.maximum_cm * 100) - offset_raw,
         )
 

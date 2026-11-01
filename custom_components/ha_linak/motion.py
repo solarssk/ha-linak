@@ -12,7 +12,12 @@ from typing import Protocol
 
 from bleak import BleakClient
 
-from .protocol import HEIGHT_UUID, PositionSample, decode_position
+from .protocol import (
+    HEIGHT_UUID,
+    DISPLAY_HALF_STEP_RAW,
+    PositionSample,
+    decode_position,
+)
 
 CONTROL_UUID = "99fa0002-338a-1024-8a49-009c0215f78a"
 TARGET_UUID = "99fa0031-338a-1024-8a49-009c0215f78a"
@@ -67,6 +72,8 @@ class TravelLimits:
         ):
             raise ValueError("Height and offset must be finite valid measurements")
         relative = height_cm * 100 - offset_raw
+        if self.minimum_raw == 0 and -DISPLAY_HALF_STEP_RAW <= relative < 0:
+            relative = 0
         if not self.minimum_raw <= relative <= self.maximum_raw:
             raise ValueError("Target height is outside the measured travel limits")
         return round(relative)

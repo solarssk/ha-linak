@@ -5,7 +5,7 @@
 1. Put the panel into Bluetooth pairing mode and close other connected desk apps.
 2. In Home Assistant, select the discovered custom LINAK integration (`ha_linak`), or select a desk through Add integration.
 3. Submit the selection. The form immediately changes to Home Assistant's native progress screen while the integration connects, authenticates and reads the panel.
-4. Successful validation releases the validation connection and creates the entry. A failed attempt shows a translated reason and a retry form, without creating an entry. Re-enable pairing before retrying if needed.
+4. Successful validation releases the validation connection and shows height calibration/range. If the panel reading is wrong, enter the current tape measurement and review the separate correction confirmation. The confirmed correction is checked before the measured range and entry creation. An unchanged or omitted correction sends no setting write. A failed connection shows a translated retry form. Re-enable pairing before retrying if needed.
 5. Home Assistant then starts the entry, opens the runtime connection and loads the sensors. A transient failure here enters HA's setup-retry state.
 
 Discovery uses the native name and a short address suffix, matching the Idasen presentation: `Office desk (EEFF)`. The flow checks current HA connectable metadata and BLEDevice names as well as the original discovery snapshot. Generic `LINAK` and address-only names do not hide a usable native name. Discovery does not connect, request an active scan or read GATT solely to obtain a card title. If no native name is cached yet, the card shows `LINAK (EEFF)`.

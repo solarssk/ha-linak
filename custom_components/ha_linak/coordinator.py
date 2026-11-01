@@ -72,11 +72,20 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
     @callback
     def _changed(self) -> None:
         if self.desk is not None and self.desk.connected:
+            self._validate_control_reference(self.desk.state)
             self.async_set_updated_data(self.desk.state)
         else:
             self.async_set_update_error(
                 UpdateFailed("Desk disconnected or invalid position")
             )
+
+    def _validate_control_reference(self, state: DeskState) -> None:
+        """A changed calibration can invalidate previously configured bounds."""
+        if self.controls is not None and state.offset_raw is not None:
+            try:
+                self.controls.limits(state.offset_raw)
+            except ValueError:
+                self.controls = None
 
     def _device(self) -> BLEDevice:
         device = bluetooth.async_ble_device_from_address(
@@ -103,7 +112,9 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         else:
             self.desk.device = device
         try:
-            return await self.desk.refresh()
+            state = await self.desk.refresh()
+            self._validate_control_reference(state)
+            return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
             raise UpdateFailed("Unable to read LINAK desk") from err
 

@@ -169,14 +169,14 @@ Skopiuj [`custom_components/ha_linak`](../custom_components/ha_linak) do folderu
 
 ## 🔌 Konfiguracja
 
-Karta wykrytego biurka pokazuje **LINAK · nazwę biurka**. Wewnętrzna domena integracji pozostaje `ha_linak`.
+W Home Assistant integracja nazywa się **Biurka LINAK**. Jej wewnętrzna domena pozostaje `ha_linak`.
 
 1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka.
 2. Włącz **tryb parowania Bluetooth** na panelu.
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **Biurka LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
-Karta wykrywania używa nazwy biurka i krótkiej końcówki adresu, np. **Office desk (EEFF)**, zamiast powtórzonego LINAK. Gdy nazwa nie jest jeszcze dostępna, pokazuje **LINAK (EEFF)**. Po połączeniu może uzupełnić nazwę urządzenia z odczytu Bluetooth; nazwa urządzenia nadana przez Ciebie w HA ma pierwszeństwo.
+Karta wykrywania używa nazwy biurka i krótkiej końcówki adresu, np. **Office desk (EEFF)**, zamiast powtórzonego LINAK. Gdy nazwa nie jest jeszcze dostępna, pokazuje **LINAK (EEFF)**. Na Linuksie integracja korzysta też z nazwy znanej lokalnemu systemowi Bluetooth. Po połączeniu może uzupełnić nazwę urządzenia z odczytu Bluetooth; nazwa urządzenia nadana przez Ciebie w HA ma pierwszeństwo.
 
 Wersja **0.1.0a4** dodaje tymczasowego agenta parowania lokalnego BlueZ. Konfiguracja rozróżnia niedostępność lokalnego parowania, odrzucone uwierzytelnienie, brak obsługi parowania w proxy i zerwanie połączenia. Automatyczne pierwsze parowanie wymaga jeszcze testu na sprzęcie.
 

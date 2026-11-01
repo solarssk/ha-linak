@@ -32,7 +32,7 @@ from .control_settings import (
     MAXIMUM_HEIGHT,
 )
 from .const import DOMAIN
-from .naming import DEFAULT_NAME, desk_name, discovery_title
+from .naming import DEFAULT_NAME, cached_bluez_names, desk_name, discovery_title
 from .protocol import SERVICE_UUID
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +52,15 @@ def _validation_error(error: Exception, stage: str) -> str:
     ):
         if isinstance(error, exception_type):
             return code
+    # The connector wraps exhausted connection timeouts in BleakNotFoundError.
+    # Preserve that reason without parsing private backend error messages.
+    cause = error.__cause__
+    for _ in range(8):
+        if isinstance(cause, TimeoutError):
+            return "timeout"
+        if cause is None:
+            break
+        cause = cause.__cause__
     return "cannot_connect"
 
 
@@ -68,6 +77,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._address: str | None = None
         self._discovery_address: str | None = None
         self._name = DEFAULT_NAME
+        self._system_names: dict[str, str] | None = None
         self._validation_task: asyncio.Task[str | None] | None = None
         self._error: str | None = None
         self._validated_state: DeskState | None = None
@@ -106,6 +116,12 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._devices[info.address] = info
         if not self._devices:
             return self.async_abort(reason="no_devices_found")
+        if self._system_names is None:
+            self._system_names = {}
+            if any(
+                self._desk_name(info) == DEFAULT_NAME for info in self._devices.values()
+            ):
+                self._system_names = await cached_bluez_names()
         if self._discovery_address is not None:
             info = self._devices[self._discovery_address]
             self.context["title_placeholders"] = {
@@ -145,6 +161,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             device.name if device is not None else None,
             info.device.name,
             latest.device.name if latest is not None else None,
+            (self._system_names or {}).get(info.address.upper()),
         )
 
     def _device(self) -> BLEDevice:

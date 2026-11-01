@@ -435,3 +435,42 @@ def test_connector_timeout_unwrap_is_bounded_and_handles_nested_causes():
     assert _validation_error(wrapped, "connection") == "timeout"
     middle.__cause__ = middle
     assert _validation_error(wrapped, "connection") == "cannot_connect"
+
+
+async def test_revisiting_discovery_reuses_system_name_cache(hass):
+    from custom_components.ha_linak.config_flow import LinakConfigFlow
+
+    device = BLEDevice(ADDRESS, ADDRESS, {})
+    info = SimpleNamespace(
+        address=ADDRESS,
+        name=ADDRESS,
+        device=device,
+        service_uuids=[SERVICE_UUID],
+        connectable=True,
+    )
+    flow = LinakConfigFlow()
+    flow.hass = hass
+    with (
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
+            return_value=[info],
+        ),
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_last_service_info",
+            return_value=info,
+        ),
+        patch(
+            "custom_components.ha_linak.config_flow.bluetooth.async_ble_device_from_address",
+            return_value=device,
+        ),
+        patch(
+            "custom_components.ha_linak.config_flow.cached_bluez_names",
+            new_callable=AsyncMock,
+            return_value={ADDRESS: "Panel name"},
+        ) as lookup,
+    ):
+        await flow.async_step_user()
+        result = await flow.async_step_user()
+    lookup.assert_awaited_once()
+    options = result["data_schema"].schema[CONF_ADDRESS].config["options"]
+    assert options[0]["label"] == f"Panel name ({ADDRESS})"

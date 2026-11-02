@@ -158,25 +158,29 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             TimeoutError,
             ValueError,
         ) as err:
-            if isinstance(err, MotionError) and err.reason == MotionFailure.BUSY:
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN, translation_key="control_busy"
-                ) from err
-            _LOGGER.warning(
-                "LINAK %s failed during %s: reason=%s backend=%s",
-                action,
-                self.desk.stage,
-                _failure_reason(err),
-                backend,
-            )
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="stop_failed"
-                if action == "stop"
-                else "movement_failed",
-            ) from err
+            raise self._control_error(action, backend, err) from err
         finally:
             self._changed()
+
+    def _control_error(
+        self, action: str, backend: str, error: Exception
+    ) -> HomeAssistantError:
+        if isinstance(error, MotionError) and error.reason == MotionFailure.BUSY:
+            return HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="control_busy"
+            )
+        assert self.desk is not None
+        _LOGGER.warning(
+            "LINAK %s failed during %s: reason=%s backend=%s",
+            action,
+            self.desk.stage,
+            _failure_reason(error),
+            backend,
+        )
+        return HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="stop_failed" if action == "stop" else "movement_failed",
+        )
 
     async def async_close(self) -> None:
         await self.async_shutdown()

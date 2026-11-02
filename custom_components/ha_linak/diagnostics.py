@@ -21,6 +21,9 @@ async def async_get_config_entry_diagnostics(  # NOSONAR(S7503) HA coroutine con
             "signal_strength_source": "advertisement",
             "backend": coordinator.bluetooth_backend,
         },
+        "settings": coordinator.desk.settings_diagnostics()
+        if coordinator.desk
+        else None,
         "controls": {
             "range_configured": getattr(coordinator, "controls", None) is not None,
             "busy": coordinator.desk.control_busy if coordinator.desk else False,

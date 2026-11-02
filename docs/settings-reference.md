@@ -41,6 +41,38 @@ Evidence labels mean manufacturer-documented product behavior, community protoco
 
 Unsupported candidates do not create dummy controls. A verified capability model must handle absent/OEM-disabled functions and honest unavailable states.
 
+## Model and variant matrix
+
+Product features are not a BLE command compatibility promise. Use the model-specific data sheets, then the reported capabilities, implementation support and hardware evidence as separate checks. A lower model is not automatically the same DPG1C with fewer enabled bits.
+
+| Desk panel | Built-in Bluetooth | Height display | Documented favorites | Reminder hardware | Automatic drive / app control | Integration evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| DPG1K | Not listed in the cited manual's variant overview | Not listed | Not listed | Not listed | Not established here | No validation; an external adapter is a separate configuration |
+| DPG1M | Yes | Described as the version without a display | Two in its data sheet | LED | Full/Limited variant dependent | No model-specific BLE validation |
+| DPG1B | Yes | Not listed in its data sheet | Two | Light strip | Full/Limited variant dependent | No model-specific BLE validation |
+| DPG1C | Yes | OLED | Up to four; OEM may disable slots 3/4 | Light strip | Full/Limited variant dependent | Reads and limited controls on one panel; exact ordering variant unknown |
+
+Sources: [DPG1M data sheet, 2026-05, pp. 2–4](https://assets.linak.com/asset/590184044899/document_5o382q0u214ij3insa6qf9ci48?content-disposition=inline), [DPG1B data sheet, 2019-10, pp. 2–4](https://assets.linak.com/asset/590184044899/document_erjegku6lh1ffa089edj2lp653?content-disposition=inline), O2 for DPG1C and O1 for the variant overview and OEM restriction. The family page says up to four positions; this is not a four-slot guarantee for every model. The current manual's overview also lists a display for DPG1M, while the model-specific data sheet describes it as the no-display version. Preserve that source inconsistency and verify the actual SKU rather than inferring a capability from the overview.
+
+For M, B and C, the cited ordering tables describe Limited as lacking wireless app control and automatic drive; Full permits those functions. Neither the advertised name nor successful read access identifies that ordering variant or establishes movement permission. Key-lock and other firmware options also need independent command evidence. DPI products need a separate profile; do not inherit the DPG matrix.
+
+At runtime the integration reads only the reported 0–4 memory slots, with synthetic coverage for 0, 1, 2 and 4. It does not identify a model by slot count, assume a reminder-light flag proves a reminder query/setter, or add unsupported writes. The [capability contract](architecture.md#proposed-state-and-library-contracts) separates protocol flags, implemented operations and physical validation.
+
+## Can HA configure more than the official app?
+
+HA can already add automations, integration diagnostics and host-side command bounds around panel data. Those are host features, not additional firmware settings. No tested evidence currently establishes an exclusive panel setting that HA can change but the official app cannot.
+
+| Candidate | Manufacturer/app evidence | Current HA behavior | Next proof needed |
+| --- | --- | --- | --- |
+| Favorite management | Product/app descriptions document favorites | Read and drive; no save/delete setter | Exact slot-safe write, acknowledgement, readback and persistence |
+| Reminder intervals | App/product descriptions document configurable intervals | Read three configured profile pairs | Selection/duration write encoding, bounds and readback |
+| Units and height reference | Panel documentation describes presentation and correction | Protected measured-height calibration; HA stays in cm | Unit-setting protocol and variant behavior |
+| Automatic drive | Full variants document optional automatic drive | Read capability flags; no firmware toggle | Permission, semantics and independent control behavior |
+| Lock, wake preference and display logo | Physical/product features or community candidates | No remote setters | Demonstrate a supported BLE command, not just a UI label or raw bit |
+| OEM slot visibility and firmware limits | Manufacturer/configurator functions | No firmware-limit import or OEM override | Official or reproducible variant-specific protocol evidence; never infer from favorites |
+
+The [official app description](https://www.linak.com/products/controls/desk-control-app) documents height adjustment, favorites, reminders and statistics. The [DPG1C data sheet](https://assets.linak.com/asset/590184044899/document_1660ji82jh2118i2b6r62ilc56?content-disposition=inline) also documents optional automatic drive through Desk Connect. Different app generations and OEM permissions prevent a blanket claim that an undocumented command is an extra feature. Follow the setter requirements below before adding any control.
+
 ## Unsupported command candidates
 
 The pinned community catalogue contains additional opcodes. Their presence is not evidence that this panel accepts them or that the integration implements them.

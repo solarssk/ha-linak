@@ -53,7 +53,7 @@ Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka po
 - ⏹️ **Stop** (`button`): zatrzymaj bieżący ruch
 - 🔖 **Przejdź do zapisanej pozycji 1–4** (`button`): jedź do pozycji zapisanej na panelu
 
-Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu. Przyciskiem **Stop** zatrzymasz jazdę. Przed wybraniem kolejnego celu poczekaj na zakończenie ruchu lub naciśnij Stop. Nowe cele nie trafiają do kolejki. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu. Przed wykonaniem polecenia integracja sprawdza klienta panelu i w razie potrzeby przygotowuje go, zachowując jego identyfikator.
+Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu. Przyciskiem **Stop** zatrzymasz jazdę. Przed wybraniem kolejnego celu poczekaj na zakończenie ruchu lub naciśnij Stop. Nowe cele nie trafiają do kolejki. Błędna odpowiedź pamięci lub przypomnień podczas odświeżania wyłącza odczyty tej grupy, zachowując poprawny pomiar wysokości. Błąd połączenia nadal dotyczy całej sesji. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu. Przed wykonaniem polecenia integracja sprawdza klienta panelu i w razie potrzeby przygotowuje go, zachowując jego identyfikator.
 
 Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](docs/controls.md).
 

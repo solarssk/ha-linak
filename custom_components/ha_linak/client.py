@@ -113,6 +113,15 @@ class DeskState:
         return (self.offset_raw + self.position.position_raw) / 100
 
 
+@dataclass
+class SettingsHealth:
+    """Read validity for one optional group; ages use a monotonic clock."""
+
+    valid: bool = False
+    last_success: float | None = None
+    error: str | None = None
+
+
 class DeskClient:
     """One serialized query channel, discarded after any ambiguous failure."""
 
@@ -129,6 +138,10 @@ class DeskClient:
         self._stage_at = monotonic()
         self.changed = changed
         self.state = DeskState()
+        self.settings_health = {
+            "memories": SettingsHealth(),
+            "reminders": SettingsHealth(),
+        }
         self.client: BleakClient | None = None
         self._lock = asyncio.Lock()
         self._operation: asyncio.Task[Any] | None = None
@@ -163,6 +176,8 @@ class DeskClient:
         if client is not self.client:
             return
         self._ready = False
+        for health in self.settings_health.values():
+            health.valid = False
         if not self._closing:
             _LOGGER.debug(
                 "BLE link lost during %s after %.3fs",
@@ -304,13 +319,15 @@ class DeskClient:
         )
         return await self._pending
 
-    async def refresh(self) -> DeskState:
+    async def refresh(self, *, allow_partial_settings: bool = False) -> DeskState:
         if self.control_busy:
             return self.state
         async with self._lock:
             try:
                 async with asyncio.timeout(REFRESH_TIMEOUT):
-                    return await self._refresh()
+                    return await self._refresh(
+                        allow_partial_settings=allow_partial_settings
+                    )
             except BaseException as error:
                 # Cleanup owns the transport even if HA cancels the flow again.
                 cancelled = isinstance(error, asyncio.CancelledError)
@@ -331,7 +348,7 @@ class DeskClient:
                     raise asyncio.CancelledError from None
                 raise
 
-    async def _refresh(self) -> DeskState:
+    async def _refresh(self, *, allow_partial_settings: bool = False) -> DeskState:
         if self.client is None or not self.client.is_connected or not self._ready:
             await self.disconnect()
             self._closing = False
@@ -376,27 +393,86 @@ class DeskClient:
             raise ValueError("Desk has no valid height offset")
         if state.capabilities.memory_slots > 4:
             raise ValueError("Unsupported number of memory slots")
-        for command in list(ReadCommand)[3 : 3 + state.capabilities.memory_slots]:
-            if state.memories:
-                # Memory replies have no slot ID. BlueZ can deliver a burst of
-                # duplicate Value signals across the next request boundary.
-                # A different response type is an ordered read-only barrier;
-                # identical saved positions must not be deduplicated by value.
-                capabilities = decode_capabilities(
-                    await self._query(ReadCommand.CAPABILITIES, 2)
-                )
-                if capabilities != state.capabilities:
-                    raise ValueError("Desk capabilities changed during memory reads")
-            state.memories.append(decode_stored_position(await self._query(command, 7)))
-        state.reminders = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
+        memories = await self._read_memories(state.capabilities, allow_partial_settings)
+        reminder_payload = await self._query(ReadCommand.REMINDERS, 11)
+        reminders = self._decode_optional(
+            decode_reminders, reminder_payload, allow_partial_settings
+        )
+        state.memories = (
+            memories
+            if memories is not None
+            else self.state.memories[: state.capabilities.memory_slots]
+        )
+        state.reminders = reminders if reminders is not None else self.state.reminders
         self._set_stage("position_read")
         state.position = decode_position(
             bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
         )
+        self._record_settings("memories", memories is not None)
+        self._record_settings("reminders", reminders is not None)
         self.state = state
         self._ready = True
         self._set_stage("ready")
         return state
+
+    @staticmethod
+    def _decode_optional[T](
+        decoder: Callable[[bytes], T], payload: bytes, allow_partial: bool
+    ) -> T | None:
+        # Only a completed, matching reply reaches this parser. Never catch a
+        # timeout, cancellation or transport error as an optional-field failure.
+        try:
+            return decoder(payload)
+        except ValueError:
+            if not allow_partial:
+                raise
+            return None
+
+    async def _read_memories(
+        self, capabilities: Capabilities, allow_partial: bool
+    ) -> list[StoredPosition] | None:
+        memories = []
+        valid = True
+        for index in range(capabilities.memory_slots):
+            if index:
+                # Memory replies have no slot ID. A different reply type is an
+                # ordered barrier against the observed duplicate signal burst.
+                barrier = decode_capabilities(
+                    await self._query(ReadCommand.CAPABILITIES, 2)
+                )
+                if barrier != capabilities:
+                    raise ValueError("Desk capabilities changed during memory reads")
+            payload = await self._query(ReadCommand(0x89 + index), 7)
+            memory = self._decode_optional(
+                decode_stored_position, payload, allow_partial
+            )
+            if memory is None:
+                valid = False
+            else:
+                memories.append(memory)
+        return memories if valid else None
+
+    def _record_settings(self, group: str, valid: bool) -> None:
+        health = self.settings_health[group]
+        if valid:
+            health.last_success = monotonic()
+        elif health.error is None:
+            _LOGGER.warning("LINAK %s response invalid; group unavailable", group)
+        health.valid = valid
+        health.error = None if valid else "invalid_response"
+
+    def settings_diagnostics(self) -> dict[str, dict[str, object]]:
+        now = monotonic()
+        return {
+            group: {
+                "valid": health.valid,
+                "age_seconds": round(max(0.0, now - health.last_success), 1)
+                if health.last_success is not None
+                else None,
+                "error": health.error,
+            }
+            for group, health in self.settings_health.items()
+        }
 
     @property
     def control_busy(self) -> bool:
@@ -730,6 +806,8 @@ class DeskClient:
         if self._operation is not None:
             self._operation.cancel()
         self._ready = False
+        for health in self.settings_health.values():
+            health.valid = False
         self._generation += 1
         client, self.client = self.client, None
         if self._pending is not None and not self._pending.done():

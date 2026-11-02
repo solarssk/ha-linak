@@ -272,6 +272,9 @@
     },
     "range_not_configured": {
       "message": "Ustaw zakres wysokości w konfiguracji Biurka LINAK."
+    },
+    "startup_timeout": {
+      "message": "Początkowe połączenie lub odczyt biurka trwały zbyt długo. Home Assistant ponowi próbę automatycznie."
     }
   }
 }

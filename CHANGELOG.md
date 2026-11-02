@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bound the first connection/read during integration setup to 20 seconds before cleanup and let Home Assistant retry in the background, instead of waiting for successive long connection attempts during startup.
+- Log the allowlisted backend after connecting and identify diagnostic RSSI as advertisement data, which may come from a different scanner than the active connection.
 - Release both movement command channels on Stop and retain a ready connection after a successful explicit interruption, so the next target or saved position does not require reconnecting.
 - Allow three seconds for movement feedback reads while retaining the one-second Stop/write deadline; measured local BlueZ read latency could exceed the old shared limit.
 - Keep the height slider at the last settled height instead of recording every intermediate centimeter; preserve live height feedback and suppress identical notification/read publications.

@@ -272,6 +272,9 @@
     },
     "range_not_configured": {
       "message": "Set the desk height range in LINAK Desks configuration."
+    },
+    "startup_timeout": {
+      "message": "The initial desk connection or read timed out. Home Assistant will retry automatically."
     }
   }
 }

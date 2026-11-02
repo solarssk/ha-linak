@@ -54,6 +54,7 @@ The first failed operation determines the next investigation. Later cleanup erro
 
 | Stage/error | Interpretation | Required evidence or action |
 | --- | --- | --- |
+| Setup retry after the initial connection/read deadline | The first setup attempt exceeded its 20-second budget | HA retries the entry; inspect connection stages instead of restarting HA or deleting the entry |
 | `device_lookup` | HA cannot supply a current connectable device | Inspect discovery freshness and connectable adapter support |
 | `connection` / `timeout` | Connector did not finish establishing a usable link | Record backend/path and advertisement presence; do not diagnose offset or parsing |
 | `pairing` / `pairing_agent_unavailable` | Local agent setup failed | Inspect BlueZ agent lifecycle; preserve existing bonds |
@@ -105,7 +106,7 @@ That sequence was observed on local BlueZ. In a separate bounded experiment, act
 
 ## Diagnose multiple adapters without guessing
 
-HA selects an active connection path using signal and available slots. A nearby adapter is not proof of the selected path, and the RSSI sensor can use an advertisement heard by another scanner.
+HA selects an active connection path using signal and available slots. After a successful connection, a debug line records `BLE session connected: backend=...` using the same category as the optional backend sensor. Failed attempts may not yet have a selected client backend; use the backend library's preceding connection trace instead. A nearby adapter is not proof of the selected path, and the RSSI sensor can use an advertisement heard by another scanner.
 
 | Evidence | What it can establish | What it cannot establish |
 | --- | --- | --- |
@@ -133,7 +134,8 @@ Enable optional diagnostics through **Settings → Devices & services → Entiti
 | Download field | Meaning |
 | --- | --- |
 | `connected`, `stage`, `last_update_success` | Client readiness, last phase and shared-read availability |
-| `bluetooth.signal_strength`, `bluetooth.backend` | Cached advertisement signal and active backend category |
+| `bluetooth.signal_strength`, `bluetooth.signal_strength_source` | Cached RSSI with explicit `advertisement` source; not active-link RSSI |
+| `bluetooth.backend` | Allowlisted active connection backend category |
 | `controls.range_configured`, `controls.busy` | Whether usable bounds exist and a foreground operation owns the client |
 | `controls.last_result` | Software result: `not_requested`, `moving`, `completed`, `interrupted`, `failed`, `stop_sent` or `stop_failed` |
 | `state` | Raw decoded position, reference, capabilities, memories and reminders |

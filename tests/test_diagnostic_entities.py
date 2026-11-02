@@ -96,6 +96,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         result = await async_get_config_entry_diagnostics(hass, entry)
         assert result["bluetooth"] == {
             "signal_strength": -65,
+            "signal_strength_source": "advertisement",
             "backend": "bleak_esphome",
         }
         serialized = json.dumps(result)

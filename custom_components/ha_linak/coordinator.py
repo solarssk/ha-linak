@@ -3,7 +3,6 @@
 from datetime import timedelta
 import logging
 
-from bleak.backends import BleakBackend
 from bleak.exc import BleakError
 from bleak.backends.device import BLEDevice
 from homeassistant.components import bluetooth
@@ -13,7 +12,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .client import DeskClient, DeskState
+from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
 from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError
@@ -29,12 +28,7 @@ def _failure_reason(error: Exception) -> str:
 
 
 class LinakCoordinator(DataUpdateCoordinator[DeskState]):
-    BACKENDS = tuple(
-        sorted(
-            {backend.value for backend in BleakBackend}
-            | {"bleak_esphome", "bluez_mgmt", "other"}
-        )
-    )
+    BACKENDS = BLUETOOTH_BACKENDS
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(
@@ -74,10 +68,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             or not self.desk.client.is_connected
         ):
             return None
-        backend = self.desk.client.backend_id
-        if isinstance(backend, BleakBackend):
-            backend = backend.value
-        return backend if backend in self.BACKENDS else "other"
+        return backend_category(self.desk.client)
 
     @callback
     def _changed(self) -> None:

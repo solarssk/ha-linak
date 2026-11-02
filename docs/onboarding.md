@@ -78,7 +78,8 @@ The connector receives a device callback so retries can use current HA adapter m
 
 | Boundary | Budget or behavior |
 | --- | --- |
-| Complete read/connection attempt | 60 seconds |
+| Initial config-entry connection/read during HA setup | 20 seconds, then bounded cleanup and HA-managed setup retry |
+| Foreground wizard or later runtime read/connection attempt | 60 seconds |
 | Pairing phase | 30 seconds inside the complete attempt |
 | Individual ordinary I/O | 10 seconds, bounded by the outer attempt |
 | DPG read/setting exchange | 8 seconds, bounded by its owning operation |
@@ -86,6 +87,8 @@ The connector receives a device callback so retries can use current HA adapter m
 | Foreground setup idle time | Release after 300 seconds without a Bluetooth operation |
 | Unconsumed setup-to-runtime transfer | Release after 60 seconds or HA shutdown |
 | Abort | Cancel the progress task and drain owned cleanup |
+
+A configured desk that cannot connect or finish its initial read within the setup budget raises `ConfigEntryNotReady`. HA retains the entry and schedules setup retries without completing two long connector attempts inside the first setup call. Cleanup may add up to 10 seconds; the 20-second radio-work budget is not a promise about total HA startup time. Entities are forwarded only after a successful read. A setup-to-runtime session that is already connected uses the same budget for validation, without forcing another connection.
 
 An expired idle session can be reopened when the wizard continues. Each new operation must validate fresh state. A failed preparation connection does not immediately launch another automatic read-only connection attempt. After a calibration failure beyond connection establishment, one read-only recovery may refresh the form without replaying the uncertain setting write.
 

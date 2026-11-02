@@ -1,45 +1,73 @@
-# Communication reuse and state lifecycle review
+# Compare existing Idasen and DPG implementations
 
-Reviewed 2026-11-01 against HA 2026.10.4 and the libraries installed on the owner's host. This separates verified implementation behavior from changes still requiring implementation or hardware evidence.
+Existing projects already implement substantial LINAK communication behavior. This comparison identifies which contracts can be reused and which differ from a DPG1C integration with centimeter heights, a panel reference and extended settings. It is a dependency/design reference, not a claim that a particular library fixes every observed failure.
 
-## Existing libraries and reusable layers
+## Comparison baseline
 
-HA's [Idasen manifest](https://github.com/home-assistant/core/blob/2026.10.4/homeassistant/components/idasen_desk/manifest.json) pins `idasen-ha==3.0.1`. That package [depends on](https://github.com/abmantis/idasen-ha/blob/3.0.1/pyproject.toml) `idasen>=0.13.1,<0.14`; the inspected host has 0.13.1. Both were read from installed package metadata, rather than inferred from the latest upstream branch.
+The inspected HA 2026.10.4 [Idasen manifest](https://github.com/home-assistant/core/blob/2026.10.4/homeassistant/components/idasen_desk/manifest.json) pins `idasen-ha==3.0.1`. Its [dependency declaration](https://github.com/abmantis/idasen-ha/blob/3.0.1/pyproject.toml) accepts `idasen>=0.13.1,<0.14`; the inspected host used 0.13.1. Compare these versions rather than an unpinned latest branch.
 
-| Layer | Existing implementation | Reuse boundary |
+| Layer | Existing contract | Reuse or adaptation needed |
 | --- | --- | --- |
-| HA entity | HA exposes a percentage cover | Our centimeter number and buttons can use a different transport implementation; percentages are not a BLE restriction |
-| Connection | `idasen-ha` uses HA's BLE device, bleak-retry-connector, pairing, one connection manager and reconnect scheduling | We already depend on the same connector; compare lifecycle behavior before maintaining a separate policy |
-| Motion | `idasen` accepts target height in meters, emits target keepalives, reads feedback and implements Stop | Compare exact installed command ordering and cancellation semantics; do not recreate protocol facts from guesses |
-| Height | `idasen` subscribes to notifications and suppresses unchanged values | Keep push updates and debounce HA publication; do not continuously read unchanged height while idle |
-| Extended settings | Community DPG libraries decode offset, capabilities, memories and reminder profiles | These are not provided by the public `idasen-ha` wrapper; retain a separate serialized, validated DPG query layer |
+| HA entity | HA exposes an Idasen percentage cover | Percentage is an entity choice, not a BLE requirement; retain the native centimeter number/buttons |
+| Connection | `idasen-ha` uses HA BLE metadata, bleak-retry-connector, pairing and one connection manager | Reuse HA's transport ownership; compare retry and cleanup policy |
+| Height conversion | `idasen` uses a fixed 0.62 m reference and 0.62–1.27 m bounds | Read the panel reference and use measured/verified bounds per device |
+| Movement target | Lower `idasen` accepts meter targets; the public HA wrapper accepts percentages | A narrow adapter can expose centimeters without changing protocol units |
+| Feedback | Height notifications and changed-value filtering | Preserve measured feedback and avoid needless HA publication |
+| Extended configuration | DPG libraries decode capabilities, reference, memories and reminders | Maintain serialized query validation and per-frame evidence |
+| Application readiness | DPG1C wakeup includes a user-ID write | Preserve the existing identifier, check status and verify acknowledgement/readback rather than copying a fixed identity |
 
-The [idasen-ha Desk wrapper](https://github.com/abmantis/idasen-ha/blob/3.0.1/idasen_ha/__init__.py) exposes both meter height and percentage height, but its public target method accepts percentages. The [lower idasen library](https://github.com/newAM/idasen/blob/v0.13.1/idasen/__init__.py) accepts meter targets. A centimeter UI therefore does not justify implementing an entire Bluetooth stack independently.
+The [HA wrapper](https://github.com/abmantis/idasen-ha/blob/3.0.1/idasen_ha/__init__.py) and [lower library](https://github.com/newAM/idasen/blob/v0.13.1/idasen/__init__.py) expose different target surfaces. A centimeter UI alone does not justify a separate Bluetooth stack. Per-panel reference, bounds, settings and ownership behavior are the actual adaptation requirements.
 
-## Important differences from the current client
+## Movement contract differences
 
-The inspected `idasen` version uses fixed 0.62 m and 1.27 m bounds and uses 0.62 m as its height reference. These are not queried mechanical limits. The inspected DPG1C returns a 0.68 m offset, so blindly using the IKEA reference would introduce a 6 cm error. Its wakeup also writes a DPG user-ID payload. Adopting the whole library requires an explicit solution for per-device reference/bounds and ownership behavior, without globally changing class constants for every desk.
+These differences are research questions, not instructions to copy behavior into production without a scoped test.
 
-Its movement sequence sends wake before control Stop, whereas the current implementation sends control Stop before wake. Its Stop sends both control `ff00` and reference-input `0180`; our current implementation only sends control Stop. These are concrete differences to resolve with a scoped protocol test, not proof of the cause of a radio disconnect. They have not been changed or tested physically in the duplicate-memory repair.
+| Contract | Inspected upstream | Current integration | Required decision/evidence |
+| --- | --- | --- | --- |
+| Reference and bounds | Fixed IKEA values | Live panel offset and configured centimeter bounds | Do not infer mechanical limits from either source |
+| Readiness identity | Wakeup writes a user-ID payload | Conditional activation preserves and verifies the existing identifier | Readiness must hold on the control connection; polling remains read-only |
+| Initial control ordering | Wake before control Stop | Control Stop before wake | Compare ordering only in a bounded experiment |
+| Stop frames | Control `ff 00` and reference-input `01 80` | Control `ff 00` | Physical Stop behavior and additional frame semantics remain unverified here |
+| Target loop | Version-specific keepalive/feedback policy | Serialized target, 0.2-second wait and fresh read | Compare effective latency, not only the configured wait |
+| Recovery | Connection manager schedules retries and closes stale links | Coordinator refresh retries; ambiguous query/control failures discard the session | Never resume an old target after recovery |
 
-The [idasen-ha connection manager](https://github.com/abmantis/idasen-ha/blob/3.0.1/idasen_ha/connection_manager.py) explicitly closes stale connections, prevents competing connect attempts and schedules retries after 30 seconds. Our runtime currently retries through coordinator polling; setup and runtime reconnect budgets need separate review against the observed sparse advertisements. Do not clear unrelated bonds or force one adapter globally.
+The [pinned idasen implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py) and [connection manager](https://github.com/abmantis/idasen-ha/blob/3.0.1/idasen_ha/connection_manager.py) are the comparison sources. Upstream's DPG1C initialization is also discussed in [issue 32](https://github.com/rhyst/linak-controller/issues/32#issuecomment-1784055470). Neither source replaces the [hardware evidence](hardware-results.md).
 
-## Required state model
+## Extended configuration differences
 
-The maintainer requires automatic import of supported panel data and a simple first-run experience. Requesting manually entered bounds as the normal solution is not the intended product. A successful BLE connection does not prove that firmware travel limits can be queried. No supported min/max read command has yet been established from the inspected DPG sources; offset and stored-position extrema must not be presented as physical travel limits.
+Community DPG implementations provide command catalogues and write/read patterns beyond the Idasen wrapper. Those are candidates for a small protocol layer, not a reason to expose every setting as a writable entity.
 
-Keep three kinds of state distinct:
+| Requirement | Current handling | Limit |
+| --- | --- | --- |
+| Correct per-panel height | Read `0x81`; protected measured-height correction | Not a travel-limit query |
+| Correct memory slot assignment | Type/length validation and capabilities barriers | Memory responses have no slot identifier |
+| Unknown counters/flags | Preserve raw fields | No invented occupancy, usage or state meaning |
+| New setters | Allowlist, acknowledgement, readback and side-effect scope | Memories/reminders/name writes remain unimplemented |
+| Device variants | Record model, firmware and capabilities | Product labels alone do not prove remote control support |
 
-- Live telemetry: actual height and connection state. A stale height must not be presented as current after link loss.
-- Last-read panel configuration: stored positions, offset and reminder profiles. Preserve a validated snapshot with its read time, show when it is stale, and reconcile it after connection recovery. A cached position must not authorize movement without fresh validation.
-- Host preferences: integration choices and any fallback configuration. Saving these must not silently write firmware settings or execute motion.
+The [protocol reference](protocol.md) owns exact frames; the [settings reference](settings-reference.md) owns source revisions and implementation status.
 
-This persistence/freshness model is a requirement from this review, not functionality already implemented. The current sensors share coordinator availability, and their values become unavailable on link loss. A durable snapshot and its HA representation need tests for reload, restart, stale settings and physical-panel edits.
+## State and traffic design
 
-## Traffic and command ownership
+Current reads share coordinator availability and a 60-second full refresh. A durable snapshot of last-read settings with a visible age is not implemented. A future optimization must separate:
 
-Use notifications for height. Read supported settings on connection, after an explicit setting change and on a deliberate refresh schedule. The current client refreshes the complete settings set every 60 seconds; this is not evidence that the desk requires a minute-by-minute keepalive. Reduce unnecessary idle reads only after separating connection health from settings freshness.
+| State | Freshness requirement | Must not do |
+| --- | --- | --- |
+| Live telemetry | Fresh position and connection status | Present stale height as current |
+| Last-read configuration | Known read time and reconciliation after reconnect/panel edits | Authorize movement solely from cached settings |
+| Host preferences | Durable HA configuration | Silently write firmware settings or replay a target |
 
-Movement keepalives exist only during an explicit move. Stop must preempt that move. One owner must serialize settings queries, movement preparation and final cleanup; two libraries must never manage independent connections to the same desk. A transport failure must not queue or resume a target after reconnect.
+Notifications should provide height feedback; target keepalives exist only during explicit movement. Two libraries must not independently own connections to the same panel. A dependency migration must preserve cancellation, final Stop, bounds, per-device reference, setting verification and redaction before replacing the current client.
 
-The first diagnosed repair is the [duplicate-response barrier](protocol.md#duplicate-memory-responses-on-bluez). Further implementation should use a contract comparison against the exact upstream versions above, then choose a configurable upstream dependency or a narrow adapter. No dependency migration, firmware-setting write, new travel-limit inference or physical movement is part of that repair.
+## Criteria for adopting an upstream dependency
+
+Accept a configurable dependency or narrow adapter only when it can satisfy the current public contract:
+
+1. Retain one HA-managed transport and current adapter metadata.
+2. Use per-device reference and bounds without global class-constant changes.
+3. Preserve the panel identifier and separate pairing from application readiness.
+4. Serialize DPG queries and handle ambiguous/duplicated replies.
+5. Preserve foreground-only side effects, Stop priority and bounded cleanup.
+6. Demonstrate matching behavior with synthetic HA tests and scoped hardware evidence.
+
+No dependency migration is implied by this comparison. Unresolved behavior is listed in the [investigation plan](bluetooth-research.md#next-tests-that-can-change-a-conclusion).

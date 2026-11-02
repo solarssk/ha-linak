@@ -1,89 +1,107 @@
-# First setup and Bluetooth failures
+# Connect and configure a desk
 
-## User flow
+This reference explains the configuration flow and connection lifecycle. Use the [control guide](controls.md) for owner-facing configuration steps and the [diagnostic manual](diagnostics.md) when a step fails. Discovery, Bluetooth authentication and DPG client activation are separate stages.
 
-1. Put the panel into Bluetooth pairing mode and close other connected desk apps.
-2. In Home Assistant, select the discovered custom LINAK integration (`ha_linak`), or select a desk through Add integration.
-3. Submit the selection. The form immediately changes to Home Assistant's native progress screen while the integration connects, authenticates and reads the panel.
-4. Successful validation retains the connection through naming, explicit client preparation, range collection and height correction. If the panel reading is wrong, enter the current tape measurement and review the separate correction confirmation. The confirmed correction is checked before the measured range and entry creation. An unchanged or omitted correction sends no setting write. A failed connection shows a translated retry form. Re-enable pairing before retrying if needed.
-5. Home Assistant then starts the entry, takes ownership of the validated connection and loads the sensors. A transient failure here enters HA's setup-retry state.
+## Setup sequence
 
-Discovery uses the native name and a short address suffix, matching the Idasen presentation: `Office desk (EEFF)`. The flow checks current HA connectable metadata and BLEDevice names as well as the original discovery snapshot. Generic `LINAK` and address-only names do not hide a usable native name. Discovery does not connect, request an active scan or read GATT solely to obtain a card title. If no native name is cached yet, the card shows `LINAK (EEFF)`.
+The wizard validates the desk before creating an entry and keeps the same connection across foreground steps.
 
-During the already-authorized connection, after pairing, a desk whose cached name is still a fallback can supply its standard GAP Device Name characteristic (0x2A00). The client reads it once per connection only if it exists and is readable. Missing, denied or malformed names retain the fallback; transport loss and read timeout still invalidate the session. This optional metadata phase is named `device_name`, has the existing 10-second I/O limit inside the total 60-second attempt, and sends no DPG settings writes. The name reader does not log raw values/errors or add the name to the diagnostic state object. HA/framework logs can still contain configured device/entry names; redact them before sharing.
+```mermaid
+flowchart TD
+    accTitle: Desk configuration flow
+    accDescr: Validate, prepare, measure and verify before transferring the setup connection to runtime.
+    Select[Select and validate desk] --> Prepare[HA name and confirmed client preparation]
+    Prepare --> Range[Measure and enter travel bounds]
+    Range --> Height{Fresh height reading correct?}
+    Height -->|Yes| Check[Final reference and bounds validation]
+    Height -->|No| Correct[Measure; confirm correction and readback]
+    Correct --> Check
+    Check --> Entry[Create entry and transfer session]
+```
 
-A new entry uses the resolved native name after validation. Existing address-only entry titles are repaired as before. An older entry titled exactly `LINAK` retains its title because its origin may be ambiguous, while its device-registry name is improved when a native name is available. Other entry titles and HA's explicit device name_by_user are preserved. Existing entity IDs and bonds are unchanged.
+| Step | Information or action | Result |
+| --- | --- | --- |
+| Selection | Choose an HA-discovered connectable device | Reserve its unique address; reject duplicates |
+| Validation | Connect, pair when needed, subscribe, read settings and position | Show progress and a stage-specific failure if validation fails |
+| Name/preparation | Choose a name in HA and confirm panel preparation | Preserve the client identifier; skip an already active client |
+| Range | Enter measured minimum and maximum desktop heights | Store proposed host-side command bounds; do not move or program firmware limits |
+| Height check | Refresh the reading after measuring the range | Use a current stationary baseline for any correction |
+| Correction | Enter current tape measurement and review a separate confirmation | Write once, verify the reference and refresh dependent heights |
+| Final validation | Re-read on the height-correct path or use verified calibration results | Save only bounds compatible with the current reference and position |
+| Entry creation | Transfer the validated session to runtime | Load entities without an unnecessary reconnect |
 
-Discovery alone does not prove a usable GATT connection. The panel accepts one connection at a time; the phone app or another desk integration may hold it. Pairing/authentication on the local Bluetooth host can also be necessary. Discovery, bonding and background reads do not reset the panel or change the user-ID setting. Explicit setup preparation and confirmed calibration can activate the existing client without replacing its identifier.
+An unchanged height correction sends no offset write. Calibration inputs are transient and are not replayed after restart. Failed preparation returns to its form instead of silently creating an unprepared entry.
 
-## Waiting and cancellation
+## Discovery names and identity
 
-A complete connection/read attempt has a 60-second budget. Explicit pairing has a 30-second limit within the same total budget. Each notification subscription and the final position read have 10-second limits; each extended query has an 8-second limit. Failed sessions are invalidated and disconnected before retry. Releasing a connection has a separate 10-second limit, so cleanup can extend a failed attempt to approximately 70 seconds. Connection retries stay inside the same total budget. The connector retains its own service-resolution timeouts; these are not shortened below Home Assistant's recommended connection window.
+The discovery card uses a desk name and short address suffix, such as `Office desk (EEFF)`. Resolution checks current HA metadata, the original discovery record and BLE device names. Generic `LINAK` and address-only values do not hide a usable name.
 
-The frontend does not keep a submitted form waiting for this work. HA owns a single registered progress task. Revisiting the step does not create another connection, and aborting the flow cancels validation and releases the session. Instant failures still pass through progress before showing retry, preventing form-submission data from being mistaken for a retry submission.
+On Linux, a two-second cached BlueZ metadata lookup can improve a fallback name without connecting or scanning. After authentication, an optional readable GAP Device Name characteristic can supply a name. Missing, denied or malformed names retain the fallback; transport failures still invalidate the attempt.
 
-Both configuration and runtime use the current connectable BLE device from Home Assistant's Bluetooth manager. A device callback lets the connector use updated adapter/proxy information. Passive-only discovery is not accepted.
+The name entered in the wizard belongs to HA, not the Bluetooth panel. Explicit HA names take priority on reload. Older address-only titles can be repaired; an existing title exactly `LINAK` is not automatically assumed to be integration-owned. Device-registry user names remain intact.
 
-## Diagnosis
+## Connection and authentication
 
-A failed validation writes a `ha_linak` warning containing a stage and error code: `device_lookup`, `connection`, `pairing`, `device_name`, `notify_dpg`, `notify_height`, `extended_reads`, `position_read`, or `disconnect`. Warnings for expected failures omit the desk name, Bluetooth address and raw exception message. The UI distinguishes timeout, connection failure, unsupported responses and unexpected errors. Unexpected errors retain a traceback for diagnosis.
+Each new transport follows the same read-only establishment sequence:
 
-When reporting a failure, include the HA Core version, local adapter or proxy, setup stage, elapsed wait and relevant `ha_linak` log lines. Remove device names, Bluetooth addresses and other private identifiers before posting.
+```mermaid
+sequenceDiagram
+    accTitle: Connection and authentication sequence
+    accDescr: Resolve the HA device, establish and authenticate the transport, subscribe and validate readings.
+    participant HA as HA Bluetooth manager
+    participant Client as DeskClient
+    participant OS as Bluetooth backend
+    participant Desk as DPG1C
+    Client->>HA: Resolve current connectable BLEDevice
+    Client->>OS: Establish connection and services
+    Client->>OS: Authenticate or reuse bond
+    Client->>Desk: Subscribe to DPG replies
+    Client->>Desk: Subscribe to height feedback
+    Client->>Desk: Serialized settings queries
+    Client->>Desk: Read current position
+    Desk-->>Client: Validated state
+```
 
-## Evidence and limits
+| Backend | Authentication behavior | Boundary |
+| --- | --- | --- |
+| Local BlueZ | Reuse `Paired`; otherwise register a private `NoInputNoOutput` Agent1 and call Device1.Pair on the same bus | Resolve one connected Device1 matching the selected address; fail on missing/ambiguous matches |
+| CoreBluetooth | Let macOS manage protected-characteristic authentication | Do not call unsupported explicit pairing |
+| ESPHome/other supported backends | Use the backend pair operation | Unsupported pairing is reported, not bypassed |
 
-Tests run in real in-process HA with simulated Bluetooth. They cover manual and Bluetooth-discovered setup, user confirmation, progress revisits, retry, abort, updated device selection, phase timeouts and HA's initial setup-retry state. Raspberry Pi 4 reads and reconnect after an HA Core restart were observed after manual host pairing. The owner also confirmed working sensors after a full host restart. Automatic first pairing in 0.1.0a4 is not yet hardware-validated. See hardware-results.md for the distinction between these results.
+BlueZ associates an application agent with its caller's bus identity. Registering an agent on one bus and pairing through another can leave confirmation unavailable. The private agent handles only the selected device, rejects unrelated requests and does not request default-agent status. Closing its bus removes it on completion, failure or cancellation. It does not set `Trusted`, replace bonds or alter adapter scan mode.
 
-The implementation follows HA's [config flow](https://contributors.home-assistant.io/core/integrations/config-flow/), [progress steps](https://contributors.home-assistant.io/core/integrations/flow-steps/#show-progress) and [Bluetooth integration guidance](https://contributors.home-assistant.io/core/integrations/bluetooth/).
+Connection establishment does not activate the DPG application client. Setup preparation and explicit control use the separate [activation contract](protocol.md#protected-setting-exchanges).
 
-See [Bluetooth research and diagnostic design](bluetooth-research.md) for the source comparison, known gaps and the next hardware experiment.
+## Session lifetime and deadlines
 
-## Authentication sequence in 0.1.0a3
+The connector receives a device callback so retries can use current HA adapter metadata. One progress task owns each attempt; revisiting a progress step does not start a second connection.
 
-After GATT connection, the selected backend's pair method runs before either subscription. Local BlueZ and compatible active proxies use explicit pairing; CoreBluetooth performs authentication automatically and its unsupported explicit pair method is not called. Pairing may establish or reuse a Bluetooth bond. It does not write the DPG user-ID setting, reset the panel or send movement/wakeup commands. Unsupported proxy pairing produces a specific error, not a silent bypass. The bluetooth_adapters dependency lets HA initialize remote adapters before setup.
+| Boundary | Budget or behavior |
+| --- | --- |
+| Complete read/connection attempt | 60 seconds |
+| Pairing phase | 30 seconds inside the complete attempt |
+| Individual ordinary I/O | 10 seconds, bounded by the outer attempt |
+| DPG read/setting exchange | 8 seconds, bounded by its owning operation |
+| Failed-link cleanup | Bounded disconnect cleanup; may add up to 10 seconds |
+| Foreground setup idle time | Release after 300 seconds without a Bluetooth operation |
+| Unconsumed setup-to-runtime transfer | Release after 60 seconds or HA shutdown |
+| Abort | Cancel the progress task and drain owned cleanup |
 
-A link-loss callback cancels the currently owned pairing, subscription, query or position operation. Setup reports connection_lost instead of waiting for its operation timeout. External cancellation remains cancellation, and bounded cleanup is drained even when the flow is cancelled repeatedly. No session is reused after failure. Authentication failure, pairing_timeout and pairing_unsupported have separate translated UI errors. The full-attempt budget can expire before a phase's individual limit; its stage is retained in logs.
+An expired idle session can be reopened when the wizard continues. Each new operation must validate fresh state. A failed preparation connection does not immediately launch another automatic read-only connection attempt. After a calibration failure beyond connection establishment, one read-only recovery may refresh the form without replaying the uncertain setting write.
 
-These paths were tested with simulated local/proxy/CoreBluetooth backends. The local BlueZ first-pairing failure was subsequently traced to missing agent confirmation; the follow-up below replaces that local pairing path. ESPHome first pairing and long-term stability remain unverified.
+Expected failures log a sanitized stage and error code. A connector `BleakNotFoundError` caused by exhausted timeouts remains a timeout, not a decode failure. Authentication failure, unavailable pairing agent, pairing timeout and unsupported pairing have distinct translated errors. See the [error table](diagnostics.md#interpret-the-failed-stage).
 
-## Local BlueZ pairing in 0.1.0a4
+## Changes after installation
 
-HA and bleak-retry-connector still choose and open the connection. For the public `bluez_dbus` backend only, the integration resolves one connected BlueZ Device1 object matching the chosen address; it never assumes hci0. No match or multiple connected matches fail rather than selecting an arbitrary adapter.
+Configure provides focused paths for HA name, connection preparation, height correction and range. Renaming updates HA registries without reloading or reconnecting the desk.
 
-An existing Paired property skips pairing without resetting keys. Otherwise a private system D-Bus connection exports a NoInputNoOutput Agent1 and calls both RegisterAgent and Device1.Pair on that same connection. This matters because BlueZ associates an application agent with the caller's bus identity. Registering an agent on one connection and calling Bleak.pair() on another would still use the host default. Only the selected device path is accepted; PIN/passkey entry and service authorization are not provided.
+Height correction is available before bounds exist. After verified correction, the flow requests missing bounds or revised bounds if the new reference invalidates them. This prevents a wrong panel offset from blocking the first valid range. Configure hides cached height when the latest update failed; it does not present old readings as a measurement baseline.
 
-The integration never requests default-agent status or replaces an existing default. BlueZ itself makes the first registered agent a fallback if none exists; during this bounded interval, requests for other devices are rejected. Closing the private bus removes the agent on success, failure, timeout or cancellation. BlueZ also cancels unfinished bonding when its requesting application exits. No shell process, permanent agent, adapter scan-mode change, Trusted-property change or DPG settings write is used. The pairing phase keeps its 30-second limit inside the 60-second complete attempt.
+Changing physical devices or Bluetooth identity is not a general reconfigure workflow yet. Do not make delete/re-add, bond removal or panel reset the routine recovery path.
 
-ESPHome and other non-BlueZ backends continue through their own pair method; CoreBluetooth remains OS-managed. A local agent preparation failure has the translated error pairing_agent_unavailable; rejected Device1.Pair remains authentication_failed. These messages omit raw D-Bus errors and identifiers.
+## Implementation and validation references
 
-Initial position notifications update internal state but do not publish an unavailable coordinator update before the initial full read completes. Invalid positions and disconnections after readiness still make sensors unavailable.
-
-The automated tests simulate D-Bus and BLE. A fresh, unbonded Raspberry Pi onboarding test is still required; the existing working bond must not be removed without an agreed hardware-test scope. Connection deadlines are unchanged: rare advertisements and intermittent disconnections need separate evidence.
-
-
-## Cached local name and connector timeouts
-
-On Linux, discovery can fall back to the local BlueZ device name through the public bluetooth-adapters metadata API when advertisements contain only an address or a generic LINAK label. The lookup has a two-second deadline, runs once per flow and does not connect, request a scan, change an alias or write panel settings. Missing system metadata remains optional for remote proxies and other platforms. A later GAP read can still resolve a previously unknown name after connection. Names remain excluded from downloaded diagnostics.
-
-The connector can wrap exhausted connection timeouts in BleakNotFoundError. Setup now follows its exception-cause chain to retain the timeout reason without inspecting or exposing backend error text. A connection timeout must not be described as a failed panel-data decode.
-
-In the 2026-11-01 follow-up, system metadata and a direct GAP read agreed on the panel name, but HA discovery displayed a generic fallback. A passive capture during failed connection attempts contained no advertisements from the desk. Connection and read-only validation succeeded after the owner enabled pairing mode again. A separate four-attempt diagnostic connection completed after 67 seconds while pairing mode changed during the experiment; this does not establish that a longer budget alone repairs reconnection. No connection-budget change, bond reset, movement or panel-setting write is included in this name/error repair.
-
-After a failed calibration, setup performs one bounded read-only recovery before returning to the measurement form. It never repeats the setting write or skips confirmation. If recovery fails, the current height is unknown. Configure also hides cached heights after a failed update and reports connection failures separately from invalid bounds.
-
-The calibration confirmation covers activation of an inactive panel client while preserving its existing identifier. Activation is checked and verified inside the reserved calibration operation, not during ordinary discovery, pairing or background reads. A rejected setting response aborts without retry.
-
-
-## Guided setup and later changes
-
-After discovery and read validation, setup asks for a name in Home Assistant. Continuing explicitly prepares the existing panel client for HA control, preserving its identifier and skipping an already active client. Preparation does not move the desk or alter its height. The name is stored in HA and does not rename the Bluetooth panel. An unsuccessful preparation returns to the name/preparation screen without creating an entry.
-
-Next, enter measured lowest/highest heights. Physical panel movement while measuring those bounds is expected. The guide then refreshes the current reading before asking whether its height is correct. A wrong reading opens a separate measurement screen and confirmation. Keep the desk still through those final steps. Correct readings skip offset writes. This order prevents a measurement captured before checking travel bounds from becoming the calibration baseline.
-
-Configure opens a menu for the HA name, explicit connection preparation, height checking/correction and travel bounds. Height correction can run before travel bounds are stored. After a verified correction, Configure asks for missing bounds or revised bounds if the corrected reference makes existing ones invalid. Sensor states use whole centimeters; calibration inputs and all internal checks retain precision. No previous measurement is replayed after cancellation or restart.
-
-On the height-correct path, setup performs another bounded read-only validation before saving travel bounds. Movement while the height question is open therefore cannot validate bounds against the older preview. In Configure, height checking/correction is also available without stored bounds, so an incorrect panel reference cannot block the first valid range.
-
-## Foreground setup session
-
-The wizard reuses one transport across its read, preparation and calibration steps. Five minutes without a Bluetooth operation release the idle session; continuing then attempts a fresh connection. Aborting releases the session. Successful setup transfers it once to the coordinator without reconnecting. An unconsumed transfer expires after 60 seconds or HA shutdown. Every I/O operation retains its existing deadline. A failed connection does not trigger a second automatic read-only recovery attempt; failures after calibration still allow one read-only recovery without replaying a setting write.
+- [HA config flows](https://contributors.home-assistant.io/core/integrations/config-flow/)
+- [HA progress steps](https://contributors.home-assistant.io/core/integrations/flow-steps/#show-progress)
+- [HA Bluetooth integration APIs](https://contributors.home-assistant.io/core/integrations/bluetooth/)
+- [Hardware evidence and unverified environments](hardware-results.md)

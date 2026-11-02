@@ -1,13 +1,13 @@
-# Supervised movement test
+# Run an isolated movement experiment
 
-This document describes the standalone research runner. Native HA entities are documented separately in [controls.md](controls.md); using this runner does not enable them. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the existing motion controller on one dedicated connection, does not change user ID, memories, reminders or offset, and never reconnects/replays a target. A successful software result is not evidence of physical Stop.
+This document describes the standalone research runner. Native HA entities are documented separately in [controls.md](controls.md); using this runner does not enable them. Run the test from a nearby computer with Bluetooth, outside the HA process; do not install extra packages inside HA Core. It uses the motion controller on one dedicated connection, does not change client identity/readiness, memories, reminders or offset, and never reconnects/replays a target. It therefore does not perform the foreground client preparation used by native HA controls. An inactive panel client can pass inspection but reject movement; do not infer the native path is identical. A successful software result is not evidence of physical Stop.
 
 ## Prepare
 
 1. Be present at the panel, clear the desk's travel path and have physical stopping available. Do not deliberately interrupt radio or power during this first experiment.
 2. Disable the LINAK integration and any IKEA Idasen entry for this desk in HA. Close phone/desktop desk apps. Wait for their connections to close. The script cannot enforce exclusion against another computer.
 3. Record measured minimum/maximum desk heights, current physical height and the current read-only offset from HA before disabling it. Use centimeters. Bounds must come from measurements, not favourite positions. The offset argument is a conversion input only; it does not program the panel.
-4. Check out this PR on the nearby computer. Use Python 3.14.2+ and the isolated development environment described in [CONTRIBUTING.md](../CONTRIBUTING.md). For a fresh Mac environment, run the commands below from the checkout root. Do not paste real device identifiers in public issues.
+4. Check out the exact revision selected for the experiment on the nearby computer. Use Python 3.14.2+ and the isolated development environment described in [CONTRIBUTING.md](../CONTRIBUTING.md). For a fresh Mac environment, run the commands below from the checkout root. Do not paste real device identifiers in public issues.
 
 ```sh
 python3.14 -m venv .venv
@@ -22,11 +22,13 @@ Use the computer's local BLE identifier: on macOS this is a UUID, not the Pi's M
 Replace the placeholders with private local values. Keep the shell variables and reports on your computer; they are not repository configuration.
 
 ```sh
-DESK_DEVICE='<local BLE identifier>'
-DESK_OFFSET='<read offset in cm>'
-DESK_MIN='<measured minimum in cm>'
-DESK_MAX='<measured maximum in cm>'
-.venv/bin/python -m scripts.test_motion_hardware --device "$DESK_DEVICE" --offset-cm "$DESK_OFFSET" --minimum-cm "$DESK_MIN" --maximum-cm "$DESK_MAX" > inspection.json
+DESK_DEVICE='your_local_ble_identifier'
+DESK_OFFSET='your_read_offset_cm'
+DESK_MIN='your_measured_minimum_cm'
+DESK_MAX='your_measured_maximum_cm'
+.venv/bin/python -m scripts.test_motion_hardware \
+  --device "$DESK_DEVICE" --offset-cm "$DESK_OFFSET" \
+  --minimum-cm "$DESK_MIN" --maximum-cm "$DESK_MAX" > inspection.json
 ```
 
 Require `result: inspection_only_no_control_writes`. Compare `initial_height_cm` with the panel and tape measure. The runner requires readable height and write-without-response properties on both motion characteristics; it refuses incompatible properties rather than guessing a write mode. If the reported height or bounds disagree, do not continue.
@@ -36,8 +38,11 @@ Require `result: inspection_only_no_control_writes`. Compare `initial_height_cm`
 Choose a target 0.5–1 cm above the freshly measured current height, within measured travel bounds and away from either end. Do not copy a sample height from another desk. The runner rejects targets more than 2 cm from its own initial read; that is an experimental limit, not an anti-collision guarantee.
 
 ```sh
-DESK_TARGET='<chosen height in cm>'
-.venv/bin/python -m scripts.test_motion_hardware --device "$DESK_DEVICE" --offset-cm "$DESK_OFFSET" --minimum-cm "$DESK_MIN" --maximum-cm "$DESK_MAX" --target-cm "$DESK_TARGET" --confirm-supervised-motion > short-up.json
+DESK_TARGET='your_target_height_cm'
+.venv/bin/python -m scripts.test_motion_hardware \
+  --device "$DESK_DEVICE" --offset-cm "$DESK_OFFSET" \
+  --minimum-cm "$DESK_MIN" --maximum-cm "$DESK_MAX" \
+  --target-cm "$DESK_TARGET" --confirm-supervised-motion > short-up.json
 ```
 
 Observe whether motion starts, its direction, whether it stops and the final measured height. The controller has a 30-second total deadline, two-second stall detection and one-second I/O budgets, with Stop attempted on completion/error/cancellation. If motion is unexpected, use the physical panel immediately; Ctrl+C requests cancellation with bounded Stop cleanup, but cannot guarantee radio delivery. Do not press Ctrl+C repeatedly or forcibly kill the process as the normal stopping method.
@@ -45,7 +50,11 @@ Observe whether motion starts, its direction, whether it stops and the final mea
 After a successful short target, choose another nearby target within 2 cm and request timed Stop:
 
 ```sh
-.venv/bin/python -m scripts.test_motion_hardware --device "$DESK_DEVICE" --offset-cm "$DESK_OFFSET" --minimum-cm "$DESK_MIN" --maximum-cm "$DESK_MAX" --target-cm "$DESK_TARGET" --stop-after 0.5 --confirm-supervised-motion > timed-stop.json
+.venv/bin/python -m scripts.test_motion_hardware \
+  --device "$DESK_DEVICE" --offset-cm "$DESK_OFFSET" \
+  --minimum-cm "$DESK_MIN" --maximum-cm "$DESK_MAX" \
+  --target-cm "$DESK_TARGET" --stop-after 0.5 \
+  --confirm-supervised-motion > timed-stop.json
 ```
 
 The Stop deadline is measured from task start, not detected physical motion. `completed_before_timed_stop` does not validate interruption during travel: choose a suitable nearby target for a later supervised attempt. `timed_stop_sent_physical_stop_unverified` means only that the software Stop path returned. Observe physical stopping yourself. Test a short downward target separately after the upward/Stop results are understood. Do not continue after unexplained behavior.

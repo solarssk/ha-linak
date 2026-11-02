@@ -1,58 +1,66 @@
-# Documentation guide
+# LINAK Desks technical documentation
 
-This folder explains how to use, diagnose and develop LINAK Desks. You do not need to read every file. Start with the task below; the detailed references exist so protocol findings, hardware evidence and implementation decisions remain traceable.
+Use these guides to configure a desk, diagnose a failed operation or change the integration. The documentation describes the current implementation and separates software guarantees from observations on one DPG1C. The integration runs inside Home Assistant on its host; a Mac is only an optional research environment.
 
-## Start here
+## Choose a reading path
 
-- **Install the integration:** [English user guide](../.github/README.md) or [Polish user guide](../.github/README.pl.md).
-- **Connection fails or entities become unavailable:** [Onboarding](onboarding.md), then [diagnostics](diagnostics.md).
-- **Test the slider, Stop or saved-position buttons:** [Control guide](controls.md).
-- **Check what actually worked on hardware:** [Hardware results](hardware-results.md). Passing software tests alone do not establish hardware behavior.
-- **See what comes next:** [Roadmap](roadmap.md).
+| Your goal | Start with | Expected result |
+| --- | --- | --- |
+| Install through HACS | [English user guide](../.github/README.md) or [Polish user guide](../.github/README.pl.md) | Install and discover the integration |
+| Configure height and controls | [Control guide](controls.md) | Correct the height reference, set bounds and test a native control |
+| Investigate a connection or movement failure | [Diagnostic manual](diagnostics.md) | Identify the failed layer and collect the evidence needed for the next test |
+| Understand the implementation | [Architecture](architecture.md) → [connection lifecycle](onboarding.md) → [protocol](protocol.md) → [movement](movement.md) | Trace an HA action to its BLE exchange and cleanup |
+| Extend the reverse engineering | [Investigation method and findings](bluetooth-research.md) → [hardware evidence](hardware-results.md) → [settings reference](settings-reference.md) | Distinguish a protocol candidate from a verified device behavior |
 
-Technical documentation is in English. User guides and the HA interface also have Polish translations.
+Technical documents use English. Product guides and the HA interface also have Polish translations.
 
-## Using and troubleshooting the integration
+## How the documents fit together
 
-| Document | What it answers |
+```mermaid
+flowchart TD
+    accTitle: Documentation reading paths
+    accDescr: Choose configuration, diagnosis or implementation references from the task map.
+    Start[Your task] --> Use[Configure or test]
+    Start --> Debug[Diagnose a failure]
+    Start --> Develop[Understand or extend]
+    Use --> Controls[Control guide]
+    Debug --> Diagnostics[Diagnostic manual]
+    Develop --> Architecture[Architecture]
+    Architecture --> Lifecycle[Connection lifecycle]
+    Architecture --> Protocol[Protocol reference]
+    Architecture --> Movement[Movement controller]
+    Diagnostics --> Evidence[Hardware evidence]
+    Protocol --> Research[Investigation method]
+    Research --> Settings[Settings and sources]
+```
+
+## Document responsibilities
+
+Each reference owns one kind of information. Follow its links for related detail instead of treating every page as a complete manual.
+
+| Document | Audience and purpose | Owns |
+| --- | --- | --- |
+| [Controls](controls.md) | Desk owner performing a task | Configuration steps and supervised HA test procedure |
+| [Diagnostics](diagnostics.md) | Desk owner or maintainer investigating a failure | Symptom triage, evidence collection, diagnostic fields and privacy |
+| [Onboarding](onboarding.md) | Developer tracing setup or reconnect | Authentication, wizard steps, session lifetime and error routing |
+| [Architecture](architecture.md) | Contributor changing integration behavior | Component boundaries, entity model, state and operation ownership |
+| [Protocol](protocol.md) | Developer implementing or reviewing exchanges | UUIDs, frames, units, parsing and response correlation |
+| [Movement](movement.md) | Developer reviewing control behavior | Preparation, control loop, guards, deadlines and Stop cleanup |
+| [Settings reference](settings-reference.md) | Contributor evaluating a new setting | Supported setters, calibration contract, feature inventory and source register |
+| [Bluetooth investigation](bluetooth-research.md) | Maintainer designing a protocol experiment | Questions, investigation method, findings and unresolved tests |
+| [Hardware evidence](hardware-results.md) | Reviewer assessing a behavior claim | Test method, observation, conclusion and limits for each finding |
+| [Library comparison](communication-review.md) | Maintainer evaluating dependency reuse | Upstream contracts, differences and migration constraints |
+| [Standalone experiment](movement-test.md) | Maintainer running a separate BLE tool | Runner prerequisites, arguments, result interpretation and recovery |
+
+## Project maintenance
+
+| Document | Purpose |
 | --- | --- |
-| [Onboarding](onboarding.md) | How discovery, connection, authentication, retry and setup errors work |
-| [Diagnostics](diagnostics.md) | What diagnostic entities and downloads contain, freshness limits and privacy |
-| [Controls](controls.md) | How to calibrate height and configure/test native height, Stop and saved-position controls |
-| [Hardware results](hardware-results.md) | Which observations came from a physical desk and what still needs verification |
+| [Roadmap](roadmap.md) | Remaining implementation and validation work |
+| [Governance](governance.md) | CI gates, dependencies, repository policy and release boundaries |
+| [Branding](branding.md) | Asset provenance, naming and artwork use |
+| [HACS presentation](hacs-presentation.md) | Separate GitHub/HACS renderers, supported Markdown and rendering checks |
+| [Contributing](../CONTRIBUTING.md) | Development setup, required checks and documentation conventions |
+| [Agent instructions](../AGENTS.md) | Repository workflow for coding agents |
 
-## Understanding or changing the implementation
-
-| Document | What it answers |
-| --- | --- |
-| [Architecture](architecture.md) | How HA entities, shared state and the BLE session fit together |
-| [Protocol](protocol.md) | Which messages we decode, how replies are validated and what the evidence establishes |
-| [Movement](movement.md) | How command ownership, deadlines, feedback and Stop cleanup work |
-| [Settings reference](settings-reference.md) | Which panel settings are known, their sources and the protected calibration design |
-| [Communication review](communication-review.md) | What existing IKEA/DPG libraries already provide and where our behavior differs |
-
-Read [Contributing](../CONTRIBUTING.md) before changing code. Agents also follow [AGENTS.md](../AGENTS.md).
-
-## Research and experiments
-
-| Document | Why it is separate |
-| --- | --- |
-| [Bluetooth investigation](bluetooth-research.md) | Compares authentication and connection implementations and records unresolved questions |
-| [Standalone movement test](movement-test.md) | Describes a separate supervised protocol experiment; ordinary HA testing uses the control guide |
-
-Research candidates are not implemented features. Hardware results record observations; they do not replace protocol or architecture references. Keep private captures and identifiers out of public documentation.
-
-## Maintenance and presentation
-
-| Document | What it covers |
-| --- | --- |
-| [Roadmap](roadmap.md) | Implementation sequence and remaining work |
-| [Governance](governance.md) | CI, dependency handling, repository policy and release boundaries |
-| [Branding](branding.md) | Official artwork provenance, naming and asset use |
-| [HACS presentation](hacs-presentation.md) | Why HACS and GitHub have separate READMEs and how their rendering is checked |
-
-The [assets folder](assets/) contains documentation artwork. Some legacy illustrations remain only so older installed README versions retain working image links.
-
-## Keeping this folder useful
-
-Update the document that owns a fact instead of copying its full explanation into several files. User guides describe available behavior; technical references explain implementation and evidence; the roadmap tracks unfinished work. When adding, renaming or removing a document, update this index and its incoming links in the same change.
+Public references explain the maintained behavior. CHANGELOG.md records release changes. Private handoff notes and raw captures remain outside the public documentation; names, addresses and client identifiers do not belong in examples.

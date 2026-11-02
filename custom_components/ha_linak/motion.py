@@ -6,6 +6,7 @@ Physical behavior still requires supervised validation; see docs/movement.md.
 
 import asyncio
 from dataclasses import dataclass
+from enum import StrEnum
 import math
 import struct
 from typing import Protocol
@@ -44,8 +45,22 @@ async def _drain_cleanup(settled: asyncio.Future) -> None:
                 raise
 
 
+class MotionFailure(StrEnum):
+    UNKNOWN = "unknown"
+    LINK_LOST = "link_lost"
+    OUTSIDE_LIMITS = "outside_limits"
+    REVERSE = "reverse_motion"
+    OVERSHOOT = "overshoot"
+    STALLED = "no_progress"
+    STOP_FAILED = "stop_failed"
+
+
 class MotionError(Exception):
     """Movement could not complete; never retry automatically."""
+
+    def __init__(self, message: str, reason: MotionFailure = MotionFailure.UNKNOWN):
+        super().__init__(message)
+        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -139,11 +154,16 @@ class MotionController:
 
     async def _read(self) -> int:
         if not self.transport.connected:
-            raise MotionError("Desk disconnected; movement will not resume")
+            raise MotionError(
+                "Desk disconnected; movement will not resume", MotionFailure.LINK_LOST
+            )
         async with asyncio.timeout(IO_TIMEOUT):
             position = (await self.transport.read_position()).position_raw
         if not self.limits.minimum_raw <= position <= self.limits.maximum_raw:
-            raise MotionError("Position is outside the measured travel limits")
+            raise MotionError(
+                "Position is outside the measured travel limits",
+                MotionFailure.OUTSIDE_LIMITS,
+            )
         return position
 
     async def _discard(self) -> None:
@@ -161,7 +181,10 @@ class MotionController:
             await self._control(STOP)
         except Exception as err:
             await self._discard()
-            raise MotionError("Stop could not be confirmed; session discarded") from err
+            raise MotionError(
+                "Stop could not be confirmed; session discarded",
+                MotionFailure.STOP_FAILED,
+            ) from err
 
     async def _finish_move(self, discard: bool) -> None:
         try:
@@ -201,7 +224,10 @@ class MotionController:
                 payload = struct.pack("<H", target)
                 while abs(target - position) > TOLERANCE_RAW:
                     if not self.transport.connected:
-                        raise MotionError("Desk disconnected; movement will not resume")
+                        raise MotionError(
+                            "Desk disconnected; movement will not resume",
+                            MotionFailure.LINK_LOST,
+                        )
                     async with asyncio.timeout(IO_TIMEOUT):
                         await self.transport.write_target(payload)
                     # Target writes require a timed keepalive, rather than an
@@ -214,14 +240,21 @@ class MotionController:
                         timer.cancel()
                     position = await self._read()
                     if (position - best_position) * direction < -TOLERANCE_RAW:
-                        raise MotionError("Desk moved away from the requested target")
+                        raise MotionError(
+                            "Desk moved away from the requested target",
+                            MotionFailure.REVERSE,
+                        )
                     if (target - position) * direction < -TOLERANCE_RAW:
-                        raise MotionError("Desk passed the requested target")
+                        raise MotionError(
+                            "Desk passed the requested target", MotionFailure.OVERSHOOT
+                        )
                     if (position - best_position) * direction > 0:
                         progress_at = loop.time()
                         best_position = position
                     elif loop.time() - progress_at >= STALL_TIMEOUT:
-                        raise MotionError("Desk stopped making progress")
+                        raise MotionError(
+                            "Desk stopped making progress", MotionFailure.STALLED
+                        )
         except TimeoutError:
             # A timed-out GATT operation may still have reached the device.
             # Never accept another target on this ambiguous session.

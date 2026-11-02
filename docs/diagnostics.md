@@ -1,41 +1,142 @@
-# Desk readings and Bluetooth diagnostics
+# Diagnose connection and movement failures
 
-## What belongs where
+Use this manual to locate the failing layer before changing pairing, bounds or panel settings. A visible desk, a connected BLE client and a desk ready to move are different conditions. Start with the symptom table, then collect the evidence required for that branch.
 
-Height, stored positions and reminder profiles are ordinary `sensor` entities. They describe how the desk is used. They remain read-only; reminder times are configured durations, not elapsed counters. Existing unique IDs are unchanged. HA updates the integration-defined category of existing entities on setup while retaining user names and enabled/disabled choices.
+## Choose the symptom
 
-Height offset stays Diagnostic: it is the technical reference used for converting raw positions. A future writable setting would need its own verified control. No panel-settings, radio-enable, pairing or restart switch is introduced. Native movement is configured separately in [control options](controls.md).
+| Symptom | What is established | Next check |
+| --- | --- | --- |
+| Desk is not discovered | HA has no usable discovery record | Panel pairing indication, HA Bluetooth advertisements and connectable adapter availability |
+| Discovery works, connection times out | An advertisement was seen; no usable GATT session completed | `connection` stage, actual backend, competing desk clients and fresh advertisements |
+| Pairing or subscription fails | Connection progressed beyond discovery | Authentication result and the specific subscription stage |
+| Height reads work, movement does not | The read path works | Fresh bounds, client readiness, requested memory and movement failure reason |
+| RSSI is available, controls are unavailable | A scanner still hears the desk | Connection/backend state; RSSI is not an active-link test |
+| Entities become unavailable after an action | The session no longer supplies valid state | Determine whether radio loss caused the error or cleanup deliberately disconnected |
+| Stored heights repeat or shift slots | Reply association may be wrong | Read-response ordering and the capabilities barriers between memory reads |
+| Displayed height disagrees with a tape measure | The height reference may be wrong | Protected calibration; do not invent different measurements to satisfy bounds |
 
-## Transport entities
+## Understand the layers
 
-| Entity | HA type | Default | Meaning |
-| --- | --- | --- | --- |
-| Connection | `binary_sensor`, connectivity | Enabled | A ready session with validated desk readings; off after link loss |
-| Bluetooth signal strength | `sensor`, signal strength, dBm | Disabled | RSSI of HA's latest connectable advertisement |
-| Bluetooth backend | `sensor`, enum | Disabled | Allowlisted backend of the active client, such as local BlueZ or ESPHome |
+```mermaid
+flowchart TD
+    accTitle: Diagnostic layers
+    accDescr: Discovery, authentication, application readiness and physical movement need separate evidence.
+    A[Advertisement] --> B[GATT connection]
+    B --> C[Bluetooth authentication]
+    C --> D[Subscriptions and valid reads]
+    D --> E[DPG client readiness]
+    E --> F[Target and feedback]
+    F --> G[Physical result]
+```
 
-All three have the Diagnostic category. Enable optional entities in Settings → Devices & services → Entities, including disabled LINAK entities in the filter. Enabling an entity publishes its readings in HA; it does not change the desk.
+Success at one box does not establish success at the next. The panel's visible pairing message is not a machine-readable confirmation of all these layers.
 
-RSSI comes from HA's public Bluetooth cache APIs, using connectable observations. It is not a controller measurement of an active GATT link and may come from a scanner other than the connected adapter. Do not use it to identify which proxy carries the connection. It becomes unavailable when HA no longer considers the advertiser present, when no advertisement exists, or for the Bluetooth unknown RSSI marker (127). The entity does not retain stale values as a current reading. No additional scan, active scan request or GATT query is made. Updates follow the shared coordinator. While enabled, RSSI also rechecks the cached value/presence every 60 seconds, independently of coordinator success. This prevents stale RSSI when repeated connection failures suppress coordinator notifications. Its timer is removed when the entity is unloaded; disabled entities create no timer. These updates do not run for every advertisement. A quiet connected desk can have an unavailable RSSI sensor.
+## Collect a useful failure record
 
-Backend is unavailable without a connected client. Unknown identifiers are mapped to Other managed backend without publishing their raw value. HA can expose a generic proxy wrapper rather than a specific ESPHome backend ID; report Other in that case instead of guessing the proxy type. It is a category, not an adapter name, MAC, source ID or signal measurement. Connection stays available and reports off when the desk session fails, while ordinary desk readings become unavailable. These entities require a successfully loaded integration; first-onboarding failures still use the setup error/logs.
+Capture one attempt with a known start time and expected outcome. Repeated retries without a changed condition make traces harder to interpret.
 
-## Local identity and safe downloads
+1. Record integration revision, HA version, host OS, panel model and known firmware/Full/Limited variant. Mark unknown values as unknown.
+2. List the available Bluetooth paths and whether each supports active connections. Record the backend of the actual connected client when available.
+3. Download diagnostics from the device page before and after the attempt. A first-onboarding failure has no entry or download; use its progress error and stage logs instead.
+4. Record the action, configured bounds, current reported height and, for movement, the intended target or memory slot. Compare a height dispute against a tape measurement.
+5. Keep the `ha_linak` stage transitions and first failure, including the events before any disconnect. Note whether the physical panel moved or stopped.
+6. Redact identifiers before sharing the record. Keep raw radio/system-bus captures private.
 
-The device registry contains its configured name and Bluetooth address. A native name obtained from cached HA metadata or the optional GAP Device Name read can replace an integration-supplied LINAK fallback. Explicit device name_by_user is preserved; an existing LINAK config-entry title is not assumed to be user-owned or automatically renamed. Separate name/MAC sensors would duplicate this metadata and create unnecessary history. The address supplements the existing device identifier without changing entity unique IDs. Local device metadata can therefore identify the desk to its owner.
+Enable debug logging for `custom_components.ha_linak` when stage timing is needed. Lower-level Bleak/connector logs can expose names, addresses and raw application identifiers; use them only for a scoped capture and restore the previous logging level afterward. A Core log alone may not contain the Bluetooth controller's disconnect reason.
 
-The downloadable diagnostic file omits names, Bluetooth addresses and adapter identifiers. Its Bluetooth section contains only signal_strength and an allowlisted backend category, alongside the existing readiness, last stage and read results. The controls section reports only range_configured, busy and an allowlisted last-result label (not_requested, moving, completed, interrupted, failed, stop_sent or stop_failed). These describe software outcomes, not physical Stop evidence. Manually shared screenshots or HA/upstream debug logs still need identifier removal.
+## Interpret the failed stage
 
-## Validation and next hardware test
+The first failed operation determines the next investigation. Later cleanup errors do not replace that evidence.
 
-Tests use synthetic Bluetooth, device/entity registries and failure/recovery in real in-process HA. Physical values and UI layout on the owner's installation remain to be checked after updating to 0.1.0a5. This update does not require bond removal and does not establish automatic first-pairing or proxy stability.
+| Stage/error | Interpretation | Required evidence or action |
+| --- | --- | --- |
+| `device_lookup` | HA cannot supply a current connectable device | Inspect discovery freshness and connectable adapter support |
+| `connection` / `timeout` | Connector did not finish establishing a usable link | Record backend/path and advertisement presence; do not diagnose offset or parsing |
+| `pairing` / `pairing_agent_unavailable` | Local agent setup failed | Inspect BlueZ agent lifecycle; preserve existing bonds |
+| `authentication_failed` | Backend rejected authentication | Distinguish host bond failure from DPG client status |
+| `pairing_timeout` / `pairing_unsupported` | Authentication exceeded its budget or backend lacks the operation | Check the selected backend; do not silently bypass authentication |
+| `notify_dpg` / `notify_height` | A specific subscription failed | Characteristic properties, authentication and actual disconnect event |
+| `extended_reads` | A serialized DPG query failed validation or timed out | Command/response type and length, duplicates and barriers; never advance an ambiguous request |
+| `position_read` | Fresh position could not be validated | Height characteristic and four-byte feedback frame |
+| `movement_activation_check` / `movement_activation_write` | Foreground client readiness failed | Valid identity, application acknowledgement and unchanged-identifier readback |
+| `movement_prepare` | Bounds, offset or selected slot cannot authorize movement | Current measured reference, configured range and exact slot read |
+| `movement` / `stop` | Control loop or cleanup failed | Use the movement reason table below |
 
-## Home Assistant references
+A rejected setting logs its protocol status without raw payloads. `0b` has been observed; its detailed vendor meaning is not established. A successful GATT write is not an application acknowledgement or a verified physical result.
 
-- [Entity categories](https://contributors.home-assistant.io/core/quality-scale/entity-category/)
-- [Device registry](https://contributors.home-assistant.io/core/integrations/device-registry/)
-- [Bluetooth integration APIs](https://contributors.home-assistant.io/core/integrations/bluetooth/)
+## Interpret a movement failure
 
-## HA hook contract
+A warning records action, phase, reason and the backend captured before cleanup. The reason describes what the software detected, not necessarily the underlying hardware cause.
 
-Home Assistant requires coroutine entry points for platform setup and diagnostic downloads even when they only construct entities or read cached coordinator data. These functions retain `async` without artificial I/O. The required hook declarations carry a narrow S7503 annotation; unused framework parameters use an underscore prefix. This does not disable analysis elsewhere or change Bluetooth behavior.
+| Reason | Detected condition | Investigation |
+| --- | --- | --- |
+| `no_progress` | Position did not advance toward the target before the stall deadline | Check client readiness, feedback and command cadence; do not extend deadlines blindly |
+| `reverse_motion` | Retreat from the best position exceeded tolerance | Stop the test; compare direction and raw target conversion |
+| `overshoot` | Feedback passed the target beyond tolerance | Compare raw feedback and target; do not treat the requested target as measured height |
+| `outside_limits` | Feedback is outside configured relative bounds | Verify calibration and real bounds before another command |
+| `link_lost` | The transport was disconnected during movement | Capture the actual link-loss event and backend evidence |
+| `stop_failed` | Stop could not complete on the session | Use physical stopping and investigate transport/cleanup |
+| Exception class, such as `TimeoutError` | Transport, deadline or validation failed outside a named motion guard | Use phase and preceding events; raw backend messages are intentionally omitted |
+
+The client currently discards the session after a movement exception. A subsequent `Connection: Disconnected` therefore cannot prove that radio loss caused the original failure.
+
+```mermaid
+sequenceDiagram
+    accTitle: No-progress failure and deliberate disconnect
+    accDescr: Stationary feedback triggers a guard, Stop and session release before the HA action reports failure.
+    participant Action as HA action
+    participant Controller as Motion controller
+    participant Desk as Panel
+    Action->>Controller: Validated explicit target
+    Controller->>Desk: Wake and target keepalives
+    Desk-->>Controller: Stationary feedback
+    Controller->>Controller: No-progress deadline expires
+    Controller->>Desk: Attempt Stop
+    Controller->>Desk: Release failed session
+    Controller-->>Action: no_progress error
+```
+
+That sequence was observed on local BlueZ. In a separate bounded experiment, activating the existing client preceded nonzero speed feedback. Complete target arrival remains unverified; see [hardware evidence](hardware-results.md#client-readiness-and-movement).
+
+## Diagnose multiple adapters without guessing
+
+HA selects an active connection path using signal and available slots. A nearby adapter is not proof of the selected path, and the RSSI sensor can use an advertisement heard by another scanner.
+
+| Evidence | What it can establish | What it cannot establish |
+| --- | --- | --- |
+| Backend `bluez_dbus` | The client uses local BlueZ | Which local adapter if more than one exists |
+| Backend `bleak_esphome` | The backend identifies an ESPHome transport | Its room, radio quality or firmware correctness |
+| Backend `other` | A connected backend outside the allowlist or a generic wrapper | A guessed proxy brand |
+| Better behavior after disabling a proxy | The environment changed | That the proxy caused every previous failure |
+| Stable reads followed by a motion guard | Read path worked until the action | Why the controller did not move |
+
+For an agreed comparison, keep the desk, integration revision and requested operation constant. Test local-only, proxy-only and mixed paths, record the actual backend and restore the original configuration afterward. Do not turn adapter isolation into a permanent installation requirement. The [HA Bluetooth documentation](https://www.home-assistant.io/integrations/bluetooth/) explains path selection and proxy support.
+
+## Diagnostic entities and download fields
+
+Diagnostic entities describe transport or conversion state. Height, stored heights and reminder profiles remain ordinary sensors.
+
+| Entity | Default | Source and limitation |
+| --- | --- | --- |
+| Connection | Enabled | Ready connected client; reports off after failure even when ordinary readings become unavailable |
+| Bluetooth signal strength | Disabled | Latest connectable advertisement RSSI in dBm; not active-link RSSI or an adapter identifier |
+| Bluetooth backend | Disabled | Allowlisted category of the active client; unavailable without a connection |
+| Height offset | Enabled | Technical conversion reference; editing belongs to protected calibration |
+
+Enable optional diagnostics through **Settings → Devices & services → Entities**, including disabled LINAK entities in the filter. Enabling them does not change panel settings. RSSI reads HA's cache and checks presence every 60 seconds while enabled; it adds no scan or GATT request. A quiet connected desk may have unavailable RSSI.
+
+| Download field | Meaning |
+| --- | --- |
+| `connected`, `stage`, `last_update_success` | Client readiness, last phase and shared-read availability |
+| `bluetooth.signal_strength`, `bluetooth.backend` | Cached advertisement signal and active backend category |
+| `controls.range_configured`, `controls.busy` | Whether usable bounds exist and a foreground operation owns the client |
+| `controls.last_result` | Software result: `not_requested`, `moving`, `completed`, `interrupted`, `failed`, `stop_sent` or `stop_failed` |
+| `state` | Raw decoded position, reference, capabilities, memories and reminders |
+
+`completed` and `stop_sent` are software outcomes, not independent physical verification. Normal sensor/history presentation rounds heights; raw diagnostic state retains precision.
+
+## Privacy and recovery
+
+Downloaded integration diagnostics omit desk names, Bluetooth addresses, adapter identifiers and client identity bytes. Local device registries still contain name/address metadata; separate identity sensors are unnecessary. Screenshots and upstream debug logs need manual redaction.
+
+After a failed test, establish physical stopping first, end the diagnostic client and restore the intended integration/adapter configuration. Verify fresh reads before another action. Do not reset the panel, remove bonds, replace client identifiers or replay uncertain writes as routine troubleshooting. Use the [investigation method](bluetooth-research.md) when the evidence does not yet support a repair.

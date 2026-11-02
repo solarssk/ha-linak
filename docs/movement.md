@@ -1,55 +1,91 @@
-# Movement implementation and validation gate
+# How desk movement is prepared, monitored and stopped
 
-## Status
+Both the native height slider and stored-position buttons use one movement controller. It operates on the existing connected client, validates centimeter conversion and monitors measured feedback. This reference defines the software behavior; the [control guide](controls.md) defines supervised owner testing.
 
-Version 0.1.0a7 registers Target height (`number`, cm slider), Stop (`button`) and go-to-memory buttons by default. Onboarding collects measured height bounds; existing entries can set their range in Configure. Stop works independently of the travel range. Saving options, setup and reconnect never issue movement/wakeup commands. No physical movement/Stop result is claimed yet.
+## Control path
 
-The client holds exclusive ownership across preparation, fresh offset/memory queries, movement, position reads and final Stop. Polling returns existing state while a control operation owns the connection. Another target is rejected rather than queued. Stop bypasses the refresh lock, cancels a pending target and drains bounded cleanup. Interrupted/failed moves discard the connection and never resume after reconnection.
+```mermaid
+flowchart TD
+    accTitle: Foreground movement flow
+    accDescr: Validate and prepare the client, monitor target feedback and always settle final Stop.
+    Request[Explicit height or memory request] --> Prepare[Reserve operation; validate bounds and client readiness]
+    Prepare --> Read[Read fresh position]
+    Read --> Goal{Within target tolerance?}
+    Goal -->|Yes| Stop[Final Stop]
+    Goal -->|No| Wake[Control Stop then wake]
+    Wake --> Loop[Repeat target write, timed wait and feedback checks]
+    Loop -->|Arrival or failure| Stop
+    Stop --> Result[Complete, interrupt or fail]
+```
 
-The [HA control test procedure](controls.md) covers activation and recording results without a separate computer. The [standalone research runner](movement-test.md) remains an alternative for protocol investigation; its 2 cm experiment limit is not the range of the native target entity.
+Preparation checks the live offset and selected memory under exclusive ownership. It rejects invalid bounds, an empty slot or an out-of-range target before activation or motion. Inactive clients receive one protected activation using the unchanged identifier, followed by status/identifier verification. An already active client receives no activation write.
 
-## Native interface contract
+Polling, connection establishment and idle Stop never activate a client. Foreground activation does not change the height reference, stored positions, reminders or firmware limits. See [protected setting exchanges](protocol.md#protected-setting-exchanges).
 
-| Control | Experimental behavior |
+## Conversion and target selection
+
+| Input | Conversion | Constraint |
+| --- | --- | --- |
+| Slider height in cm | `round(height_cm * 100 - offset_raw)` | Must be within configured relative bounds |
+| Stored position | Read exact selected raw position, then add the live offset for the common controller | Empty/out-of-range slots cannot move |
+| Lower/upper command bounds | Measured centimeter bounds minus the panel offset | Host-side constraints, not discovered or programmed mechanical limits |
+| Actual height | `(position_raw + offset_raw) / 100` | Publish device feedback, never the requested target as fact |
+
+The slider's integer presentation is separate from wire precision. Saved-position movement uses exact raw values, and no target is stored for replay after reload or reconnect.
+
+## Command loop and budgets
+
+The current sequence sends control Stop, then wake, then repeated target writes. Each iteration waits before a fresh position read. Target transmission and reading are serialized, so the effective target interval also includes transport/read latency.
+
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `COMMAND_INTERVAL` | 0.2 seconds | Wait within each target/read iteration; not a guaranteed end-to-end packet interval |
+| `IO_TIMEOUT` | 1 second | Deadline for each motion I/O operation |
+| `STALL_TIMEOUT` | 2 seconds | Maximum interval without a new best position toward the target |
+| `MOVE_TIMEOUT` | 30 seconds | Overall motion deadline |
+| `TOLERANCE_RAW` | 10 raw units, or 1 mm | Arrival/reversal threshold; not a physical positioning-accuracy claim |
+
+A target inside arrival tolerance sends final Stop without wake or target packets. Otherwise the controller tracks directional progress against the best position reached. A new best position resets the stall timer; reverse movement, returning to the same best or small jitter does not.
+
+| Guard | Abort condition |
 | --- | --- |
-| Target height | Native number, centimeters, slider input, measured travel limits; changing it explicitly starts a move |
-| Stop | Native button, interrupts a pending movement; no automatic retry |
-| Go to stored position 1–4 | Native buttons only for configured slots; use the latest panel value and the same movement path |
-| Actual height | Existing sensor; independent of the target and updated from device feedback |
+| Link state | Transport disconnected |
+| Bounds | Current feedback outside measured relative limits |
+| Direction | Cumulative retreat from the best position exceeds tolerance |
+| Overshoot | Feedback passes the target beyond tolerance |
+| Progress | No new best position before the stall deadline |
+| Deadlines | Individual I/O or complete movement budget expires |
 
-Entity names and exceptions must have English and Polish translations. Rejected commands raise an HA action error. A Stop failure must be visible; sending a BLE packet is not proof the desk physically stopped. No percentage cover, restore of a target on startup, automatic resume, or writing a new stored position is planned in this step. A physical panel change always remains observable.
+Every exit attempts Stop. A failed motion session is discarded rather than reused for another queued target. The [diagnostic reason table](diagnostics.md#interpret-a-movement-failure) distinguishes these failures without exposing raw backend messages.
 
-## Protocol evidence
+## Stop, cancellation and unload
 
-The research adapter uses characteristic `99fa0002-338a-1024-8a49-009c0215f78a` with wake `fe00` and Stop `ff00`. Targets are unsigned little-endian relative 0.1 mm positions on `99fa0031-338a-1024-8a49-009c0215f78a`. These are independently implemented in [rhyst/linak-controller](https://github.com/rhyst/linak-controller/blob/master/linak_controller/gatt.py) and its [movement loop](https://github.com/rhyst/linak-controller/blob/master/linak_controller/desk.py). This is community protocol evidence, not an official public LINAK specification. No code is copied from that project. Its initialization writes a user ID; this project deliberately does not do that without separately validating its meaning.
+Stop has a separate shared task so it can preempt movement without waiting for the polling lock. When idle, it sends Stop only, without activation, wake or target writes. An interrupted target may report an action failure even when Stop succeeds.
 
-The prototype repeats targets every 200 ms, reads fresh position after each, and attempts Stop on success, error, timeout and cancellation. Individual I/O has a one-second deadline, no progress aborts after two seconds, and a movement has a thirty-second deadline. Reverse motion, overshoot and readings outside measured travel bounds abort. Position words are used for feedback without assuming the meaning of speed flags. These timings are research defaults, not device guarantees.
+```mermaid
+sequenceDiagram
+    accTitle: Cancellation and Stop ownership
+    accDescr: The caller waits for bounded Stop cleanup before releasing the BLE link.
+    participant Caller as HA action or unload
+    participant Move as Movement task
+    participant Cleanup as Shared Stop cleanup
+    participant Transport as BLE session
+    Caller->>Move: Cancel or request Stop
+    Move->>Cleanup: Reserve final Stop
+    Cleanup->>Transport: Send Stop within I/O deadline
+    Caller->>Cleanup: Wait, including repeated cancellation
+    Cleanup-->>Caller: Settled result
+    Caller->>Transport: Release failed or unloaded session
+```
 
-Centimeter conversion subtracts the explicitly supplied panel offset. Travel limits must be supplied from measurements, never guessed from four stored positions or from the protocol's 16-bit capacity. Non-finite heights and out-of-range targets are rejected before any write. Concurrent targets are rejected, not queued. No error reconnects and resumes movement. An I/O or total movement timeout permanently closes the controller, attempts Stop and then discards the transport, even if Stop succeeds. Disconnect failure does not make the controller reusable. A fresh, separately validated session is required. Stop failure also attempts disconnection.
+Movement completion, explicit Stop and close/unload retain ownership until their cleanup settles. Shielding prevents repeated caller cancellation from cancelling the final Stop packet. Late errors are observed and propagated. A Stop timeout closes/discards the session; it does not silently report successful stopping.
 
-Explicit Stop callers share a single shielded operation. Its reservation lasts until every Stop write completes, including after cancellation of a caller; a new movement is rejected during that interval. Only the movement caller clears the worker reservation. Loss of radio means delivery of Stop cannot be guaranteed.
+Software can confirm that the transport call returned, not that the physical desk stopped. Radio loss can prevent Stop delivery. Initial hardware tests therefore require physical stopping access and direct observation.
 
-## Supervised hardware sequence
+## Protocol differences still under investigation
 
-Record results without device names, addresses or other private identifiers:
+The inspected upstream `idasen` implementation uses different wake/Stop ordering and an additional reference-input Stop payload. The current controller does not copy those differences automatically. Their effect, target cadence under proxy latency and firmware-specific behavior require separately scoped experiments. See the [library comparison](communication-review.md#movement-contract-differences).
 
-1. Verify panel offset, actual height and measured travel bounds against the desk.
-2. Confirm characteristic properties and correct write mode on this DPG1C.
-3. Test a short move up, a short move down, and physical height readback.
-4. Test explicit Stop during movement and cancellation of the requesting action.
-5. Check behavior when target packets cease and when the connection is lost.
-6. Confirm whether wake and reference writes require a user-ID setting; do not silently change that setting to make a test pass.
-7. Validate ownership with the polling client, HA shutdown/unload, disconnect, unavailable feedback and reconnection without resuming a target.
-8. Test the native entities for their names, units, range, availability, exceptions and lifecycle on Raspberry Pi. In-process HA tests cover these contracts with simulated Bluetooth.
+## Validation boundary
 
-Native entities are included for explicitly supervised HA testing. Record these results before claiming hardware validation or recommending unattended automations. Writing memories, reminders, offset or unrelated panel bits needs its own evidence and readback verification.
-
-Cancellation of `close()` waits for the reserved Stop operation to settle before disconnecting and then propagates cancellation. Repeated cancellation cannot bypass that wait; Stop keeps its existing I/O deadlines. Shielded task results are observed even when callers cancel, so a later Stop error is consumed while the controller remains closed.
-
-Movement completion and close cancellation share the same shielded cleanup-draining path. Repeated cancellation of the movement caller cannot cancel its final Stop or release ownership before cleanup settles. A successful Stop propagates cancellation afterward; a Stop timeout still closes and discards the session.
-
-Directional progress is measured against the best position reached toward the target. Retreat exceeding the tolerance from that position aborts, including several small backward steps. Only a new best position resets the no-progress deadline; returning to an earlier best or moving backward within tolerance does not count as progress. Small feedback reversals remain allowed when genuine forward progress continues.
-
-## Client readiness for explicit movement
-
-Height targets and stored-position commands first validate the requested bounds, then check the existing panel client under the exclusive control lock. An inactive client is activated with its unchanged identifier and verified before any wake or target command. An already active client receives no activation write. Rejection, invalid identity, failed verification and cancellation abort the command without replay. Polling, connection establishment and Stop never activate a client. This preparation uses the same protected exchange as confirmed calibration; it does not change offset, memories, reminders or firmware limits.
+Automated tests cover conversion, readiness, target ordering, guards, cancellation, repeated cleanup cancellation and ownership with simulated Bluetooth. Hardware evidence includes stationary failed target feedback and a bounded activation/movement attempt interrupted by timed Stop. Complete arrival, physical stopping accuracy, downward travel and mixed-adapter behavior remain unverified. Follow [native HA testing](controls.md#test-native-controls-at-the-panel) before unattended use.

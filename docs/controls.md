@@ -1,63 +1,77 @@
-# Desk height slider and buttons
+# Configure and test desk controls
 
-The device page includes a height slider in centimeters, Stop and buttons for positions saved on the panel. The slider follows the current desk height, including changes made with the physical panel. Selecting a new height starts movement. No previous target is restored or executed after reload or reconnect.
+The device page provides a centimeter height slider, Stop and buttons for positions already saved on the panel. These controls use actual feedback and measured command bounds. Initial tests require someone at the desk; complete travel and physical Stop accuracy are not yet validated across supported environments.
 
-## Set the height range
+## Configure the desk after installation
 
-New onboarding asks for the desk's measured minimum and maximum heights, then rechecks the desk before saving them. Use the same centimeter reference as the Height reading and compare it against the panel and a physical measurement. Do not infer the range from favourites or probe mechanical extremes automatically.
+Open **Settings → Devices & services → LINAK Desks → Configure**. Choose the task you need:
 
-For an existing installation, update through HACS, restart HA and open Settings → Devices & services → LINAK Desks → Configure to fill in the range. Use the same page to change it later. There is no movement-enable switch or extra confirmation step. Saving the range does not move the desk or program firmware limits or offset.
-
-All control entities are registered by default. Stop works with a ready connection even before the range is filled in. The slider and saved-position travel need the range; on an older entry they remain unavailable until it is supplied. Empty memory slots are unavailable. Existing sensor, diagnostic and control unique IDs are preserved.
-
-## How movement works
-
-The native slider selects whole-centimeter targets in 1 cm steps. Its minimum is rounded upward and maximum downward inside the exact measured bounds. The height sensor records the rounded current height; the slider shows the nearest permitted whole-centimeter target. It does not have the standalone script's 2 cm experiment limit. A stored-position button re-reads its slot and offset before moving through the same controller and bounds. It does not save/overwrite the position. Targets outside bounds, empty memories, unsupported characteristic operations and competing requests produce errors. Commands are not queued or resumed after connection loss.
-
-Stop cancels an active request without waiting for periodic polling. When idle, it sends only Stop, without wake or target packets. Reload/unload settles movement cleanup before releasing the connection. The command loop uses fresh position reads, one-second I/O deadlines, a two-second no-progress deadline and a thirty-second overall deadline. It attempts Stop on completion, failure and cancellation. Radio loss means Stop delivery cannot be guaranteed, so keep the physical panel available during tests.
-
-## First test at the panel
-
-Keep the travel path clear, close other connected desk apps and disable any Idasen integration for this desk. Use HA itself; do not run the standalone BLE tool alongside it. Be present at the physical panel for every initial test. Do not deliberately disconnect Bluetooth or power during this sequence.
-
-| Step | Action | Record / pass condition |
+| Option | What to enter or confirm | What changes |
 | --- | --- | --- |
-| 1 | Add the desk or update its height range | Entities appear, existing sensors remain, no spontaneous movement |
-| 2 | Press Stop while idle | No movement/wakeup; no action error; observe the physical panel |
-| 3 | Set a target 0.5–1 cm above the fresh Height reading, inside bounds | Correct direction, stops near target; compare Height, panel and tape measurement |
-| 4 | Set a new nearby target and press Stop while physically moving | Observe actual stopping and delay; the interrupted target action may report failure, Stop must not silently hide cleanup failure |
-| 5 | Repeat a short downward move | Correct direction and measured final position |
-| 6 | Try a stored-position button only after reviewing its read height and travel path | Correct destination, no stored-value change; unavailable/out-of-bounds slots do not move |
-| 7 | Reload or disable during a supervised short move | Stop attempted, no continuing target packets, clean disconnect, no resumed move after reload |
-| 8 | Reconnect/restart after the desk is stationary | Sensors recover; Slider follows current height; no movement until a new explicit action |
+| HA name | A recognizable name | HA entry/device naming; no Bluetooth rename or reconnect |
+| Connection preparation | Explicit preparation of the existing panel client | Conditional verified activation; no motion |
+| Check/correct height | Whether the current reading matches a tape measurement | A separate confirmation can correct the panel reference |
+| Height range | Measured lowest/highest desktop heights | HA command bounds; no motion or firmware-limit programming |
 
-Do not continue after unexpected direction, failure to stop, height-reference disagreement or repeated action errors. Use the physical panel to stop the desk. A successful HA action means the software path returned, not that physical stopping was independently confirmed.
+Setup guides you through the same information. Keep the desk stationary from its current-height measurement through correction confirmation. Physical panel movement while measuring the travel range happens before the final current-height check.
 
-## Evidence and debugging
+## Correct a wrong height reading
 
-For each attempt retain the integration commit/version, HA/OS version, adapter category, panel/known firmware variant, measured bounds/reference, initial/target/final Height, physical measurements, action and outcome. Record actual Stop behavior and whether read-only reconnection recovered. Review names, addresses and locations before sharing screenshots/logs. Add redacted observations to [hardware-results.md](hardware-results.md), explicitly separating software results from physical observations.
+Measure from the floor to the top of the desktop. Enter that real measurement; do not alter it to match an incorrect panel reading.
 
-Download diagnostics after a failure. `stage` can show movement_prepare, movement, stop or the normal read phases; `controls.range_configured` shows whether bounds exist; `controls.last_result` is an allowlisted software outcome, not physical motion telemetry. The debug log records action, phase and exception type without logging targets or backend error text. If reads work but motion fails, capture characteristic properties and the phase/error rather than resetting pairing, changing user ID or silently retrying. Some firmware/Full/Limited variants may reject motion despite readable sensors.
+1. Open the height check and choose the correction path if the reading is wrong.
+2. Enter the current tape measurement while the desk is stationary.
+3. Review the old/proposed height and the effect on displayed saved heights.
+4. Confirm the correction. Wait for activation, acknowledgement and independent readback to finish.
+5. Verify the resulting height and provide or revise the measured range when requested.
 
-[Movement implementation](movement.md) · [Settings/calibration research](settings-reference.md) · [Standalone protocol experiment](movement-test.md)
+Height correction is available even if no bounds have been saved yet. It changes the reference used for displayed heights, not raw saved mechanism positions. It sends no movement or wake command.
 
-## Validation status
+A changed position/reference rejects the proposal before correction. If verification fails after a write, the setting may already have changed. Check the current reading before another attempt; there is no automatic retry or rollback. See the [calibration contract](settings-reference.md#height-calibration-contract) for exact checks.
 
-Software tests run in real in-process HA with synthetic Bluetooth. Physical DPG1C movement and Stop tests remain pending. Explicit setup preparation and separately confirmed height-reference calibration can write panel settings. Memories and reminder settings are not written. Confirmed calibration can activate the existing client identity without replacing it. Record the supervised outcomes above before recommending unattended automations.
+## Set measured command bounds
 
+Enter the actual lowest and highest desktop heights from measurements or verified product data for this desk. Do not infer them from favorite positions or let the integration probe mechanical extremes.
 
-## Calibrate a wrong height reading
+| Behavior | Result |
+| --- | --- |
+| Save bounds | Validate them against the current reference and position; do not move |
+| Missing bounds | Target and memory travel remain unavailable; Stop can work with a ready connection |
+| Corrected reference invalidates old bounds | Request revised bounds instead of silently expanding them |
+| Empty memory slot | Its travel button is unavailable |
+| Target outside bounds | Reject it without movement |
 
-During setup, choose a name and confirm connection preparation, then enter measured travel bounds. The guide refreshes the reading and asks whether the current height is correct. Choose the correction path to enter **Height measured with a tape**, measured from the floor to the top of the desktop. Keep the desk still from this height check until confirmation completes. After installation, Configure provides separate name, connection preparation, height and range options. A difference within half a 1 mm display step does not trigger a setting write. Do not alter tape measurements to match an incorrect panel reading.
+Host command bounds do not override the desk's firmware limits or anti-collision behavior. No verified remote minimum/maximum query exists yet.
 
-Review the separate confirmation page: it shows the HA name, old and proposed heights and travel bounds and explains that displayed saved heights also change. Confirm only when the measurement corresponds to the same stationary position. The integration re-reads position and reference, activates an inactive client with its existing identifier when necessary, sends the offset setting, then verifies a full readback before checking the measured range. A moving desk or changed reference rejects the proposal. No movement, wake or saved-position write is part of calibration.
+## Use the native controls
 
-If verification fails or saving is cancelled, the write may already have reached the panel. There is no automatic retry or rollback. Check the current panel reading before submitting a new correction. Options never store a measured-height input or replay calibration on restart. A 1 mm displayed bound can round up to half a display step below wire position zero; that rounding maps to zero, while larger inconsistencies remain errors. This does not discover or program firmware limits.
+The slider uses 1 cm steps inside inward-rounded measured bounds. Its state and the height sensor follow measured position, including physical-panel changes. Calibration inputs, raw diagnostics and stored-position targets retain decimal precision; new height history records use whole centimeters.
 
-The payload follows the pinned community implementation recorded in the settings reference. Activation and offset write/readback were verified on one DPG1C, including a separate connection. Power-cycle persistence and physical movement remain pending.
+Before either a target or stored-position drive, the integration checks client readiness and prepares the existing identifier only if inactive. It verifies preparation before wake/target commands. Stored-position drive re-reads that slot and the reference; it does not overwrite the saved position.
 
-Calibration allows one raw position quantum (0.1 mm) between the measurement preview and fresh checks. Both immediate position reads must still match exactly and report zero speed; offset changes and larger position differences reject the write. Readback position verification remains exact. A rejected preflight reports that no correction was sent, separately from an uncertain write.
+Stop preempts an active request. When idle it sends Stop only, with no activation, wake or target. An interrupted target can report an action error even when Stop succeeds. Failed commands are not queued or resumed after reload/reconnect.
 
-Confirmed calibration now reads the panel client status and activates it only if needed, preserving the existing identifier. Calibration preparation is covered by the confirmation screen. Explicit height and stored-position commands also check and prepare the existing client before motion; background polling, reconnect and Stop never perform activation. Both activation and offset writes require panel acknowledgements and verified readback.
+## Test native controls at the panel
 
-HA-facing height, memory and offset sensor states are rounded to whole centimeters, including new history records. Existing history is not rewritten. Raw diagnostics and protocol data retain full precision; saved-position buttons use exact stored positions. Measurement inputs and host bounds retain decimal precision, so presentation rounding cannot expand the physical command range.
+Clear the travel path, have physical stopping available and disable any other integration controlling the same desk. Use HA alone, not the standalone BLE runner at the same time. Review the actual/reference height and bounds before each attempt.
+
+| Step | Action | Pass condition and record |
+| --- | --- | --- |
+| 1 | Add/update the desk and range | Existing sensors and controls appear without spontaneous movement |
+| 2 | Press Stop while idle | No motion/wake and no silent action error |
+| 3 | Choose a nearby whole-centimeter target above the actual height | Correct direction, observed stopping and measured final height; account for rounding of the current sensor |
+| 4 | During another agreed nearby move, press Stop | Observe physical stopping and delay, not only the HA action result |
+| 5 | Repeat a nearby downward target | Correct direction and final height |
+| 6 | Review a saved height/path, then test its button | Correct destination and unchanged stored value |
+| 7 | Test scoped reload/unload during motion | Stop attempted, cleanup settles, no continued/resumed target |
+| 8 | Reconnect/restart once stationary | Fresh readings; no motion until another explicit action |
+
+The native slider has no standalone runner's 2 cm experiment cap. Choose the test target deliberately from the fresh actual height, not a rounded value copied from another desk. Do not continue after unexpected direction, failure to stop, a reference disagreement or repeated action errors.
+
+## Interpret and report the result
+
+A successful action means its software path completed, not that a person independently confirmed physical stopping. Keep integration revision, HA/OS version, actual backend, panel/variant, measured bounds, initial/target/final heights and the physical observation for each attempt.
+
+Use the [diagnostic manual](diagnostics.md) to interpret unavailable entities and the reason logged before cleanup. RSSI can remain available after a session failure because it comes from advertisements. Readable sensors do not establish client readiness or motion support on a Limited/OEM-restricted variant.
+
+The [hardware evidence](hardware-results.md) distinguishes observed activation, calibration and limited movement feedback from full target/Stop validation still pending. The [standalone runner](movement-test.md) is a separate research tool with its own ownership and preparation requirements.

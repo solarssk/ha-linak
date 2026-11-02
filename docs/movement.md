@@ -64,7 +64,7 @@ Every exit attempts Stop. A failed motion session is discarded rather than reuse
 
 ## Stop, cancellation and unload
 
-Stop has a separate shared task so it can preempt movement without waiting for the polling lock. When idle, it sends Stop only, without activation, wake or target writes. An interrupted target may report an action failure even when Stop succeeds.
+Stop has a separate shared task so it can preempt movement without waiting for the polling lock. If it interrupts preparation before the movement controller exists, the client attempts one bounded Stop on the still-connected link before discarding the session. Failure or timeout remains visible to the Stop caller; no wake or target is sent. When idle, it sends Stop only, without activation, wake or target writes. An interrupted target may report an action failure even when Stop succeeds.
 
 ```mermaid
 sequenceDiagram

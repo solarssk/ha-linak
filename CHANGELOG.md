@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Deliver a requested Stop during offset, memory and client-activation preparation before disconnecting; retain shared cleanup through cancellation and report failed or timed-out Stop delivery.
 - Reorganize technical documentation into task-based manuals, protocol/lifecycle references and question-based hardware evidence, with diagrams, diagnostic decision tables and a shared authoring convention.
 - Check and prepare the existing panel client before explicit height and stored-position commands. Verify activation before sending motion; background reads, reconnect and Stop remain free of activation writes.
 - Log a stable movement-failure reason and the connection backend before cleanup, distinguishing no progress, reverse travel, overshoot, invalid bounds and lost links.

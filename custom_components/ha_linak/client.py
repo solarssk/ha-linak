@@ -568,6 +568,7 @@ class DeskClient:
         settings: ControlSettings,
         memory_index: int | None,
     ) -> None:
+        controller: MotionController | None = None
         async with self._lock:
             try:
                 self._set_stage("movement_prepare")
@@ -594,12 +595,32 @@ class DeskClient:
                 await controller.move_to_cm(height_cm)
                 self._set_stage("ready")
             except BaseException:
-                # Stop cleanup in the controller settles before this discards the link.
+                # A controller settles its own Stop. Preparation has no controller,
+                # so an explicit Stop still needs one bounded write before release.
                 cleanup = asyncio.gather(
-                    self._disconnect_link(), return_exceptions=True
+                    self._finish_failed_move(controller is None), return_exceptions=True
                 )
                 await _drain_cleanup(cleanup)
+                result = cleanup.result()[0]
+                if isinstance(result, BaseException):
+                    raise result
                 raise
+
+    async def _finish_failed_move(self, before_motion: bool) -> None:
+        try:
+            if (
+                before_motion
+                and not self._motion_stop_sent
+                and self._stop_task is not None
+                and not self._stop_task.done()
+            ):
+                client = self._check_control_properties()
+                self._set_stage("stop")
+                async with asyncio.timeout(MOTION_IO_TIMEOUT):
+                    await client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+                self._motion_stop_sent = True
+        finally:
+            await self._disconnect_link()
 
     async def stop(self) -> None:
         if self._stop_task is None or self._stop_task.done():

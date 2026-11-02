@@ -24,7 +24,9 @@ CONTROL_UUID = "99fa0002-338a-1024-8a49-009c0215f78a"
 TARGET_UUID = "99fa0031-338a-1024-8a49-009c0215f78a"
 WAKE = b"\xfe\x00"
 STOP = b"\xff\x00"
+REFERENCE_STOP = b"\x01\x80"
 IO_TIMEOUT = 1.0
+READ_TIMEOUT = 3.0
 COMMAND_INTERVAL = 0.2
 MOVE_TIMEOUT = 30.0
 STALL_TIMEOUT = 2.0
@@ -120,7 +122,19 @@ class BleakMotionTransport:
         return decode_position(bytes(await self.client.read_gatt_char(HEIGHT_UUID)))
 
     async def write_control(self, payload: bytes) -> None:
-        await self.client.write_gatt_char(CONTROL_UUID, payload, response=False)
+        if payload != STOP:
+            await self.client.write_gatt_char(CONTROL_UUID, payload, response=False)
+            return
+        # Stop both command channels. A failed control write must not skip the
+        # reference release; both writes share the caller's bounded deadline.
+        failure: Exception | None = None
+        try:
+            await self.client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+        except Exception as err:
+            failure = err
+        await self.client.write_gatt_char(TARGET_UUID, REFERENCE_STOP, response=False)
+        if failure is not None:
+            raise failure
 
     async def write_target(self, payload: bytes) -> None:
         await self.client.write_gatt_char(TARGET_UUID, payload, response=False)
@@ -157,7 +171,7 @@ class MotionController:
             raise MotionError(
                 "Desk disconnected; movement will not resume", MotionFailure.LINK_LOST
             )
-        async with asyncio.timeout(IO_TIMEOUT):
+        async with asyncio.timeout(READ_TIMEOUT):
             position = (await self.transport.read_position()).position_raw
         if not self.limits.minimum_raw <= position <= self.limits.maximum_raw:
             raise MotionError(

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Release both movement command channels on Stop and retain a ready connection after a successful explicit interruption, so the next target or saved position does not require reconnecting.
+- Allow three seconds for movement feedback reads while retaining the one-second Stop/write deadline; measured local BlueZ read latency could exceed the old shared limit.
+- Keep the height slider at the last settled height instead of recording every intermediate centimeter; preserve live height feedback and suppress identical notification/read publications.
 - Deliver a requested Stop during offset, memory and client-activation preparation before disconnecting; retain shared cleanup through cancellation and report failed or timed-out Stop delivery.
 - Reorganize technical documentation into task-based manuals, protocol/lifecycle references and question-based hardware evidence, with diagrams, diagnostic decision tables and a shared authoring convention.
 - Check and prepare the existing panel client before explicit height and stored-position commands. Verify activation before sending motion; background reads, reconnect and Stop remain free of activation writes.

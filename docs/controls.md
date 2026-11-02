@@ -45,11 +45,11 @@ Host command bounds do not override the desk's firmware limits or anti-collision
 
 ## Use the native controls
 
-The slider uses 1 cm steps inside inward-rounded measured bounds. Its state and the height sensor follow measured position, including physical-panel changes. Calibration inputs, raw diagnostics and stored-position targets retain decimal precision; new height history records use whole centimeters.
+The slider uses 1 cm steps inside inward-rounded measured bounds. The height sensor follows measured position live. The slider holds its previous value during travel and updates to the measured height after movement completes or a stationary position remains unchanged for 0.5 seconds, including physical-panel changes. Intermediate travel heights are not slider targets or separate slider history entries. Calibration inputs, raw diagnostics and stored-position targets retain decimal precision; new height history records use whole centimeters.
 
 Before either a target or stored-position drive, the integration checks client readiness and prepares the existing identifier only if inactive. It verifies preparation before wake/target commands. Stored-position drive re-reads that slot and the reference; it does not overwrite the saved position.
 
-Stop preempts an active request. When idle it sends Stop only, with no activation, wake or target. An interrupted target can report an action error even when Stop succeeds. Failed commands are not queued or resumed after reload/reconnect.
+Stop preempts an active request. Stop sends control Stop and reference-input release, with no activation, wake or height target. A successful interruption retains the ready link for the next command; failed or ambiguous cleanup still discards it. An interrupted target can report an action error even when Stop succeeds. Failed commands are not queued or resumed after reload/reconnect.
 
 ## Test native controls at the panel
 

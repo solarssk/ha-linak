@@ -47,7 +47,7 @@ DESK_TARGET='your_target_height_cm'
   --target-cm "$DESK_TARGET" --confirm-supervised-motion > short-up.json
 ```
 
-Observe whether motion starts, its direction, whether it stops and the final measured height. The controller has a 30-second total deadline, two-second stall detection and one-second I/O budgets, with Stop attempted on completion/error/cancellation. If motion is unexpected, use the physical panel immediately; Ctrl+C requests cancellation with bounded Stop cleanup, but cannot guarantee radio delivery. Do not press Ctrl+C repeatedly or forcibly kill the process as the normal stopping method.
+Observe whether motion starts, its direction, whether it stops and the final measured height. The controller has a 30-second total deadline, two-second stall detection and one-second Stop/write budgets and a separate three-second feedback-read budget, with Stop attempted on completion/error/cancellation. If motion is unexpected, use the physical panel immediately; Ctrl+C requests cancellation with bounded Stop cleanup, but cannot guarantee radio delivery. Do not press Ctrl+C repeatedly or forcibly kill the process as the normal stopping method.
 
 After a successful short target, choose another nearby target within 2 cm and request timed Stop:
 

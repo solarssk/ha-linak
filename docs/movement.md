@@ -42,7 +42,8 @@ The current sequence sends control Stop, then wake, then repeated target writes.
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `COMMAND_INTERVAL` | 0.2 seconds | Wait within each target/read iteration; not a guaranteed end-to-end packet interval |
-| `IO_TIMEOUT` | 1 second | Deadline for each motion I/O operation |
+| `IO_TIMEOUT` | 1 second | Shared deadline for each control/target write or the two-frame Stop |
+| `READ_TIMEOUT` | 3 seconds | Position-read deadline; does not extend the Stop/write deadline |
 | `STALL_TIMEOUT` | 2 seconds | Maximum interval without a new best position toward the target |
 | `MOVE_TIMEOUT` | 30 seconds | Target/feedback-loop deadline, excluding preparation and final cleanup |
 | `TOLERANCE_RAW` | 10 raw units, or 1 mm | Arrival/reversal threshold; not a physical positioning-accuracy claim |
@@ -60,11 +61,11 @@ A target inside arrival tolerance sends final Stop without wake or target packet
 | Progress | No new best position before the stall deadline |
 | Deadlines | Individual I/O or complete movement budget expires |
 
-Every exit attempts Stop. A failed motion session is discarded rather than reused for another queued target. The [diagnostic reason table](diagnostics.md#interpret-a-movement-failure) distinguishes these failures without exposing raw backend messages.
+Every exit attempts both control Stop and reference-input release. A failed motion session is discarded rather than reused for another queued target. A successful explicit Stop during the target loop retains the ready link; the next action is a new request, never a replay. The [diagnostic reason table](diagnostics.md#interpret-a-movement-failure) distinguishes these failures without exposing raw backend messages.
 
 ## Stop, cancellation and unload
 
-Stop has a separate shared task so it can preempt movement without waiting for the polling lock. If it interrupts preparation before the movement controller exists, the client attempts one bounded Stop on the still-connected link before discarding the session. Failure or timeout remains visible to the Stop caller; no wake or target is sent. When idle, it sends Stop only, without activation, wake or target writes. An interrupted target may report an action failure even when Stop succeeds.
+Stop has a separate shared task so it can preempt movement without waiting for the polling lock. If it interrupts preparation before the movement controller exists, the client attempts one bounded Stop on the still-connected link before discarding the preparation session. Failure or timeout remains visible to the Stop caller; no wake or target is sent. When idle, it sends control Stop and reference-input release, without activation, wake or a height target. An interrupted target may report an action failure even when Stop succeeds.
 
 ```mermaid
 sequenceDiagram
@@ -88,7 +89,7 @@ Software can confirm that the transport call returned, not that the physical des
 
 ## Protocol differences still under investigation
 
-The inspected upstream `idasen` implementation uses different wake/Stop ordering and an additional reference-input Stop payload. The current controller does not copy those differences automatically. Their effect, target cadence under proxy latency and firmware-specific behavior require separately scoped experiments. See the [library comparison](communication-review.md#movement-contract-differences).
+The inspected upstream `idasen` implementation uses different wake/Stop ordering. This integration now uses its two-channel Stop contract while retaining the existing initial ordering. Physical-panel gesture recovery, target cadence under proxy latency and firmware-specific behavior still need separate observations. See the [library comparison](communication-review.md#movement-contract-differences).
 
 ## Validation boundary
 

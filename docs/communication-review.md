@@ -27,7 +27,7 @@ These differences are research questions, not instructions to copy behavior into
 | Reference and bounds | Fixed IKEA values | Live panel offset and configured centimeter bounds | Do not infer mechanical limits from either source |
 | Readiness identity | Wakeup writes a user-ID payload | Conditional activation preserves and verifies the existing identifier | Readiness must hold on the control connection; polling remains read-only |
 | Initial control ordering | Wake before control Stop | Control Stop before wake | Compare ordering only in a bounded experiment |
-| Stop frames | Control `ff 00` and reference-input `01 80` | Control `ff 00` | Physical Stop behavior and additional frame semantics remain unverified here |
+| Stop frames | Control `ff 00` and reference-input `01 80` | Control `ff 00` followed by reference-input `01 80` | Shared bounded cleanup; physical-panel handback still needs observation |
 | Target loop | Version-specific keepalive/feedback policy | Serialized target, 0.2-second wait and fresh read | Compare effective latency, not only the configured wait |
 | Recovery | Connection manager schedules retries and closes stale links | Coordinator refresh retries; ambiguous query/control failures discard the session | Never resume an old target after recovery |
 

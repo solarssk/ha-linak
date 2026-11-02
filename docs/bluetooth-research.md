@@ -86,7 +86,8 @@ Choose the test that distinguishes the remaining explanations, rather than repea
 | Client status lifetime | Compare read-only status on the same session, new session, HA restart and agreed panel power cycle | No identifier replacement; do not assume persistence from one reconnect |
 | Mixed adapters | Repeat the same read/control case on local-only, proxy-only and mixed paths | Record actual backend and restore original configuration |
 | Automatic first pairing | Agreed unbonded test on the intended host/backend | Do not remove a working bond without scope |
-| Target cadence and Stop payload differences | Compare pinned upstream ordering with the current controller | One change per bounded experiment; retain all movement guards |
+| Target cadence and physical-panel handback | Two-channel Stop and short target sequences are trace-observed; compare physical gestures after HA travel | One change per bounded experiment; retain all movement guards |
+| OLED remains lit during inactivity | Compare visible OLED and reminder strip with no client, a quiet connected client and periodic reads | Quiet GATT is not proof of screen sleep; do not infer a sleep opcode |
 | New panel setters | Verify encoding, unrelated-bit preservation, acknowledgement, readback and persistence | No generic arbitrary-write control or guessed safe bounds |
 
 A capture can show a host-visible disconnect without its radio-level reason. Record that reason as unknown unless an actual controller/HCI event supplies it. Private identifiers, raw device objects and unredacted bus/radio traces stay outside the repository.

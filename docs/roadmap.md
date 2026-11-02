@@ -4,7 +4,7 @@ The integration implements native HA reads, configuration, protected calibration
 
 | Priority | Work | Current state | Completion evidence |
 | --- | --- | --- | --- |
-| 1 | Full supervised target and Stop validation | Readiness activation and limited movement feedback observed; full travel unverified | Up/down arrival, physical Stop, bounds, lifecycle and recovery on Raspberry Pi |
+| 1 | Full supervised target and Stop validation | Readiness, short target arrival and Stop/next-command sequences trace-observed; physical-panel handback and full travel unverified | Up/down arrival, physical Stop, bounds, lifecycle and recovery on Raspberry Pi |
 | 2 | Connection/environment coverage | Local reads and scoped pairing evidence available | Fresh unbonded onboarding; local-only, proxy-only and mixed-path comparison |
 | 3 | Settings/readiness persistence | Calibration write/readback and one reconnect observed | Agreed restart/power-cycle tests, without assuming active status persists |
 | 4 | Settings freshness and traffic | Full 60-second refresh; no durable stale snapshot | Separate live telemetry from last-read settings and test reconciliation after panel edits/restart |

@@ -1,6 +1,6 @@
 # DPG1C hardware evidence and validation limits
 
-This register explains what was tested, how it was tested and which conclusions the observations support. It covers one DPG1C, not every LINAK desk. Software implementation and simulation are recorded separately from physical observations; full target arrival and physical Stop accuracy remain unverified.
+This register explains what was tested, how it was tested and which conclusions the observations support. It covers one DPG1C, not every LINAK desk. Software implementation and simulation are recorded separately from physical observations; short target arrival is trace-observed, while full-range travel and physical Stop accuracy remain unverified.
 
 ## Test environment and evidence classes
 
@@ -100,11 +100,32 @@ The public fixture records this initial configuration snapshot. It predates late
 
 Offset, name and stored-position settings were not written. This evidence supports checking client readiness before explicit control, not activating clients during background polling. It does not establish status persistence, downward travel, unattended safety or a universal root cause for adapter-dependent behavior.
 
+## Target release, interruption and quiet idle
+
+**Question:** can a target followed by Stop and another saved-position request leave the panel or HA control path unusable, and does dense logging demonstrate outgoing command flooding?
+
+**Method:** compare the owner's logs with the pinned `idasen` Stop implementation. Pause the native entry to reserve local BlueZ, run isolated candidate code without installing it into HA, and restrict targets to nearby 0.5 cm moves within configured bounds. Record channel writes and feedback, wait for a real target packet before requesting Stop, then request a saved position only when it is within 1 cm of the initial position. Restore the native entry after each test. No offset, name, memory or reminder setting is changed.
+
+| Evidence | Observation | Interpretation |
+| --- | --- | --- |
+| Owner trace | Two targets reached their exact raw position; each used eight target writes, separated by 0.295–0.367 seconds | These captured loops do not show uncontrolled target flooding |
+| Previous Stop path | Sent control `ff 00` without reference-input `01 80`; explicit interruption discarded the native connection even after successful Stop | Missing reference release differs from upstream; deliberate disconnect explains one subsequent unavailable path |
+| Notification capture | Repeated identical position/speed pairs arrived several times; polling reads could republish the same sample | HA update/log volume is not the same as outgoing BLE command volume |
+| Earlier bounded attempts | A short overall deadline expired during preparation; other attempts hit the old one-second feedback deadline or failed movement | Not every experiment succeeded; successful runs do not establish general radio stability |
+| Candidate short travel | A 0.5 cm target produced a 50-raw-unit position change and completed | Short target arrival is trace-observed on this panel |
+| Candidate interruption | Stop was requested after the first height-target write; both Stop frames completed, the link remained ready, and the next nearby saved-position request completed | Successful explicit interruption can preserve ownership and the same live session for the next action |
+| Quiet idle | The isolated candidate stayed connected for 62 seconds after the sequence, with zero outgoing writes and zero new published position samples | Its movement loop and publication path stopped; this test excludes HA's periodic settings refresh |
+| Cleanup | Native LINAK entry restored and enabled/loaded; competing IKEA entry retained its existing disabled state | Diagnostic ownership ended; the installed HA component was not replaced |
+
+**Conclusion:** use the two-channel Stop contract, preserve a sound link after explicit interruption, keep read deadlines separate from Stop deadlines and suppress identical telemetry publications. Slider history should record settled heights while the measurement sensor remains live.
+
+**Limits:** OLED state and physical double-tap response were not observable remotely. The release frame is therefore not proof that the reported physical-panel freeze is resolved. The official [DPG user manual](https://cdn.linak.com/-/media/files/user-manual-source/en/deskline-dpg-desk-panels-and-desk-control-app-user-manual-eng.pdf) distinguishes the height OLED from the reminder light strip and documents a four-hour reminder-light timeout; that is not an OLED sleep specification. The inspected `idasen-ha` connection manager also retains a connection. A persistent GATT link alone does not establish why this panel's display remained lit. A controlled visual comparison with and without periodic reads remains necessary before changing connection policy or firmware settings.
+
 ## Validation still required
 
 | Claim | Current status | Evidence needed |
 | --- | --- | --- |
-| Full upward/downward target arrival | Unverified | Supervised travel with feedback, physical measurement and actual direction |
+| Full upward/downward target arrival | Short arrival trace-observed; full-range and independent measurement unverified | Supervised travel with feedback, physical measurement and actual direction |
 | Physical Stop and overshoot | Unverified | Interruption during observed motion and measured stopping behavior |
 | Automatic first pairing from an unbonded host | Unverified end to end | Scoped fresh-host/backend test without reusing the working bond |
 | ESPHome-only and mixed-adapter control | Unverified | Controlled path comparison with actual backend recorded |

@@ -93,11 +93,12 @@ The controller sends these allowlisted frames on the dedicated motion characteri
 
 | Channel | Bytes | Meaning in the current implementation |
 | --- | --- | --- |
-| Control `99fa0002` | `ff 00` | Stop |
+| Control `99fa0002` | `ff 00` | Control Stop |
+| Reference input `99fa0031` | `01 80` | Release reference-input control |
 | Control `99fa0002` | `fe 00` | Wake |
 | Target `99fa0031` | LE uint16 relative target | Repeated target input during one explicit move |
 
-The [movement reference](movement.md) owns ordering, timing, guards and cleanup. The upstream reference-input Stop candidate `01 80` is not sent by the current controller.
+The [movement reference](movement.md) owns ordering, timing, guards and cleanup. Stop sends control `ff 00` followed by reference-input `01 80` on the same session, using the two channels also stopped by the [pinned idasen implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py#L441). Both writes share the Stop I/O deadline. An immediate control-write failure still attempts reference release; a deadline expiry discards the ambiguous session. No wake or height target is sent by Stop.
 
 ## Standard metadata and unsupported settings
 

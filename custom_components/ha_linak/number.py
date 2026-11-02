@@ -1,12 +1,14 @@
 """Native centimeter target with explicit movement, without target restoration."""
 
 import math
+from collections.abc import Callable
 
 from homeassistant.components.number import NumberEntity, NumberMode, NumberDeviceClass
 from homeassistant.const import UnitOfLength
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .entity import LinakEntity, whole_centimeters
@@ -31,6 +33,66 @@ class LinakTargetHeight(LinakEntity, NumberEntity):
         settings = coordinator.controls
         self._attr_native_min_value = math.ceil(settings.minimum_cm) if settings else 0
         self._attr_native_max_value = math.floor(settings.maximum_cm) if settings else 0
+        self._settled_value = self._measured_value()
+        self._candidate: tuple[int, int | None] | None = None
+        self._cancel_settle: Callable[[], None] | None = None
+
+    def _measured_value(self) -> float | None:
+        value = whole_centimeters(self.coordinator.data.height_cm)
+        if value is None:
+            return None
+        return max(self.native_min_value, min(value, self.native_max_value))
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(self._cancel_pending_settle)
+
+    @callback
+    def _cancel_pending_settle(self) -> None:
+        if self._cancel_settle is not None:
+            self._cancel_settle()
+            self._cancel_settle = None
+        self._candidate = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        desk = self.coordinator.desk
+        position = self.coordinator.data.position
+        if (
+            not self.available
+            or desk is None
+            or desk.control_busy
+            or position is None
+            or position.speed_raw != 0
+        ):
+            self._cancel_pending_settle()
+        else:
+            candidate = (position.position_raw, self.coordinator.data.offset_raw)
+            if self._measured_value() == self._settled_value:
+                self._cancel_pending_settle()
+            elif candidate != self._candidate:
+                self._cancel_pending_settle()
+                self._candidate = candidate
+                self._cancel_settle = async_call_later(self.hass, 0.5, self._settle)
+        super()._handle_coordinator_update()
+
+    @callback
+    def _settle(self, _now) -> None:
+        self._cancel_settle = None
+        desk = self.coordinator.desk
+        position = self.coordinator.data.position
+        if (
+            self.available
+            and desk is not None
+            and not desk.control_busy
+            and position is not None
+            and position.speed_raw == 0
+            and self._candidate
+            == (position.position_raw, self.coordinator.data.offset_raw)
+        ):
+            self._settled_value = self._measured_value()
+            self.async_write_ha_state()
+        self._candidate = None
 
     @property
     def available(self) -> bool:
@@ -42,11 +104,10 @@ class LinakTargetHeight(LinakEntity, NumberEntity):
 
     @property
     def native_value(self) -> float | None:
-        value = whole_centimeters(self.coordinator.data.height_cm)
-        if value is None:
-            return None
-        return max(self.native_min_value, min(value, self.native_max_value))
+        return self._settled_value
 
     async def async_set_native_value(self, value: float) -> None:
         await self.coordinator.async_move_to_cm(value)
+        self._cancel_pending_settle()
+        self._settled_value = self._measured_value()
         self.async_write_ha_state()

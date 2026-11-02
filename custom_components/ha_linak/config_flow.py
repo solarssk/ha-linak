@@ -235,14 +235,14 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 progress_task=self._validation_task,
             )
         self._error = self._validation_task.result()
-        if self._pending_range is not None:
-            next_step = (
-                "finish"
-                if self._error
-                else ("save_range" if self._final_height_check else "height")
-            )
-        else:
+        if self._pending_range is None:
             next_step = "retry" if self._error else "name"
+        elif self._error:
+            next_step = "finish"
+        elif self._final_height_check:
+            next_step = "save_range"
+        else:
+            next_step = "height"
         return self.async_show_progress_done(next_step_id=next_step)
 
     async def async_step_retry(

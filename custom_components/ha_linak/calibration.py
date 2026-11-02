@@ -15,6 +15,14 @@ class CalibrationSnapshotChanged(ValueError):
     """Fresh preflight data rejected the proposal before any setting write."""
 
 
+class SettingRejected(ValueError):
+    """The panel returned a non-success status for a setting request."""
+
+    def __init__(self, status: int) -> None:
+        self.status = status
+        super().__init__(f"Panel setting status {status:02x}")
+
+
 class InvalidMeasurement(ValueError):
     """The measurement cannot calibrate the current stationary snapshot."""
 

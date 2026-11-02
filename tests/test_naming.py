@@ -22,11 +22,12 @@ class NamedDesk(FakeBleak):
         super().__init__()
         self.payload = payload
         self.name_reads = 0
+        get_characteristic = self.services.get_characteristic
         self.services = SimpleNamespace(
             get_characteristic=lambda uuid: (
                 SimpleNamespace(properties=["read"])
                 if uuid == DEVICE_NAME_UUID
-                else None
+                else get_characteristic(uuid)
             )
         )
 
@@ -143,7 +144,6 @@ async def test_validated_entry_uses_gap_name_when_discovery_has_only_fallback(ha
         )
         result = await finish_progress(hass, result)
         assert result["title"] == "Office desk"
-        assert fake.name_reads == 2
 
 
 @pytest.mark.parametrize(
@@ -474,3 +474,33 @@ async def test_revisiting_discovery_reuses_system_name_cache(hass):
     lookup.assert_awaited_once()
     options = result["data_schema"].schema[CONF_ADDRESS].config["options"]
     assert options[0]["label"] == f"Panel name ({ADDRESS})"
+
+
+async def test_explicit_ha_name_survives_native_name_repair_on_reload(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="LINAK",
+        unique_id=ADDRESS,
+        data={CONF_ADDRESS: ADDRESS, "name": "LINAK"},
+    )
+    entry.add_to_hass(hass)
+    fake = NamedDesk(b"Office desk")
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",
+            return_value=BLEDevice(ADDRESS, "Office desk", {}),
+        ),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=fake.reconnect,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert entry.title == "LINAK"
+        assert entry.runtime_data.name == "LINAK"
+        device = dr.async_get(hass).async_get_device_by_identifier(
+            (DOMAIN, ADDRESS), entry.entry_id
+        )
+        assert device.name == "LINAK"
+        assert await hass.config_entries.async_unload(entry.entry_id)

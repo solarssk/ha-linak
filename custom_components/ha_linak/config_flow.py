@@ -9,13 +9,14 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import (
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlowWithReload,
 )
-from homeassistant.const import CONF_ADDRESS
-from homeassistant.core import callback
-from homeassistant.helpers import selector
+from homeassistant.const import CONF_ADDRESS, CONF_NAME
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import selector, device_registry as dr
 
 from .client import (
     DeskClient,
@@ -29,6 +30,7 @@ from .client import (
 from .calibration import (
     HeightCalibration,
     InvalidMeasurement,
+    SettingRejected,
     MEASURED_HEIGHT,
     CalibrationSnapshotChanged,
 )
@@ -39,6 +41,7 @@ from .control_settings import (
     MAXIMUM_HEIGHT,
 )
 from .const import DOMAIN
+from .entity import whole_centimeters
 from .naming import DEFAULT_NAME, cached_bluez_names, desk_name, discovery_title
 from .protocol import SERVICE_UUID
 
@@ -84,6 +87,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._address: str | None = None
         self._discovery_address: str | None = None
         self._name = DEFAULT_NAME
+        self._user_named = False
         self._system_names: dict[str, str] | None = None
         self._validation_task: asyncio.Task[str | None] | None = None
         self._error: str | None = None
@@ -91,6 +95,8 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._pending_range: dict[str, Any] | None = None
         self._calibration: HeightCalibration | None = None
         self._calibration_task: asyncio.Task[str | None] | None = None
+        self._preparing = False
+        self._final_height_check = False
 
     async def async_step_bluetooth(
         self, discovery_info: bluetooth.BluetoothServiceInfoBleak
@@ -189,7 +195,10 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
             self._validated_state = await desk.refresh()
-            self._name = desk_name(desk.device.address, self._name, desk.device_name)
+            if not self._user_named:
+                self._name = desk_name(
+                    desk.device.address, self._name, desk.device_name
+                )
         except (TimeoutError, ValueError, BleakError, ConnectionError) as err:
             error = _validation_error(err, desk.stage if desk else "device_lookup")
         except Exception:
@@ -226,10 +235,14 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 progress_task=self._validation_task,
             )
         self._error = self._validation_task.result()
-        if self._pending_range is not None:
-            next_step = "finish" if self._error else "save_range"
+        if self._pending_range is None:
+            next_step = "retry" if self._error else "name"
+        elif self._error:
+            next_step = "finish"
+        elif self._final_height_check:
+            next_step = "save_range"
         else:
-            next_step = "retry" if self._error else "finish"
+            next_step = "height"
         return self.async_show_progress_done(next_step_id=next_step)
 
     async def async_step_retry(
@@ -244,6 +257,46 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             errors={"base": self._error or "cannot_connect"},
         )
 
+    async def async_step_name(self, user_input=None) -> ConfigFlowResult:
+        errors = {"base": self._error} if self._error else {}
+        if user_input is not None:
+            name = str(user_input.get(CONF_NAME, self._name)).strip()
+            if name and len(name) <= 80 and name.isprintable():
+                self._name = name
+                self._user_named = True
+                self._error = None
+                self._preparing = True
+                self._calibration_task = self.hass.async_create_task(
+                    self._apply_calibration(), eager_start=False
+                )
+                return await self.async_step_calibration_apply()
+            errors["name"] = "invalid_name"
+        return self.async_show_form(
+            step_id="name", data_schema=_name_schema(self._name), errors=errors
+        )
+
+    async def async_step_height(self, user_input=None) -> ConfigFlowResult:
+        return await _guide_height(
+            self, user_input, self._validated_state, "refresh_range"
+        )
+
+    async def async_step_measure(self, user_input=None) -> ConfigFlowResult:
+        return await _guide_measure(
+            self, user_input, self._validated_state, "confirm_height"
+        )
+
+    async def async_step_confirm_height(self, user_input=None) -> ConfigFlowResult:
+        if self._calibration is not None and self._calibration.changed:
+            return await self.async_step_calibration_confirm()
+        return await self.async_step_refresh_range()
+
+    async def async_step_refresh_range(self, user_input=None) -> ConfigFlowResult:
+        """Re-read position after the owner confirms the displayed height."""
+        self._final_height_check = True
+        self._validation_task = None
+        self._error = None
+        return await self.async_step_connect()
+
     async def async_step_finish(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -253,8 +306,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             error = self._prepare_finish(user_input)
             errors = {"base": error} if error else {}
             if not errors:
-                if self._calibration is not None and self._calibration.changed:
-                    return await self.async_step_calibration_confirm()
+                self._final_height_check = False
                 self._validation_task = None
                 self._error = None
                 return await self.async_step_connect()
@@ -274,13 +326,6 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         except ValueError:
             return "invalid_limits"
         self._pending_range = _range_options(user_input)
-        if MEASURED_HEIGHT in user_input:
-            try:
-                self._calibration = _prepare_calibration(
-                    self._validated_state, user_input[MEASURED_HEIGHT]
-                )
-            except ValueError:
-                return "invalid_measurement"
         return None
 
     async def async_step_calibration_confirm(self, user_input=None) -> ConfigFlowResult:
@@ -293,7 +338,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="calibration_confirm",
             data_schema=vol.Schema({}),
-            description_placeholders=_calibration_placeholders(self._calibration),
+            description_placeholders=_calibration_placeholders(
+                self._calibration, self._pending_range, self._name
+            ),
         )
 
     async def _apply_calibration(self) -> str | None:
@@ -302,8 +349,18 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             desk = DeskClient(self._device(), lambda: None, self._device)
             await desk.refresh()
+            if self._preparing:
+                assert desk.state.height_cm is not None
+                self._calibration = _prepare_calibration(
+                    desk.state, desk.state.height_cm
+                )
             assert self._calibration is not None
-            self._validated_state = await desk.calibrate_height(self._calibration)
+            self._validated_state = await desk.calibrate_height(
+                self._calibration, activate_client=self._preparing
+            )
+        except SettingRejected as err:
+            _log_setting_rejection(err, desk)
+            error = "setting_rejected"
         except CalibrationSnapshotChanged:
             error = "calibration_snapshot_changed"
         except (
@@ -342,9 +399,14 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         self._error = self._calibration_task.result()
         self._calibration_task = None
-        return self.async_show_progress_done(
-            next_step_id="finish" if self._error else "save_range"
-        )
+        if self._preparing:
+            next_step = "name" if self._error else "finish"
+            if self._error:
+                self._error = "client_preparation_failed"
+        else:
+            next_step = "height" if self._error else "save_range"
+        self._preparing = False
+        return self.async_show_progress_done(next_step_id=next_step)
 
     async def async_step_save_range(self, user_input=None) -> ConfigFlowResult:
         self._abort_if_unique_id_configured()
@@ -355,7 +417,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_finish()
         return self.async_create_entry(
             title=self._name,
-            data={CONF_ADDRESS: self._address},
+            data={CONF_ADDRESS: self._address, CONF_NAME: self._name},
             options=self._pending_range,
         )
 
@@ -370,17 +432,76 @@ class LinakOptionsFlow(OptionsFlowWithReload):
         self._calibration_error: str | None = None
 
     async def async_step_init(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None:
+            return await self.async_step_range(user_input)
+        options = ["name", "connect", "height", "range"]
+        return self.async_show_menu(step_id="init", menu_options=options)
+
+    # Named HA flow steps must be coroutines; renaming only updates HA registries.
+    async def async_step_name(
+        self, user_input=None
+    ) -> ConfigFlowResult:  # NOSONAR(S7503) HA flow contract
+        errors = {}
+        if user_input is not None:
+            name = str(user_input.get(CONF_NAME, self.config_entry.title)).strip()
+            if name and len(name) <= 80 and name.isprintable():
+                _rename_ha_device(self.hass, self.config_entry, name)
+                return self.async_create_entry(
+                    title="", data=dict(self.config_entry.options)
+                )
+            errors["name"] = "invalid_name"
+        return self.async_show_form(
+            step_id="name",
+            data_schema=_name_schema(self.config_entry.title),
+            errors=errors,
+        )
+
+    async def async_step_connect(self, user_input=None) -> ConfigFlowResult:
+        state = self._current_state()
+        errors = {}
+        if user_input is not None:
+            if state is None or state.height_cm is None:
+                errors["base"] = "connection_unavailable"
+            else:
+                try:
+                    self._calibration = _prepare_calibration(state, state.height_cm)
+                except InvalidMeasurement:
+                    errors["base"] = "desk_not_stationary"
+                else:
+                    self._pending_range = dict(self.config_entry.options)
+                    self._calibration_task = self.hass.async_create_task(
+                        self._apply_calibration(), eager_start=False
+                    )
+                    return await self.async_step_calibration_apply()
+        return self.async_show_form(
+            step_id="connect", data_schema=vol.Schema({}), errors=errors
+        )
+
+    async def async_step_height(self, user_input=None) -> ConfigFlowResult:
+        return await _guide_height(
+            self, user_input, self._current_state(), "confirm_height"
+        )
+
+    async def async_step_measure(self, user_input=None) -> ConfigFlowResult:
+        return await _guide_measure(
+            self, user_input, self._current_state(), "confirm_height"
+        )
+
+    async def async_step_confirm_height(self, user_input=None) -> ConfigFlowResult:
+        self._pending_range = dict(self.config_entry.options)
+        if self._calibration is not None and self._calibration.changed:
+            return await self.async_step_calibration_confirm()
+        return await self.async_step_calibration_finish()
+
+    async def async_step_range(self, user_input=None) -> ConfigFlowResult:
         errors = {"base": self._calibration_error} if self._calibration_error else {}
         self._calibration_error = None
         if user_input is not None:
             try:
-                if self._prepare_options(user_input):
-                    return await self.async_step_calibration_confirm()
+                self._prepare_options(user_input)
                 return self.async_create_entry(title="", data=self._pending_range)
             except ConnectionError:
                 errors["base"] = "connection_unavailable"
-            except InvalidMeasurement:
-                errors["base"] = "invalid_measurement"
             except ValueError:
                 errors["base"] = "invalid_limits"
         options = (
@@ -389,7 +510,7 @@ class LinakOptionsFlow(OptionsFlowWithReload):
             else (self._pending_range or self.config_entry.options)
         )
         return self.async_show_form(
-            step_id="init",
+            step_id="range",
             data_schema=_range_schema(options),
             errors=errors,
             description_placeholders=_height_placeholders(self._current_state()),
@@ -402,18 +523,13 @@ class LinakOptionsFlow(OptionsFlowWithReload):
             return None
         return coordinator.data
 
-    def _prepare_options(self, user_input: dict[str, Any]) -> bool:
+    def _prepare_options(self, user_input: dict[str, Any]) -> None:
         state = self._current_state()
         if state is None:
             raise ConnectionError("A current height reading is required")
         self._calibration = None
         self._pending_range = _range_options(user_input)
-        if MEASURED_HEIGHT in user_input:
-            self._calibration = _prepare_calibration(state, user_input[MEASURED_HEIGHT])
-            if self._calibration.changed:
-                return True
         _validate_range(user_input, state)
-        return False
 
     async def async_step_calibration_confirm(self, user_input=None) -> ConfigFlowResult:
         assert self._calibration is not None
@@ -425,7 +541,9 @@ class LinakOptionsFlow(OptionsFlowWithReload):
         return self.async_show_form(
             step_id="calibration_confirm",
             data_schema=vol.Schema({}),
-            description_placeholders=_calibration_placeholders(self._calibration),
+            description_placeholders=_calibration_placeholders(
+                self._calibration, self._pending_range, self.config_entry.title
+            ),
         )
 
     async def _apply_calibration(self) -> str | None:
@@ -437,8 +555,13 @@ class LinakOptionsFlow(OptionsFlowWithReload):
                 or self._calibration is None
             ):
                 raise ValueError("A current connection is required")
-            await coordinator.desk.calibrate_height(self._calibration)
+            await coordinator.desk.calibrate_height(
+                self._calibration, activate_client=True
+            )
             return None
+        except SettingRejected as err:
+            _log_setting_rejection(err, coordinator.desk if coordinator else None)
+            return "setting_rejected"
         except CalibrationSnapshotChanged:
             return "calibration_snapshot_changed"
         except BleakError, ConnectionError, TimeoutError, ValueError, MotionError:
@@ -462,6 +585,8 @@ class LinakOptionsFlow(OptionsFlowWithReload):
 
     async def async_step_calibration_finish(self, user_input=None) -> ConfigFlowResult:
         if not self._calibration_error:
+            if not self._pending_range:
+                return await self.async_step_range()
             try:
                 _validate_range(
                     self._pending_range, self.config_entry.runtime_data.data
@@ -470,7 +595,9 @@ class LinakOptionsFlow(OptionsFlowWithReload):
                 self._calibration_error = "invalid_limits"
             else:
                 return self.async_create_entry(title="", data=self._pending_range)
-        return await self.async_step_init()
+        if self._calibration_error != "invalid_limits":
+            return await self.async_step_height()
+        return await self.async_step_range()
 
 
 def _range_options(values: dict[str, Any]) -> dict[str, Any]:
@@ -489,11 +616,18 @@ def _prepare_calibration(
 
 def _height_placeholders(state: DeskState | None) -> dict[str, str]:
     height = state.height_cm if state is not None else None
-    return {"height": f"{height:.1f}" if height is not None else "?"}
+    return {"height": str(whole_centimeters(height)) if height is not None else "?"}
 
 
-def _calibration_placeholders(proposal: HeightCalibration) -> dict[str, str]:
+def _calibration_placeholders(
+    proposal: HeightCalibration,
+    bounds: dict[str, Any] | None = None,
+    name: str = DEFAULT_NAME,
+) -> dict[str, str]:
     return {
+        "desk_name": name,
+        "minimum_height": str((bounds or {}).get(MINIMUM_HEIGHT, "?")),
+        "maximum_height": str((bounds or {}).get(MAXIMUM_HEIGHT, "?")),
         "old_height": f"{(proposal.position_raw + proposal.old_offset_raw) / 100:.1f}",
         "measured_height": f"{proposal.measured_cm:.1f}",
         "old_offset": f"{proposal.old_offset_raw / 100:.2f}",
@@ -515,13 +649,7 @@ def _validate_range(options: dict[str, Any], state: DeskState | None) -> None:
 
 
 def _range_schema(options) -> vol.Schema:
-    schema: dict[Any, Any] = {
-        vol.Optional(MEASURED_HEIGHT): selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                mode=selector.NumberSelectorMode.BOX, step=0.1, unit_of_measurement="cm"
-            )
-        )
-    }
+    schema: dict[Any, Any] = {}
     for key in (MINIMUM_HEIGHT, MAXIMUM_HEIGHT):
         field = (
             vol.Required(key, default=options[key])
@@ -534,3 +662,81 @@ def _range_schema(options) -> vol.Schema:
             )
         )
     return vol.Schema(schema)
+
+
+def _name_schema(name: str) -> vol.Schema:
+    return vol.Schema({vol.Required(CONF_NAME, default=name): selector.TextSelector()})
+
+
+async def _guide_height(flow, user_input, state, next_step) -> ConfigFlowResult:
+    if user_input is not None and state is not None:
+        flow._calibration = None
+        if user_input.get("height_correct", True):
+            return await getattr(flow, f"async_step_{next_step}")()
+        return await flow.async_step_measure()
+    error = getattr(flow, "_error", None) or getattr(flow, "_calibration_error", None)
+    flow._error = None
+    flow._calibration_error = None
+    if state is None and not error:
+        error = "connection_unavailable"
+    return flow.async_show_form(
+        step_id="height",
+        data_schema=vol.Schema(
+            {vol.Required("height_correct", default=True): selector.BooleanSelector()}
+        ),
+        description_placeholders=_height_placeholders(state),
+        errors={"base": error} if error else {},
+    )
+
+
+async def _guide_measure(flow, user_input, state, next_step) -> ConfigFlowResult:
+    errors = {"base": "connection_unavailable"} if state is None else {}
+    if user_input is not None and state is not None:
+        try:
+            proposal = _prepare_calibration(state, user_input.get(MEASURED_HEIGHT))
+        except ValueError:
+            errors["base"] = "invalid_measurement"
+        else:
+            flow._calibration = proposal
+            return await getattr(flow, f"async_step_{next_step}")()
+    return flow.async_show_form(
+        step_id="measure",
+        data_schema=vol.Schema(
+            {
+                vol.Required(MEASURED_HEIGHT): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        step=0.1,
+                        unit_of_measurement="cm",
+                    )
+                )
+            }
+        ),
+        errors=errors,
+        description_placeholders=_height_placeholders(state),
+    )
+
+
+def _rename_ha_device(hass: HomeAssistant, entry: ConfigEntry, name: str) -> None:
+    """Apply an explicit HA name without reconnecting or changing Bluetooth."""
+    hass.config_entries.async_update_entry(
+        entry, title=name, data={**entry.data, CONF_NAME: name}
+    )
+    coordinator = getattr(entry, "runtime_data", None)
+    if coordinator is not None:
+        coordinator.name = name
+    registry = dr.async_get(hass)
+    device = registry.async_get_device_by_identifier(
+        (DOMAIN, entry.data[CONF_ADDRESS]), entry.entry_id
+    )
+    if device is not None:
+        registry.async_update_device(device.id, name_by_user=name)
+
+
+def _log_setting_rejection(error: SettingRejected, desk: DeskClient | None) -> None:
+    """Log only the protocol status and phase, never identifiers or payloads."""
+    _LOGGER.warning(
+        "LINAK setting rejected during %s: status=%02x",
+        desk.stage if desk else "not_connected",
+        error.status,
+    )

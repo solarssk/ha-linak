@@ -18,20 +18,50 @@
         "description": "Zbliż biurko do adaptera Bluetooth, włącz parowanie na panelu i zamknij inne aplikacje połączone z biurkiem. Zatwierdź, aby spróbować ponownie."
       },
       "finish": {
-        "title": "Kalibracja i zakres wysokości",
-        "description": "Odczyt panelu: {height} cm. Jeśli jest błędny, zmierz aktualną wysokość od podłogi do góry blatu i wpisz ją w pierwszym polu. Następnie podaj rzeczywisty zakres wysokości. Korekta wymaga osobnego potwierdzenia. Nie ruszaj biurkiem do zakończenia zapisu.",
+        "title": "2. Ustaw zakres ruchu",
+        "description": "Wpisz najniższą i najwyższą wysokość blatu, zmierzone od podłogi. W razie potrzeby użyj fizycznego panelu, aby sprawdzić oba końce zakresu, a następnie pozostaw biurko nieruchomo. Te granice ograniczą polecenia z HA. Zachowaj dokładność pomiaru; nie zaokrąglaj granic na zewnątrz zakresu.",
         "data": {
-          "measured_height": "Aktualna wysokość z miarki (opcjonalnie)",
-          "minimum_height": "Minimalna wysokość (cm)",
-          "maximum_height": "Maksymalna wysokość (cm)"
+          "minimum_height": "Najniższa wysokość blatu",
+          "maximum_height": "Najwyższa wysokość blatu"
+        },
+        "data_description": {
+          "minimum_height": "Od podłogi do górnej powierzchni blatu w najniższej pozycji.",
+          "maximum_height": "Od podłogi do górnej powierzchni blatu w najwyższej pozycji."
         }
       },
       "calibration_confirm": {
         "title": "Potwierdź korektę wysokości",
-        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem."
+        "description": "**{desk_name}**\n\n- Wysokość: {old_height} cm → {measured_height} cm\n- Zakres ruchu: {minimum_height}–{maximum_height} cm\n\nZapiszemy korektę w panelu i sprawdzimy odczyt. Wyświetlane wysokości pamięci również się zmienią, ale zapisane pozycje mechanizmu pozostaną takie same. W razie potrzeby przygotujemy połączenie panelu z HA. Ten krok może zostać zapisany w pamięci panelu. Pozostaw biurko nieruchomo; samo zatwierdzenie nie poruszy biurkiem."
       },
       "calibration_apply": {
-        "title": "Zapisywanie korekty wysokości"
+        "title": "Przygotowywanie i sprawdzanie biurka"
+      },
+      "name": {
+        "title": "1. Nazwij i połącz biurko",
+        "description": "Wybierz nazwę widoczną w Home Assistant. Kontynuując, przygotujesz panel do sterowania przez HA. Może to zapisać ustawienie połączenia w pamięci panelu. Biurko się nie poruszy. Aplikacja telefonu nie jest potrzebna.",
+        "data": {
+          "name": "Nazwa w Home Assistant"
+        },
+        "data_description": {
+          "name": "Na przykład: Biurko w gabinecie."
+        }
+      },
+      "height": {
+        "title": "3. Sprawdź aktualną wysokość",
+        "description": "Aktualny odczyt: {height} cm. Sprawdź odległość od podłogi do górnej powierzchni blatu. Jeśli wysokość jest poprawna, zakończymy dodawanie biurka. Jeśli nie, wpiszesz aktualny pomiar w następnym kroku. Od teraz pozostaw biurko nieruchomo.",
+        "data": {
+          "height_correct": "Wysokość jest poprawna"
+        }
+      },
+      "measure": {
+        "title": "3. Wpisz aktualny pomiar",
+        "description": "Pozostaw biurko nieruchomo. Zmierz odległość od podłogi do górnej powierzchni blatu i wpisz wynik w centymetrach. Nie odejmuj poprzedniego odczytu. Korektę sprawdzisz i zatwierdzisz przed zapisem.",
+        "data": {
+          "measured_height": "Wysokość z miarki"
+        },
+        "data_description": {
+          "measured_height": "Możesz podać dokładny pomiar, np. 75,5 cm."
+        }
       }
     },
     "error": {
@@ -47,7 +77,11 @@
       "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie.",
       "invalid_measurement": "Sprawdź pomiar aktualnej wysokości. Biurko musi być nieruchome, a odczyt panelu aktualny.",
       "calibration_failed": "Nie potwierdzono korekty. Ustawienie mogło się zmienić. Sprawdź wskazanie panelu przed kolejną próbą; zapis nie zostanie automatycznie ponowiony.",
-      "calibration_snapshot_changed": "Pozycja lub ustawienie wysokości zmieniły się od pomiaru. Nie wysłano korekty. Pozostaw biurko nieruchomo, sprawdź aktualny pomiar i spróbuj ponownie."
+      "calibration_snapshot_changed": "Pozycja lub ustawienie wysokości zmieniły się od pomiaru. Nie wysłano korekty. Pozostaw biurko nieruchomo, sprawdź aktualny pomiar i spróbuj ponownie.",
+      "invalid_name": "Wpisz czytelną nazwę o długości od 1 do 80 znaków.",
+      "connection_unavailable": "Połączenie z biurkiem jest niedostępne. Spróbuj ponownie po przywróceniu połączenia.",
+      "client_preparation_failed": "Nie udało się przygotować panelu. Sprawdź połączenie Bluetooth i kontynuuj, aby ponowić sprawdzenie. Nie wysłano polecenia ruchu.",
+      "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
@@ -56,7 +90,7 @@
     },
     "progress": {
       "connect": "Łączenie z biurkiem, uwierzytelnianie Bluetooth i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację.",
-      "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."
+      "calibrate": "Sprawdzamy połączenie i klienta panelu. Jeśli zatwierdzono korektę wysokości, zapiszemy ją i sprawdzimy odczyt. Pozostaw biurko nieruchomo. Anulowanie nie cofa zapisu, który dotarł do panelu."
     }
   },
   "entity": {
@@ -148,28 +182,76 @@
   "options": {
     "step": {
       "init": {
-        "title": "Kalibracja i zakres wysokości",
-        "description": "Odczyt panelu: {height} cm. Jeśli jest błędny, zmierz aktualną wysokość od podłogi do góry blatu i wpisz ją w pierwszym polu. Następnie podaj rzeczywisty zakres wysokości. Korekta wymaga osobnego potwierdzenia. Nie ruszaj biurkiem do zakończenia zapisu.",
-        "data": {
-          "measured_height": "Aktualna wysokość z miarki (opcjonalnie)",
-          "minimum_height": "Minimalna wysokość (cm)",
-          "maximum_height": "Maksymalna wysokość (cm)"
+        "title": "Ustawienia biurka",
+        "description": "Wybierz, co chcesz zmienić. Kalibracja i zakres mają osobne kroki z instrukcjami.",
+        "menu_options": {
+          "name": "Nazwa w Home Assistant",
+          "height": "Sprawdź lub popraw wysokość",
+          "range": "Zakres ruchu",
+          "connect": "Przygotuj sterowanie"
         }
       },
       "calibration_confirm": {
         "title": "Potwierdź korektę wysokości",
-        "description": "Wskazanie zmieni się z {old_height} cm na {measured_height} cm. Punkt odniesienia panelu: {old_offset} cm → {new_offset} cm. Zmienią się również przeliczone wskazania zapisanych pozycji. Zatwierdzenie zapisuje korektę w panelu Bluetooth i sprawdza odczyt. Nie porusza biurkiem ani nie zmienia zapisanych pozycji mechanizmu. Nie ruszaj biurkiem."
+        "description": "**{desk_name}**\n\n- Wysokość: {old_height} cm → {measured_height} cm\n\nZapiszemy korektę w panelu i sprawdzimy odczyt. Wyświetlane wysokości pamięci również się zmienią, ale zapisane pozycje mechanizmu pozostaną takie same. W razie potrzeby przygotujemy połączenie panelu z HA. Ten krok może zostać zapisany w pamięci panelu. Pozostaw biurko nieruchomo; samo zatwierdzenie nie poruszy biurkiem."
       },
       "calibration_apply": {
         "title": "Zapisywanie korekty wysokości"
+      },
+      "name": {
+        "title": "Nazwa w Home Assistant",
+        "description": "Wybierz nazwę, którą zobaczysz w Home Assistant. Możesz zostawić wykrytą nazwę lub wpisać własną.",
+        "data": {
+          "name": "Nazwa w Home Assistant"
+        },
+        "data_description": {
+          "name": "Na przykład: Biurko w gabinecie."
+        }
+      },
+      "height": {
+        "title": "Sprawdź wysokość",
+        "description": "Aktualny odczyt: {height} cm. Sprawdź odległość od podłogi do górnej powierzchni blatu. Jeśli odczyt jest poprawny, kontynuuj. Jeśli jest błędny, wpiszesz pomiar z miarki w następnym kroku.",
+        "data": {
+          "height_correct": "Wysokość jest poprawna"
+        }
+      },
+      "measure": {
+        "title": "Wpisz pomiar z miarki",
+        "description": "Pozostaw biurko nieruchomo. Zmierz odległość od podłogi do górnej powierzchni blatu i wpisz wynik w centymetrach. Nie odejmuj poprzedniego odczytu. Korektę sprawdzisz i zatwierdzisz przed zapisem.",
+        "data": {
+          "measured_height": "Wysokość z miarki"
+        },
+        "data_description": {
+          "measured_height": "Możesz podać dokładny pomiar, np. 75,5 cm."
+        }
+      },
+      "range": {
+        "title": "Zakres ruchu",
+        "description": "Wpisz najniższą i najwyższą wysokość blatu, zmierzone od podłogi. W razie potrzeby użyj fizycznego panelu, aby sprawdzić oba końce zakresu, a następnie pozostaw biurko nieruchomo. Te granice ograniczą polecenia z HA. Zachowaj dokładność pomiaru; nie zaokrąglaj granic na zewnątrz zakresu.",
+        "data": {
+          "minimum_height": "Najniższa wysokość blatu",
+          "maximum_height": "Najwyższa wysokość blatu"
+        },
+        "data_description": {
+          "minimum_height": "Od podłogi do górnej powierzchni blatu w najniższej pozycji.",
+          "maximum_height": "Od podłogi do górnej powierzchni blatu w najwyższej pozycji."
+        }
+      },
+      "connect": {
+        "title": "Przygotuj sterowanie biurkiem",
+        "description": "Kontynuując, przygotujesz panel do sterowania przez HA. W razie potrzeby zapiszemy ustawienie połączenia w pamięci panelu. Wysokość i pozycja nie zostaną zmienione."
       }
     },
     "error": {
       "invalid_limits": "Podaj poprawne granice wysokości obejmujące bieżący odczyt. Sprawdź wysokość biurka i spróbuj ponownie.",
       "invalid_measurement": "Sprawdź pomiar aktualnej wysokości. Biurko musi być nieruchome, a odczyt panelu aktualny.",
       "calibration_failed": "Nie potwierdzono korekty. Ustawienie mogło się zmienić. Sprawdź wskazanie panelu przed kolejną próbą; zapis nie zostanie automatycznie ponowiony.",
-      "connection_unavailable": "Biurko jest rozłączone. Spróbuj ponownie po przywróceniu połączenia.",
-      "calibration_snapshot_changed": "Pozycja lub ustawienie wysokości zmieniły się od pomiaru. Nie wysłano korekty. Pozostaw biurko nieruchomo, sprawdź aktualny pomiar i spróbuj ponownie."
+      "connection_unavailable": "Połączenie z biurkiem jest niedostępne. Spróbuj ponownie po przywróceniu połączenia.",
+      "calibration_snapshot_changed": "Pozycja lub ustawienie wysokości zmieniły się od pomiaru. Nie wysłano korekty. Pozostaw biurko nieruchomo, sprawdź aktualny pomiar i spróbuj ponownie.",
+      "invalid_name": "Wpisz czytelną nazwę o długości od 1 do 80 znaków.",
+      "desk_not_stationary": "Poczekaj, aż biurko się zatrzyma i pojawi się aktualny odczyt wysokości, a następnie spróbuj ponownie.",
+      "range_required": "Najpierw zapisz najniższą i najwyższą wysokość biurka. Następnie wybierz sprawdzenie wysokości w Konfiguruj.",
+      "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji."
     },
     "progress": {
       "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."

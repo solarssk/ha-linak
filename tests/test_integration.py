@@ -32,16 +32,40 @@ def available_bluetooth_device():
         yield
 
 
+async def prepare_setup(hass, result):
+    if result.get("step_id") == "name":
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    return result
+
+
+async def guide_to_range(hass, result):
+    result = await prepare_setup(hass, result)
+    if result.get("step_id") == "height":
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"height_correct": True}
+        )
+    for _ in range(3):
+        if result["type"] != "progress":
+            break
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    return result
+
+
 async def finish_progress(hass, result):
     assert result["type"] == "progress"
     await hass.async_block_till_done()
     result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    result = await guide_to_range(hass, result)
     if result["type"] == "form" and result["step_id"] == "finish":
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"minimum_height": 70, "maximum_height": 125}
         )
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        result = await guide_to_range(hass, result)
     return result
 
 
@@ -74,7 +98,7 @@ async def test_setup_reads_centimeters_and_unload_disconnects(hass):
         states = hass.states.async_all("sensor")
         assert len(states) == 13
         assert any(
-            s.state == "82.38" and s.attributes.get("unit_of_measurement") == "cm"
+            s.state == "82" and s.attributes.get("unit_of_measurement") == "cm"
             for s in states
         )
         assert not hass.states.async_all("cover")
@@ -122,8 +146,8 @@ async def test_config_flow_tests_connection_and_prevents_duplicates(hass):
             result["flow_id"], {CONF_ADDRESS: ADDRESS}
         )
         result = await finish_progress(hass, result)
-        assert result["type"] == "create_entry"
-        assert result["data"] == {CONF_ADDRESS: ADDRESS}
+        assert result["type"] == "create_entry", result
+        assert result["data"] == {CONF_ADDRESS: ADDRESS, "name": "Desk"}
         assert not fake.is_connected
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_init(
@@ -257,7 +281,7 @@ async def test_validation_errors_show_retry_and_allow_a_new_attempt(
     ):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
         result = await finish_progress(hass, result)
-        assert result["type"] == "create_entry"
+        assert result["type"] == "create_entry", result
         await hass.async_block_till_done()
 
 
@@ -351,7 +375,7 @@ async def test_discovery_requires_confirmation_before_connection(hass):
             result["flow_id"], {CONF_ADDRESS: ADDRESS}
         )
         result = await finish_progress(hass, result)
-        assert result["type"] == "create_entry"
+        assert result["type"] == "create_entry", result
         assert connect.call_args.args[1] is DEVICE
         assert connect.call_args.kwargs["ble_device_callback"]() is DEVICE
         await hass.async_block_till_done()
@@ -487,7 +511,7 @@ async def test_flow_title_uses_the_device_name_when_discovery_only_has_the_addre
             result["flow_id"], {CONF_ADDRESS: ADDRESS}
         )
         result = await finish_progress(hass, result)
-        assert result["type"] == "create_entry"
+        assert result["type"] == "create_entry", result
         assert result["title"] == "Desk"
 
 

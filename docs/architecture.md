@@ -56,7 +56,7 @@ Repository: solarssk/ha-linak (public). Minimum supported Home Assistant: 2026.1
 
 ## Entity categories and identity
 
-Height, stored heights and reminder profiles are regular sensor entities. Offset remains diagnostic because it is a technical height-reference parameter. Backend and signal-strength sensors are diagnostic and disabled by default; Connection is a diagnostic binary_sensor enabled by default. Onboarding sets movement bounds and Options Flow changes them later; there is no movement-enable switch. No panel-setting write is implied. Existing product sensor IDs are preserved.
+Height, stored heights and reminder profiles are regular sensor entities. Offset remains diagnostic because it is a technical height-reference parameter. Backend and signal-strength sensors are diagnostic and disabled by default; Connection is a diagnostic binary_sensor enabled by default. Onboarding sets movement bounds and Options Flow changes them later; there is no movement-enable switch. Onboarding writes client activation and a height correction only after explicit confirmation; it never programs movement limits. Existing product sensor IDs are preserved.
 
 DeviceInfo uses the existing domain/address identifier and also a Bluetooth connection identifier. Names and the address are local device metadata rather than extra entities. Downloaded diagnostics contain only allowlisted transport categories and RSSI, without raw advertisement or client objects. See [diagnostics](diagnostics.md) for freshness and lifecycle limits.
 
@@ -69,4 +69,6 @@ Stop has a separate shared task and bypasses the polling lock. Movement cancella
 
 ## Height calibration ownership
 
-Confirmed calibration reserves the current client and query lock. Another calibration or movement is rejected while it owns the session; polling returns existing state. Unload/disconnect cancels and drains the calibration task before releasing the transport. The command changes only the panel reference, then refreshes height, saved-height conversions and settings. No measured-height input is persisted for replay. Hardware write validation remains distinct from simulated HA tests.
+Confirmed calibration reserves the current client and query lock. Another calibration or movement is rejected while it owns the session; polling returns existing state. Unload/disconnect cancels and drains the calibration task before releasing the transport. After confirmation it reads the client activation status and, if needed, activates the same identifier once and verifies it before writing the reference. Polling and reconnect never activate a client. Each setting requires an application acknowledgement and the reference is verified through fresh readback before height, saved-height conversions and settings are published. No measured-height input is persisted for replay. Hardware write validation remains distinct from simulated HA tests.
+
+HA sensor values are rounded only at the entity boundary. Raw position/reference/memory values remain unchanged for movement, diagnostics and calibration. The integer slider limits are ceil(minimum) and floor(maximum), never rounded outward. Explicitly chosen HA names are stored separately from discovered Bluetooth names and retain priority on reload. Guided preparation is a confirmed foreground operation; polling and reconnect remain read-only.

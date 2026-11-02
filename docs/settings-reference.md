@@ -1,6 +1,6 @@
 # DPG1C settings and implementation reference
 
-Reviewed 2026-10-31. This is a research inventory and product plan, not a list of enabled controls. Runtime 0.1.0a7 adds native slider/button movement; panel-settings writes remain unimplemented. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
+Reviewed 2026-11-02. This inventory distinguishes implemented features from research candidates. Native slider/button movement, protected client activation and confirmed height calibration are implemented; other panel-setting writes remain planned. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
 
 ## Evidence levels
 
@@ -44,7 +44,7 @@ O4 distinguishes Owner and Guest storage/transfer behavior, describes settings f
 | Target height and Stop | O3, C3, S | Native number in cm and Stop button | Registered by default. Target height needs a configured travel range; Stop works with a ready connection. Simulated HA coverage, physical movement/Stop evidence pending. |
 | Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Drive buttons re-read the selected slot; drive not physically verified. Respect configured/available slots. |
 | Save/replace favourite | O4, C1 | Separate explicit save operation | Write payload, slot identity and persistence unverified; read back the exact slot. |
-| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Read and protected confirmed calibration flow implemented. Write/readback, failures and cancellation have simulated tests; physical write/persistence validation is pending. |
+| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Read and protected confirmed calibration flow implemented. Activation and offset write/readback were verified on one DPG1C and persisted across a separate Bluetooth connection. Failures/cancellation have simulated tests; power-cycle persistence remains unverified. |
 | Panel display units | O1, O2, C2 | Configuration choice if verified | Preserve the integration's centimeter interface; changing panel units must not reinterpret raw positions or cause motion. |
 | Active reminder profile / off | O3, H, C2 | Configuration select after write validation | Profile read works; confirm the encoding/meaning of the off state before writing. |
 | Sitting/standing duration per profile | O3/O4, H, C2 | Configuration values with validated ranges | Three profiles read; units, encoding limits and write persistence require validation. |
@@ -70,8 +70,8 @@ Existing UUIDs and parsing are recorded in [protocol.md](protocol.md). The suffi
 | DPG channel | `99fa0011` | H reads; serialize requests. |
 | Height feedback | `99fa0021`, position and unclassified speed/flags | H reads; relative position units used by current decoder. |
 | Capabilities | `0x80` | H read; capability flags are not settings acknowledgements. |
-| Offset | `0x81` | H read; C1 names a setting candidate, but no validated setter here. |
-| User ID | `0x86` | C1 only; ownership/persistence research required. |
+| Offset | `0x81` | Protected setter implemented and physically verified on one DPG1C with client activation, acknowledgement and readback. |
+| User ID | `0x86` | Confirmed calibration activates the existing identifier only when inactive; no identifier replacement. |
 | Reminder time | `0x87` | C1 candidate; distinct from the implemented `0x88` query. |
 | Reminder settings | `0x88` | H read; C2 exposes light/wake/automatic-up/down/units/profile candidates. |
 | Memory 1–4 | `0x89`–`0x8c` | H reads; C1 proposes get/set operations. |
@@ -122,4 +122,13 @@ The pinned community [send_desk_height implementation](https://github.com/anetcz
 
 Calibration proposes `round(measured_cm * 100) - position_raw`, treats differences up to half a 1 mm display step as unchanged, checks encoding bounds and requires a stationary snapshot. The confirmed operation owns the same client lock as reads and movement, rechecks position twice and validates the original reference before writing once. A full refresh begins with capabilities before offset readback so an offset echo cannot satisfy verification. Updated height and saved-height conversions are published together. Failed, timed-out or cancelled operations discard the session; they do not retry or restore a previous reference.
 
-The calibration operation has a 60-second budget plus bounded disconnect cleanup. First-time setup also opens and validates a connection before that operation. Calibration input is transient and is never stored as a startup action. This is community protocol evidence plus simulated validation, not an official public GATT specification or a completed physical calibration test.
+The calibration operation has a 60-second budget plus bounded disconnect cleanup. First-time setup also opens and validates a connection before that operation. Calibration input is transient and is never stored as a startup action. This is community protocol evidence plus simulated validation, not an official public GATT specification. The subsequent activation experiment below records physical calibration evidence.
+
+
+## Confirmed client activation (0.1.0a9)
+
+The supervised DPG1C experiment returned `0b 00` for an offset-only write while the USER_ID response reported an inactive status. After changing only that status byte from 0 to 1 and preserving the existing 16 identifier bytes, the panel acknowledged activation and calibration with `01 00`. Three reads returned the requested offset, with unchanged mechanism position. A separate connection verified active status and the corrected height. Power-cycle persistence and other firmware remain unverified.
+
+The [idasen wakeup implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py) and its [upstream DPG1C discussion](https://github.com/rhyst/linak-controller/issues/32#issuecomment-1784055470) document this initialization requirement. Here the confirmed calibration reads `7f 86 00`, validates the `01 11 <status> <16-byte identifier>` response, skips active clients, and writes `7f 86 80 01 <same identifier>` once for an inactive client. It verifies status and identifier before calibration. Identifier bytes are neither generated nor replaced, stored in HA options, or included in integration logs. Redact them from low-level Bluetooth traces before sharing.
+
+Neither polling nor reconnect performs activation. Setup preparation, post-install connection preparation and calibration confirmation explain the possible persistent panel change. Each setting requires an application acknowledgement, separately from the Bluetooth transport acknowledgement. A non-success two-byte response aborts without retry; `0b` has been observed but its detailed vendor meaning is not established. A read barrier precedes each setting exchange, and offset readback remains mandatory.

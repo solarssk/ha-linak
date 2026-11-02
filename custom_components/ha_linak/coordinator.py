@@ -22,6 +22,12 @@ from .setup_session import take_session
 _LOGGER = logging.getLogger(__name__)
 
 
+def _failure_reason(error: Exception) -> str:
+    if isinstance(error, MotionError):
+        return error.reason.value
+    return type(error).__name__
+
+
 class LinakCoordinator(DataUpdateCoordinator[DeskState]):
     BACKENDS = tuple(
         sorted(
@@ -141,6 +147,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 translation_domain=DOMAIN, translation_key="range_not_configured"
             )
         settings = self.controls
+        backend = self.bluetooth_backend or "not_connected"
         try:
             if action == "stop":
                 await self.desk.stop()
@@ -156,11 +163,12 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             TimeoutError,
             ValueError,
         ) as err:
-            _LOGGER.debug(
-                "LINAK %s failed during %s: %s",
+            _LOGGER.warning(
+                "LINAK %s failed during %s: reason=%s backend=%s",
                 action,
                 self.desk.stage,
-                type(err).__name__,
+                _failure_reason(err),
+                backend,
             )
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

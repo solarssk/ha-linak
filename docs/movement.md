@@ -49,3 +49,7 @@ Cancellation of `close()` waits for the reserved Stop operation to settle before
 Movement completion and close cancellation share the same shielded cleanup-draining path. Repeated cancellation of the movement caller cannot cancel its final Stop or release ownership before cleanup settles. A successful Stop propagates cancellation afterward; a Stop timeout still closes and discards the session.
 
 Directional progress is measured against the best position reached toward the target. Retreat exceeding the tolerance from that position aborts, including several small backward steps. Only a new best position resets the no-progress deadline; returning to an earlier best or moving backward within tolerance does not count as progress. Small feedback reversals remain allowed when genuine forward progress continues.
+
+## Failure diagnosis
+
+A failed HA control action logs its action, phase, stable movement reason and backend captured before cleanup. Reasons include `no_progress`, `reverse_motion`, `overshoot`, `outside_limits`, `link_lost` and `stop_failed`. Transport and validation exceptions retain only their class name. Logs omit Bluetooth addresses, desk names, payloads and raw exception messages. The client currently discards a session after any movement exception, so a later disconnected state alone does not show whether radio loss caused the original failure. A no-progress failure means feedback did not advance toward the target before the existing stall deadline. It does not identify why the panel did not move.

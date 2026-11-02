@@ -843,6 +843,7 @@ async def test_stop_during_preparation_writes_before_disconnect(phase, failed_st
             await operation
     assert events == (["disconnect"] if failed_stop else ["stop", "disconnect"])
     assert sum(uuid == CONTROL_UUID and data == STOP for uuid, data in fake.writes) == 1
+    assert fake.writes.count((TARGET_UUID, REFERENCE_STOP)) == 1
     assert not any(
         uuid == TARGET_UUID and payload != REFERENCE_STOP
         for uuid, payload in fake.writes

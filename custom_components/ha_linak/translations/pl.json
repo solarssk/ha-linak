@@ -275,6 +275,9 @@
     },
     "startup_timeout": {
       "message": "Początkowe połączenie lub odczyt biurka trwały zbyt długo. Home Assistant ponowi próbę automatycznie."
+    },
+    "control_busy": {
+      "message": "Biurko wykonuje inne polecenie. Poczekaj na zakończenie lub naciśnij Stop przed wybraniem nowego celu. To polecenie nie zostało zapisane w kolejce."
     }
   }
 }

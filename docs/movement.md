@@ -63,9 +63,24 @@ A target inside arrival tolerance sends final Stop without wake or target packet
 
 Every exit attempts both control Stop and reference-input release. A failed motion session is discarded rather than reused for another queued target. A successful explicit Stop during the target loop retains the ready link; the next action is a new request, never a replay. The [diagnostic reason table](diagnostics.md#interpret-a-movement-failure) distinguishes these failures without exposing raw backend messages.
 
+## Competing requests
+
+One operation owns the client from preparation through final cleanup. New slider or stored-position requests are rejected immediately while that reservation or a settings exchange is active. The busy response asks the user to wait or press Stop; it does not schedule a later move or send another packet. Choosing a new target requires a fresh request after the current operation settles.
+
+| Input during an active operation | Result | Additional target writes |
+| --- | --- | --- |
+| Slider or stored-position button, including repeats | Busy response; original goal continues | None from the rejected request |
+| Stop during movement | Cancel goal and await bounded Stop/release | No replacement target |
+| Repeated Stop while cleanup runs | Join the existing Stop task | None; share the same cleanup |
+| New target while Stop runs | Busy response until cleanup settles | None |
+| New target after successful Stop | Validate and execute a new explicit operation | Normal bounded command loop |
+| Stop cleanup failure | Surface the error and discard the session | No queued or resumed target |
+
+This admission policy bounds concurrent work; it is not a firmware overload or electrical safety certification. The normal target keepalive cadence and feedback guards still apply. There is no automatic retargeting, delayed queue or command replay.
+
 ## Stop, cancellation and unload
 
-Stop has a separate shared task so it can preempt movement without waiting for the polling lock. If it interrupts preparation before the movement controller exists, the client attempts one bounded Stop on the still-connected link before discarding the preparation session. Failure or timeout remains visible to the Stop caller; no wake or target is sent. When idle, it sends control Stop and reference-input release, without activation, wake or a height target. An interrupted target may report an action failure even when Stop succeeds.
+Stop has a separate shared task so it can preempt movement without waiting for the polling lock. If it interrupts preparation before the movement controller exists, the client attempts one bounded Stop on the still-connected link before discarding the preparation session. Failure or timeout remains visible to the Stop caller; no wake or target is sent. When idle, it sends control Stop and reference-input release, without activation, wake or a height target. An explicit interruption whose final Stop and reference release succeed completes the HA action without an error. A failed cleanup still fails both the movement and Stop actions.
 
 ```mermaid
 sequenceDiagram

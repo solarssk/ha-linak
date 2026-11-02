@@ -126,7 +126,7 @@ Enable optional entities under **Settings → Devices & services → Entities**,
 | `button` | ⏹️ **Stop** | Interrupts the current movement request |
 | `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
 
-The slider selects a whole-centimeter target inside your measured range. Press **Stop** to stop travel. Stored-position buttons move the desk to positions saved on the panel. Before either command, the integration checks the panel client and prepares it if necessary, preserving its identifier.
+The slider selects a whole-centimeter target inside your measured range. Press **Stop** to stop travel. During movement, wait or press Stop before choosing another target. New targets are not queued. Stored-position buttons move the desk to positions saved on the panel. Before either command, the integration checks the panel client and prepares it if necessary, preserving its identifier.
 
 Setup guides you through a name in HA, connection preparation, measured travel bounds and a current-height check. No phone app is needed. Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](../docs/controls.md).
 

@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
 from .const import DOMAIN
 from .control_settings import ControlSettings
-from .motion import MotionError
+from .motion import MotionError, MotionFailure, MotionStopped
 from .setup_session import take_session
 
 _LOGGER = logging.getLogger(__name__)
@@ -147,6 +147,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                     await self.desk.move_to_memory(int(value), settings)
                 else:
                     await self.desk.move_to_cm(value, settings)
+        except MotionStopped:
+            # Intentional interruption is a normal control outcome. Failed Stop
+            # cleanup raises an ordinary MotionError and remains visible.
+            return
         except (
             MotionError,
             BleakError,
@@ -154,21 +158,29 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             TimeoutError,
             ValueError,
         ) as err:
-            _LOGGER.warning(
-                "LINAK %s failed during %s: reason=%s backend=%s",
-                action,
-                self.desk.stage,
-                _failure_reason(err),
-                backend,
-            )
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="stop_failed"
-                if action == "stop"
-                else "movement_failed",
-            ) from err
+            raise self._control_error(action, backend, err) from err
         finally:
             self._changed()
+
+    def _control_error(
+        self, action: str, backend: str, error: Exception
+    ) -> HomeAssistantError:
+        if isinstance(error, MotionError) and error.reason == MotionFailure.BUSY:
+            return HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="control_busy"
+            )
+        assert self.desk is not None
+        _LOGGER.warning(
+            "LINAK %s failed during %s: reason=%s backend=%s",
+            action,
+            self.desk.stage,
+            _failure_reason(error),
+            backend,
+        )
+        return HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="stop_failed" if action == "stop" else "movement_failed",
+        )
 
     async def async_close(self) -> None:
         await self.async_shutdown()

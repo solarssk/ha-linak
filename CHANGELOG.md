@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Check and prepare the existing panel client before explicit height and stored-position commands. Verify activation before sending motion; background reads, reconnect and Stop remain free of activation writes.
 - Preserve one bounded Bluetooth session through setup and transfer it to the coordinator instead of reconnecting between forms. Release abandoned sessions and avoid immediate connection retries after preparation connection failure.
 - Activate an inactive panel client only during confirmed calibration, preserving its identifier and verifying the status before the offset write. Require the panel acknowledgement and report rejected setting statuses.
 - Accept a single 0.1 mm position quantum between the calibration preview and fresh stationary checks; distinguish rejected preflight checks from uncertain writes.

@@ -417,14 +417,14 @@ class DeskClient:
         await self.client.write_gatt_char(DPG_UUID, payload, response=True)
         return await self._pending
 
-    async def _activate_calibration_client(self) -> None:
-        """Only a confirmed calibration may activate the existing panel identity."""
-        self._set_stage("calibration_activation_check")
+    async def _activate_client(self, phase: str) -> None:
+        """Prepare the existing identity only for explicit foreground control."""
+        self._set_stage(f"{phase}_activation_check")
         identity = await self._query(ReadCommand.USER_ID, 17)
         payload = activation_request(identity)
         if payload is None:
             return
-        self._set_stage("calibration_activation_write")
+        self._set_stage(f"{phase}_activation_write")
         await self._write_setting(payload)
         verified = await self._query(ReadCommand.USER_ID, 17)
         if verified != identity[:2] + b"\x01" + identity[3:]:
@@ -474,7 +474,7 @@ class DeskClient:
                         "Desk position or reference changed; measure again"
                     )
                 if proposal.changed or activate_client:
-                    await self._activate_calibration_client()
+                    await self._activate_client("calibration")
                     fresh_offset = decode_offset(
                         await self._query(ReadCommand.OFFSET, 3)
                     )
@@ -586,6 +586,7 @@ class DeskClient:
                 assert height_cm is not None
                 limits.target(height_cm, offset)
                 self.state.offset_raw = offset
+                await self._activate_client("movement")
                 assert self.client is not None
                 transport = _LiveMotionTransport(self)
                 controller = MotionController(transport, limits, offset)

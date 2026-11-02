@@ -49,3 +49,7 @@ Cancellation of `close()` waits for the reserved Stop operation to settle before
 Movement completion and close cancellation share the same shielded cleanup-draining path. Repeated cancellation of the movement caller cannot cancel its final Stop or release ownership before cleanup settles. A successful Stop propagates cancellation afterward; a Stop timeout still closes and discards the session.
 
 Directional progress is measured against the best position reached toward the target. Retreat exceeding the tolerance from that position aborts, including several small backward steps. Only a new best position resets the no-progress deadline; returning to an earlier best or moving backward within tolerance does not count as progress. Small feedback reversals remain allowed when genuine forward progress continues.
+
+## Client readiness for explicit movement
+
+Height targets and stored-position commands first validate the requested bounds, then check the existing panel client under the exclusive control lock. An inactive client is activated with its unchanged identifier and verified before any wake or target command. An already active client receives no activation write. Rejection, invalid identity, failed verification and cancellation abort the command without replay. Polling, connection establishment and Stop never activate a client. This preparation uses the same protected exchange as confirmed calibration; it does not change offset, memories, reminders or firmware limits.

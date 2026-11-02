@@ -655,3 +655,30 @@ async def test_changed_capabilities_at_memory_barrier_discards_session():
             await desk.refresh()
     assert not desk.connected
     assert fake.disconnected.is_set()
+
+
+@pytest.mark.parametrize(
+    "backend,expected",
+    [("bleak_esphome", "bleak_esphome"), ("private-adapter-name", "other")],
+)
+async def test_connection_log_uses_only_the_allowlisted_backend(
+    caplog, backend, expected
+):
+    import logging
+
+    fake = FakeBleak()
+    fake.backend_id = backend
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+    caplog.set_level(logging.DEBUG, logger="custom_components.ha_linak.client")
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", return_value=fake
+    ):
+        await desk.refresh()
+    messages = [
+        record.message
+        for record in caplog.records
+        if "BLE session connected:" in record.message
+    ]
+    assert messages == [f"BLE session connected: backend={expected}"]
+    assert "private-adapter-name" not in " ".join(messages)
+    await desk.disconnect()

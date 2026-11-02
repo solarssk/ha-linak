@@ -57,6 +57,20 @@ IO_TIMEOUT = 10
 QUERY_TIMEOUT = 8
 PAIR_TIMEOUT = 30
 DEVICE_NAME_UUID = "00002a00-0000-1000-8000-00805f9b34fb"
+BLUETOOTH_BACKENDS = tuple(
+    sorted(
+        {backend.value for backend in BleakBackend}
+        | {"bleak_esphome", "bluez_mgmt", "other"}
+    )
+)
+
+
+def backend_category(client: BleakClient) -> str:
+    """Expose a backend category without device names or adapter identifiers."""
+    backend = getattr(client, "backend_id", None)
+    if isinstance(backend, BleakBackend):
+        backend = backend.value
+    return backend if backend in BLUETOOTH_BACKENDS else "other"
 
 
 class DeskLinkLost(ConnectionError):
@@ -330,6 +344,9 @@ class DeskClient:
                 disconnected_callback=self._disconnected,
                 max_attempts=2,
                 ble_device_callback=self.device_callback,
+            )
+            _LOGGER.debug(
+                "BLE session connected: backend=%s", backend_category(self.client)
             )
             await self._pair()
             await self._read_device_name()

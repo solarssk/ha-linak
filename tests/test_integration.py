@@ -574,3 +574,58 @@ async def test_setup_uses_the_fallback_name_when_no_device_name_is_known(hass):
         assert entry.title == "LINAK"
         assert entry.runtime_data.name == "LINAK"
         assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("phase", ["connection", "notifications"])
+async def test_first_refresh_deadline_defers_setup_and_releases_resources(hass, phase):
+    import asyncio
+    from unittest.mock import AsyncMock
+    from homeassistant.config_entries import ConfigEntryState
+
+    fake = FakeBleak()
+    original_subscribe = fake.start_notify
+    cancelled = asyncio.Event()
+
+    async def blocked(*args, **kwargs):
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+
+    connect = AsyncMock(
+        side_effect=blocked if phase == "connection" else fake.reconnect
+    )
+    if phase == "notifications":
+        fake.start_notify = blocked
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    with (
+        patch("custom_components.ha_linak.client.establish_connection", connect),
+        patch("custom_components.ha_linak.FIRST_REFRESH_TIMEOUT", 0.02),
+    ):
+        assert not await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert cancelled.is_set()
+    connect.assert_awaited_once()
+    assert entry.runtime_data.desk.client is None
+    if phase == "notifications":
+        assert not fake.is_connected
+    assert not hass.states.async_all("sensor")
+    assert not hass.states.async_all("number")
+
+    from datetime import timedelta
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    fake.start_notify = original_subscribe
+    with patch(
+        "custom_components.ha_linak.client.establish_connection",
+        side_effect=fake.reconnect,
+    ):
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.desk.connected
+    assert await hass.config_entries.async_unload(entry.entry_id)

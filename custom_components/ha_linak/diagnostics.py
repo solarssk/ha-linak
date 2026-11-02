@@ -18,6 +18,7 @@ async def async_get_config_entry_diagnostics(  # NOSONAR(S7503) HA coroutine con
         "last_update_success": coordinator.last_update_success,
         "bluetooth": {
             "signal_strength": coordinator.signal_strength,
+            "signal_strength_source": "advertisement",
             "backend": coordinator.bluetooth_backend,
         },
         "controls": {

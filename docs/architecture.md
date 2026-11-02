@@ -66,7 +66,7 @@ The current implementation has one shared availability boundary for panel readin
 | Explicit HA name | HA entry and device registry | Retained | Stored independently of discovery metadata |
 | RSSI | HA connectable advertisement cache | Can remain available independently of the session | No extra GATT request |
 
-A full refresh currently runs every 60 seconds. Height notifications can update actual position between refreshes; identical samples are not republished. The number entity holds the last settled height during travel while the measurement sensor remains live. Polling yields while a control operation owns the client. Separating settings freshness from live connection health is planned, not an implemented cache feature.
+Config-entry setup limits its initial connection/read to 20 seconds before bounded cleanup; HA owns later setup retries and platforms are created only after a successful read. A full runtime refresh currently runs every 60 seconds. Height notifications can update actual position between refreshes; identical samples are not republished. The number entity holds the last settled height during travel while the measurement sensor remains live. Polling yields while a control operation owns the client. Separating settings freshness from live connection health is planned, not an implemented cache feature.
 
 ## Operation ownership
 

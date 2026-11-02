@@ -66,7 +66,7 @@ The current implementation has one shared availability boundary for panel readin
 | Explicit HA name | HA entry and device registry | Retained | Stored independently of discovery metadata |
 | RSSI | HA connectable advertisement cache | Can remain available independently of the session | No extra GATT request |
 
-A full refresh currently runs every 60 seconds. Height notifications can update actual position between refreshes. Polling yields while a control operation owns the client. Separating settings freshness from live connection health is planned, not an implemented cache feature.
+A full refresh currently runs every 60 seconds. Height notifications can update actual position between refreshes; identical samples are not republished. The number entity holds the last settled height during travel while the measurement sensor remains live. Polling yields while a control operation owns the client. Separating settings freshness from live connection health is planned, not an implemented cache feature.
 
 ## Operation ownership
 
@@ -78,7 +78,7 @@ One desk must have one active owner of its BLE connection. The client reserves a
 | Confirmed setup preparation | Foreground preparation | Verified activation of the existing client when inactive |
 | Confirmed height calibration | Calibration reservation and query lock | Verified activation and one offset correction |
 | Explicit target or stored-position drive | Movement reservation and query lock | Verified client activation if needed, then wake/target/Stop |
-| Stop | Separate shared Stop task; preempts motion | Stop only when idle; no activation or target |
+| Stop | Separate shared Stop task; preempts motion | Control Stop and reference release when idle; no activation or height target |
 | Unload/shutdown | Waits for owned cleanup | Attempts final Stop and releases the link |
 
 A second target or calibration cannot compete with an active operation. Cancellation and unload wait for bounded cleanup. A session failure never queues a target for later reconnect. See the [movement reference](movement.md) for the controller and the [settings reference](settings-reference.md#height-calibration-contract) for calibration.

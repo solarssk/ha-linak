@@ -83,7 +83,7 @@ A warning records action, phase, reason and the backend captured before cleanup.
 | `unknown` | A movement/preflight error has no dedicated guard code | Use its phase, connection state and request validity; no raw exception message is exposed |
 | Exception class, such as `TimeoutError` | Transport, deadline or validation failed outside a named motion guard | Use phase and preceding events; raw backend messages are intentionally omitted |
 
-The client currently discards the session after a movement exception. A subsequent `Connection: Disconnected` therefore cannot prove that radio loss caused the original failure.
+Movement failures and ambiguous cleanup discard the session. A successful explicit Stop during the target loop retains a ready link, even though the interrupted target reports an action error. A subsequent `Connection: Disconnected` therefore cannot prove that radio loss caused the original failure.
 
 ```mermaid
 sequenceDiagram

@@ -132,7 +132,7 @@ Setup guides you through a name in HA, connection preparation, measured travel b
 
 If the panel height is wrong, enter the current floor-to-desktop measurement in **Height measured with a tape** during setup or later under **Settings → Devices & services → LINAK Desks → Configure → Check or correct the height**. Review and confirm the correction before it is saved to the panel. Calibration does not move the desk. Setup prepares an inactive panel client after confirmation, preserving its existing identifier. Background reads never perform this write. The offset sensor remains read-only; saving memories and changing reminders remain in the [settings plan](../docs/settings-reference.md).
 
-Height sensors and history use whole centimeters. The slider uses 1 cm targets within your measured bounds. Tape measurements, Bluetooth readings and movement calculations retain their original precision. The name entered in setup belongs to HA.
+Height sensors and history use whole centimeters. The slider holds its value during travel and updates at the settled height. The height sensor remains live. The slider uses 1 cm targets within your measured bounds. Tape measurements, Bluetooth readings and movement calculations retain their original precision. The name entered in setup belongs to HA.
 
 <a id="requirements"></a>
 

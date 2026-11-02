@@ -19,6 +19,7 @@ from custom_components.ha_linak.motion import (
     CONTROL_UUID,
     TARGET_UUID,
     STOP,
+    REFERENCE_STOP,
     MotionError,
 )
 from custom_components.ha_linak.protocol import DPG_UUID, HEIGHT_UUID
@@ -71,7 +72,7 @@ class MotionBleak(FakeBleak):
             return
         assert not response
         self.writes.append((uuid, bytes(data)))
-        if uuid == TARGET_UUID:
+        if uuid == TARGET_UUID and data != REFERENCE_STOP:
             self.target_written.set()
             if not self.stall:
                 self.position = struct.unpack("<H", data)[0]
@@ -117,13 +118,13 @@ async def test_move_publishes_actual_feedback_and_prevents_polling():
         await desk.move_to_cm(84, settings)
     await operation
     assert desk.state.height_cm == 83
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     assert desk.last_control_result == "completed"
     assert desk.connected
     await desk.disconnect()
 
 
-async def test_stop_interrupts_active_move_before_disconnect():
+async def test_stop_interrupts_active_move_and_keeps_ready_link():
     desk, fake = await connected_desk()
     fake.stall = True
     settings = ControlSettings.from_options(OPTIONS)
@@ -132,16 +133,21 @@ async def test_stop_interrupts_active_move_before_disconnect():
     await desk.stop()
     with pytest.raises(MotionError):
         await operation
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
-    assert not fake.is_connected
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
+    assert fake.is_connected
     assert not desk.control_busy
+
+    fake.stall = False
+    await desk.move_to_memory(1, settings)
+    assert desk.connected
+    await desk.disconnect()
 
 
 async def test_idle_stop_does_not_wake_or_request_a_target():
     desk, fake = await connected_desk()
     fake.writes.clear()
     await desk.stop()
-    assert fake.writes == [(CONTROL_UUID, STOP)]
+    assert fake.writes == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     await desk.disconnect()
 
 
@@ -154,7 +160,10 @@ async def test_memory_requeries_the_selected_slot():
     assert any(
         uuid == DPG_UUID and payload == b"\x7f\x8a\x00" for uuid, payload in fake.writes
     )
-    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not any(
+        uuid == TARGET_UUID and payload != REFERENCE_STOP
+        for uuid, payload in fake.writes
+    )
     assert desk.state.height_cm == 82.38
     await desk.disconnect()
 
@@ -181,7 +190,7 @@ async def test_shutdown_during_motion_sends_stop_and_cannot_resume():
     with pytest.raises(MotionError):
         await desk.move_to_cm(83, settings)
     assert fake.writes == writes
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
 
 
 async def setup_entry(hass, options=None):
@@ -315,7 +324,7 @@ async def test_cancelled_action_stops_before_releasing_ownership():
     operation.cancel()
     with pytest.raises(asyncio.CancelledError):
         await operation
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     assert not desk.connected
     assert not desk.control_busy
 
@@ -355,7 +364,7 @@ async def test_missing_range_blocks_targets_but_keeps_stop_available(hass):
     with pytest.raises(HomeAssistantError):
         await entry.runtime_data.async_move_to_cm(83)
     await entry.runtime_data.async_stop()
-    assert fake.writes == [(CONTROL_UUID, STOP)]
+    assert fake.writes == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -385,7 +394,7 @@ async def test_native_memory_button_uses_common_controller(hass):
         "button", "press", {"entity_id": memory.entity_id}, blocking=True
     )
     assert entry.runtime_data.data.height_cm == 80.04
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -417,7 +426,10 @@ async def test_empty_memory_readback_rejects_before_motion():
     ):
         with pytest.raises(MotionError):
             await desk.move_to_memory(0, settings)
-    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not any(
+        uuid == TARGET_UUID and payload != REFERENCE_STOP
+        for uuid, payload in fake.writes
+    )
     assert not desk.connected
 
 
@@ -446,8 +458,11 @@ async def test_stop_before_motion_preparation_completes_sends_stop():
         await desk.stop()
         with pytest.raises(MotionError):
             await operation
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
-    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
+    assert not any(
+        uuid == TARGET_UUID and payload != REFERENCE_STOP
+        for uuid, payload in fake.writes
+    )
     assert desk.last_control_result == "stop_sent"
     assert not desk.connected
 
@@ -477,7 +492,7 @@ async def test_stop_caller_cancellation_keeps_reservation_until_write_finishes()
         with pytest.raises(asyncio.CancelledError):
             await first
         await second
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     await desk.disconnect()
 
 
@@ -489,7 +504,7 @@ async def test_ha_unload_during_move_stops_before_disconnect(hass):
     assert await hass.config_entries.async_unload(entry.entry_id)
     with pytest.raises(HomeAssistantError):
         await operation
-    assert fake.writes[-1] == (CONTROL_UUID, STOP)
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     assert not fake.is_connected
 
 
@@ -523,10 +538,17 @@ async def test_real_options_reload_sets_range_without_moving(hass):
         assert await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_slider_follows_physical_height_changes(hass):
+async def test_slider_follows_only_settled_physical_height(hass):
     entry, fake = await setup_entry(hass, OPTIONS)
     target_id = hass.states.async_all("number")[0].entity_id
     fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1600, 0)))
+    await hass.async_block_till_done()
+    assert hass.states.get(target_id).state == "82"
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from homeassistant.util import dt as dt_util
+    from datetime import timedelta
+
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
     await hass.async_block_till_done()
     assert hass.states.get(target_id).state == "84"
     assert hass.states.get(target_id).attributes["mode"] == "slider"
@@ -698,7 +720,9 @@ async def test_inactive_client_is_prepared_before_explicit_motion(memory):
     activation = (DPG_UUID, b"\x7f\x86\x80\x01" + identity)
     assert fake.writes.count(activation) == 1
     first_target = next(
-        i for i, (uuid, _) in enumerate(fake.writes) if uuid == TARGET_UUID
+        i
+        for i, (uuid, payload) in enumerate(fake.writes)
+        if uuid == TARGET_UUID and payload != REFERENCE_STOP
     )
     assert fake.writes.index(activation) < first_target
     assert fake.identity == identity
@@ -819,7 +843,10 @@ async def test_stop_during_preparation_writes_before_disconnect(phase, failed_st
             await operation
     assert events == (["disconnect"] if failed_stop else ["stop", "disconnect"])
     assert sum(uuid == CONTROL_UUID and data == STOP for uuid, data in fake.writes) == 1
-    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not any(
+        uuid == TARGET_UUID and payload != REFERENCE_STOP
+        for uuid, payload in fake.writes
+    )
     assert not any(uuid == CONTROL_UUID and data != STOP for uuid, data in fake.writes)
     assert not desk.connected
     assert not desk.control_busy
@@ -866,7 +893,10 @@ async def test_repeated_stop_caller_cancellation_during_preparation_drains_once(
         with pytest.raises(MotionError):
             await operation
     assert sum(uuid == CONTROL_UUID and data == STOP for uuid, data in fake.writes) == 1
-    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not any(
+        uuid == TARGET_UUID and payload != REFERENCE_STOP
+        for uuid, payload in fake.writes
+    )
     assert not fake.is_connected
     assert not desk.control_busy
 
@@ -898,4 +928,98 @@ async def test_preparation_stop_timeout_is_bounded_and_reported():
     assert desk.last_control_result == "stop_failed"
     assert not desk.connected
     assert not desk.control_busy
-    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not any(
+        uuid == TARGET_UUID and payload != REFERENCE_STOP
+        for uuid, payload in fake.writes
+    )
+
+
+async def test_position_notification_and_read_do_not_publish_identical_samples():
+    from unittest.mock import Mock
+    from custom_components.ha_linak.client import _LiveMotionTransport
+
+    desk, fake = await connected_desk()
+    desk.changed = Mock()
+    data = bytearray(struct.pack("<HH", fake.position, 0))
+    for _ in range(5):
+        fake.callbacks[HEIGHT_UUID](None, data)
+    assert await _LiveMotionTransport(desk).read_position() == desk.state.position
+    desk.changed.assert_not_called()
+    fake.position += 1
+    data = bytearray(struct.pack("<HH", fake.position, 0))
+    for _ in range(5):
+        fake.callbacks[HEIGHT_UUID](None, data)
+    await _LiveMotionTransport(desk).read_position()
+    desk.changed.assert_called_once()
+    await desk.disconnect()
+
+
+async def test_slider_history_omits_intermediate_heights_and_keeps_live_sensor(hass):
+    from datetime import timedelta
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    entry, fake = await setup_entry(hass, OPTIONS)
+    target_id = hass.states.async_all("number")[0].entity_id
+    for position in (1500, 1600, 1700):
+        fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", position, 100)))
+        await hass.async_block_till_done()
+        assert hass.states.get(target_id).state == "82"
+        assert entry.runtime_data.data.position.position_raw == position
+    fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1800, 0)))
+    await hass.async_block_till_done()
+    assert hass.states.get(target_id).state == "82"
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
+    await hass.async_block_till_done()
+    assert hass.states.get(target_id).state == "86"
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("interrupt", ["movement", "disconnect", "unload"])
+async def test_slider_cancels_pending_settlement_when_state_changes(hass, interrupt):
+    from datetime import timedelta
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    entry, fake = await setup_entry(hass, OPTIONS)
+    target_id = hass.states.async_all("number")[0].entity_id
+    fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1600, 0)))
+    await hass.async_block_till_done()
+    if interrupt == "movement":
+        fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1700, 100)))
+    elif interrupt == "disconnect":
+        fake.is_connected = False
+        entry.runtime_data.desk._disconnected(fake)
+    else:
+        await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
+    await hass.async_block_till_done()
+    state = hass.states.get(target_id)
+    assert state is None or state.state != "84"
+    if interrupt != "unload":
+        await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_stop_reports_link_loss_before_worker_cleanup_without_retry():
+    desk, fake = await connected_desk()
+    fake.writes.clear()
+    desk._motion_task = asyncio.create_task(asyncio.Event().wait())
+    fake.is_connected = False
+    with pytest.raises(MotionError, match="not delivered"):
+        await desk.stop()
+    assert desk.last_control_result == "stop_failed"
+    assert fake.writes == []
+    desk._motion_task = None
+    await desk.disconnect()
+
+
+async def test_slider_without_an_initial_measurement_has_no_invented_height(hass):
+    from custom_components.ha_linak.client import DeskState
+    from custom_components.ha_linak.number import LinakTargetHeight
+
+    entry, _ = await setup_entry(hass, OPTIONS)
+    entry.runtime_data.data = DeskState()
+    number = LinakTargetHeight(entry.runtime_data)
+    assert number.native_value is None
+    await hass.config_entries.async_unload(entry.entry_id)

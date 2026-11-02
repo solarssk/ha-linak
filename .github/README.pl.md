@@ -132,7 +132,7 @@ Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go
 
 Jeśli panel pokazuje błędną wysokość, podczas dodawania lub w Konfiguruj wpisz aktualny pomiar od podłogi do góry blatu w **Wysokość z miarki**. Osobny ekran pozwala sprawdzić i potwierdzić korektę przed zapisem w panelu. Kalibracja nie porusza biurkiem. Podczas dodawania potwierdzisz przygotowanie klienta panelu, z zachowaniem jego identyfikatora. Odczyty w tle nie wykonują tego zapisu. Czujnik offsetu pozostaje tylko do odczytu; zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md).
 
-Kreator prowadzi przez nazwę w HA, przygotowanie połączenia, zakres ruchu i sprawdzenie aktualnej wysokości. Aplikacja telefonu nie jest potrzebna. Sensory wysokości i historia zapisują pełne centymetry, a suwak wybiera cele co 1 cm wewnątrz zmierzonego zakresu. Pomiary z miarki oraz obliczenia kalibracji i ruchu zachowują dokładność. Nazwa wybrana w kreatorze dotyczy HA.
+Kreator prowadzi przez nazwę w HA, przygotowanie połączenia, zakres ruchu i sprawdzenie aktualnej wysokości. Aplikacja telefonu nie jest potrzebna. Sensory wysokości i historia zapisują pełne centymetry, a suwak wybiera cele co 1 cm wewnątrz zmierzonego zakresu. W czasie ruchu suwak zachowuje poprzednią wartość i aktualizuje ją po zatrzymaniu. Sensor wysokości pokazuje ruch na bieżąco. Pomiary z miarki oraz obliczenia kalibracji i ruchu zachowują dokładność. Nazwa wybrana w kreatorze dotyczy HA.
 
 <a id="requirements"></a>
 

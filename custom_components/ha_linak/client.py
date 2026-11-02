@@ -173,11 +173,16 @@ class DeskClient:
         if generation != self._generation:
             return
         was_ready = self._ready
+        previous = self.state.position
         try:
             self.state.position = decode_position(bytes(data))
         except ValueError:
             self._ready = False
-        if was_ready and self._calibration_task is None:
+        if (
+            was_ready
+            and self._calibration_task is None
+            and (not self._ready or self.state.position != previous)
+        ):
             self.changed()
 
     async def _io[T](self, operation: Coroutine[Any, Any, T], budget: float) -> T:
@@ -594,7 +599,19 @@ class DeskClient:
                 self._set_stage("movement")
                 await controller.move_to_cm(height_cm)
                 self._set_stage("ready")
-            except BaseException:
+            except BaseException as error:
+                if (
+                    isinstance(error, asyncio.CancelledError)
+                    and controller is not None
+                    and self._stop_task is not None
+                    and not self._stop_task.done()
+                    and self._motion_stop_sent
+                    and self.connected
+                ):
+                    # Explicit Stop completed both channel writes. Its cancelled
+                    # movement can release ownership without dropping a sound link.
+                    self._set_stage("ready")
+                    raise
                 # A controller settles its own Stop. Preparation has no controller,
                 # so an explicit Stop still needs one bounded write before release.
                 cleanup = asyncio.gather(
@@ -617,7 +634,7 @@ class DeskClient:
                 client = self._check_control_properties()
                 self._set_stage("stop")
                 async with asyncio.timeout(MOTION_IO_TIMEOUT):
-                    await client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+                    await BleakMotionTransport(client).write_control(STOP)
                 self._motion_stop_sent = True
         finally:
             await self._disconnect_link()
@@ -641,25 +658,25 @@ class DeskClient:
             task.cancel()
             settled = asyncio.gather(task, return_exceptions=True)
             await _drain_cleanup(settled)
-            # Cancellation discards the movement session after its final Stop.
-            # Its cleanup failure must remain visible to this Stop caller too.
+            # Await the movement's final two-channel Stop before releasing ownership.
+            # Cleanup failures must remain visible to this Stop caller too.
             result = settled.result()[0]
             if isinstance(result, Exception):
                 self.last_control_result = "stop_failed"
                 raise MotionError(
                     "Movement cleanup failed; check physical Stop"
                 ) from result
-            if not self.connected:
-                if not self._motion_stop_sent:
-                    self.last_control_result = "stop_failed"
-                    raise MotionError("Stop was not delivered; check physical Stop")
+            if self._motion_stop_sent:
                 self.last_control_result = "stop_sent"
                 return
+            if not self.connected:
+                self.last_control_result = "stop_failed"
+                raise MotionError("Stop was not delivered; check physical Stop")
         try:
             client = self._check_control_properties()
             self._set_stage("stop")
             async with asyncio.timeout(MOTION_IO_TIMEOUT):
-                await client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+                await BleakMotionTransport(client).write_control(STOP)
             self.last_control_result = "stop_sent"
             self._set_stage("ready")
         except Exception as err:
@@ -705,14 +722,16 @@ class _LiveMotionTransport(BleakMotionTransport):
 
     async def read_position(self) -> PositionSample:
         sample = await super().read_position()
+        previous = self.desk.state.position
         self.desk.state.position = sample
-        self.desk.changed()
+        if sample != previous:
+            self.desk.changed()
         return sample
 
     async def write_control(self, payload: bytes) -> None:
+        self.desk._motion_stop_sent = False
         await super().write_control(payload)
-        if payload == STOP:
-            self.desk._motion_stop_sent = True
+        self.desk._motion_stop_sent = payload == STOP
 
     async def disconnect(self) -> None:
         await self.desk._disconnect_link()

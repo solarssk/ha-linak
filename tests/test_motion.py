@@ -53,6 +53,7 @@ def fast_motion():
         patch("custom_components.ha_linak.motion.COMMAND_INTERVAL", 0.001),
         patch("custom_components.ha_linak.motion.STALL_TIMEOUT", 0.01),
         patch("custom_components.ha_linak.motion.IO_TIMEOUT", 0.03),
+        patch("custom_components.ha_linak.motion.READ_TIMEOUT", 0.03),
     ):
         yield
 
@@ -258,7 +259,8 @@ async def test_bleak_adapter_uses_expected_characteristics_and_write_mode():
     assert await adapter.read_position() == PositionSample(1438, 0)
     client.read_gatt_char.assert_awaited_once_with(HEIGHT_UUID)
     await adapter.write_control(STOP)
-    client.write_gatt_char.assert_awaited_with(CONTROL_UUID, STOP, response=False)
+    client.write_gatt_char.assert_any_await(CONTROL_UUID, STOP, response=False)
+    client.write_gatt_char.assert_awaited_with(TARGET_UUID, b"\x01\x80", response=False)
     target = struct.pack("<H", 1500)
     await adapter.write_target(target)
     client.write_gatt_char.assert_awaited_with(TARGET_UUID, target, response=False)
@@ -652,3 +654,65 @@ async def test_small_feedback_retreat_with_forward_progress_is_tolerated(positio
     assert transport.writes[-1] == STOP
     assert transport.last == 1500
     assert not motion.moving
+
+
+@pytest.mark.parametrize("failed_channel", ["control", "reference"])
+async def test_stop_attempts_both_channels_and_preserves_failure(failed_channel):
+    from unittest.mock import AsyncMock, Mock, call
+    from custom_components.ha_linak.motion import (
+        BleakMotionTransport,
+        CONTROL_UUID,
+        TARGET_UUID,
+        REFERENCE_STOP,
+    )
+
+    client = Mock()
+    error = ConnectionError("transport failure")
+    client.write_gatt_char = AsyncMock(
+        side_effect=[error, None] if failed_channel == "control" else [None, error]
+    )
+    adapter = BleakMotionTransport(client)
+    with pytest.raises(ConnectionError):
+        await adapter.write_control(STOP)
+    assert client.write_gatt_char.await_args_list == [
+        call(CONTROL_UUID, STOP, response=False),
+        call(TARGET_UUID, REFERENCE_STOP, response=False),
+    ]
+
+
+async def test_stop_reference_release_has_same_io_deadline():
+    from unittest.mock import AsyncMock, Mock
+    from custom_components.ha_linak.motion import (
+        BleakMotionTransport,
+        TARGET_UUID,
+    )
+
+    client = Mock()
+    client.is_connected = True
+    client.disconnect = AsyncMock()
+
+    async def write(uuid, data, response):
+        if uuid == TARGET_UUID:
+            await asyncio.Event().wait()
+
+    client.write_gatt_char = AsyncMock(side_effect=write)
+    motion = controller(BleakMotionTransport(client))
+    with pytest.raises(MotionError):
+        await motion.stop()
+    client.disconnect.assert_awaited_once()
+    assert not motion.moving
+
+
+async def test_position_read_has_separate_budget_from_stop():
+    class SlowRead(Transport):
+        async def read_position(self):
+            await asyncio.sleep(0.02)
+            return PositionSample(1500, 0)
+
+    transport = SlowRead()
+    with (
+        patch("custom_components.ha_linak.motion.IO_TIMEOUT", 0.01),
+        patch("custom_components.ha_linak.motion.READ_TIMEOUT", 0.04),
+    ):
+        await controller(transport).move_to_cm(83)
+    assert transport.writes == [STOP]

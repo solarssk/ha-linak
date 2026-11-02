@@ -56,17 +56,18 @@ Device identity uses the `ha_linak` domain and Bluetooth address. Existing entit
 
 ## State and freshness
 
-The current implementation has one shared availability boundary for panel readings.
+Live height requires a validated connection and reference. Optional memories and reminders additionally have independent response-validity metadata during runtime refresh; initial setup and calibration verification still require complete validated reads.
 
 | State | Source | On disconnect | Persistence |
 | --- | --- | --- | --- |
 | Position and speed word | Height reads and notifications | Ordinary readings become unavailable | No target or motion replay |
-| Offset, memories and reminders | Serialized DPG refresh | Last objects may remain in memory, but entities report unavailable | No durable stale-settings snapshot yet |
+| Offset | Required serialized reference read | Dependent readings become unavailable with the link | No assumed reference from a previous generation |
+| Memories and reminders | Serialized optional groups with validity and last-success age | Cached objects remain only in memory; their entities report unavailable when the group or link is invalid | No durable snapshot or stale-as-live values |
 | Measured command bounds | HA options | Retained for later validation | Stored in the config entry; do not program firmware limits |
 | Explicit HA name | HA entry and device registry | Retained | Stored independently of discovery metadata |
 | RSSI | HA connectable advertisement cache | Can remain available independently of the session | No extra GATT request |
 
-Config-entry setup limits its initial connection/read to 20 seconds before bounded cleanup; HA owns later setup retries and platforms are created only after a successful read. A full runtime refresh currently runs every 60 seconds. Height notifications can update actual position between refreshes; identical samples are not republished. The number entity holds the last settled height during travel while the measurement sensor remains live. Polling yields while a control operation owns the client. Separating settings freshness from live connection health is planned, not an implemented cache feature.
+Config-entry setup limits its initial connection/read to 20 seconds before bounded cleanup; HA owns later setup retries and platforms are created only after a successful read. A full runtime refresh currently runs every 60 seconds. Height notifications can update actual position between refreshes; identical samples are not republished. The number entity holds the last settled height during travel while the measurement sensor remains live. Polling yields while a control operation owns the client. A completed matching reply that fails optional memory/reminder decoding invalidates only that group during runtime refresh. Other valid readings can remain available. Diagnostics expose group validity, age and a stable error. Transport errors, timeouts, capability changes and invalid references still invalidate the session; setup/calibration remain strict. Independent refresh schedules and recovery from optional-query timeouts remain planned.
 
 ## Operation ownership
 

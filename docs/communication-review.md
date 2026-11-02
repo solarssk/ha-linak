@@ -49,7 +49,7 @@ The [protocol reference](protocol.md) owns exact frames; the [settings reference
 
 ## State and traffic design
 
-Current reads share coordinator availability and a 60-second full refresh. A durable snapshot of last-read settings with a visible age is not implemented. A future optimization must separate:
+A full refresh still runs every 60 seconds. Runtime decoding failures in completed memory/reminder replies now have per-group validity and last-success ages; initial setup/calibration and ambiguous transport failures remain strict. A durable settings snapshot and independent refresh schedules are not implemented. Further optimization must separate:
 
 | State | Freshness requirement | Must not do |
 | --- | --- | --- |

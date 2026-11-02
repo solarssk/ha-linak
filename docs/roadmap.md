@@ -11,7 +11,7 @@ The external architecture review examined revision `e909e8f`. Its findings are a
 | Finding | Assessment | Decision and completion evidence |
 | --- | --- | --- |
 | Physical Stop, recovery and panel handback | Release validation gap, not proof of a particular firmware defect | Complete the hardware acceptance matrix; transport completion alone cannot pass a physical test |
-| Configuration failure makes ordinary readings unavailable | Confirmed: `DeskClient.refresh()` discards a failed full refresh and ordinary entities share coordinator availability | Split telemetry health from configuration freshness; fault injection must establish which data remains usable |
+| Configuration failure makes ordinary readings unavailable | Runtime optional decoding failures are now isolated per group; transport ambiguity still discards the session | Complete separate refresh scheduling and recovery; never hide a timeout or publish stale height as current |
 | Monitoring requires control preparation and bounds | Confirmed in the current setup flow | Add an optional monitoring-only path with no activation or bounds; preserve the normal native-control setup path |
 | Another HA integration can own the same desk | Confirmed gap: address uniqueness is currently integration-local | Detect an enabled `idasen_desk` entry for the same normalized address, explain the conflict and leave the other entry unchanged |
 | Memory replies can cross request boundaries | Protocol ambiguity remains: type `07` has no slot identifier | Add cross-barrier delayed-duplicate replay cases; retain fail-closed behavior and document what a barrier cannot prove |
@@ -30,7 +30,7 @@ Each row is a scoped change with its own tests and review. Hardware validation r
 | Order | Deliverable | Acceptance condition |
 | --- | --- | --- |
 | 1 | Telemetry/configuration state contract | Define timestamps, unavailable/unknown/stale semantics and operation state before changing entity behavior; no stale height represented as live |
-| 2 | Split settings refresh from live telemetry | Inject settings rejection, timeout, disconnect and reconnect; telemetry recovers independently, old replies cannot populate a new generation, controls require fresh validated inputs |
+| 2 | Split settings refresh from live telemetry | Per-group malformed-response isolation and age tracking implemented; independent schedules/recovery remain. Test timeouts, disconnect/reconnect and fresh control inputs without accepting old-generation replies |
 | 3 | Cross-integration conflict handling | Same address in an enabled IKEA entry gives an actionable message; disabled entries and different addresses do not block; never disable another entry automatically |
 | 4 | Optional monitoring and explicit connection ownership | Monitoring performs no activation, calibration or motion; deliberate disconnect suppresses background reconnect until the user requests connection; unload removes callbacks and pending tasks |
 | 5 | Operation state for UI and automations | Distinguish preparing, moving, stopping, completed, interrupted and failed; report a reason without recording every feedback tick as a new goal |

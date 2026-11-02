@@ -113,7 +113,9 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         else:
             self.desk.device = device
         try:
-            state = await self.desk.refresh()
+            state = await self.desk.refresh(
+                allow_partial_settings=self.data is not None
+            )
             self._validate_control_reference(state)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:

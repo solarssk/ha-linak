@@ -2,6 +2,12 @@
 
 Use this manual to locate the failing layer before changing pairing, bounds or panel settings. A visible desk, a connected BLE client and a desk ready to move are different conditions. Start with the symptom table, then collect the evidence required for that branch.
 
+## Optional settings validity
+
+Downloaded diagnostics include `settings.memories` and `settings.reminders`, each with `valid`, `age_seconds` and `error`. Age measures time since the last successful group read in this process, not BLE latency or a persisted timestamp. `null` age means no successful read. The stable `invalid_response` reason means a completed matching reply could not be decoded; no backend payload or identifier is exposed.
+
+During normal runtime refresh, a malformed memory/reminder response makes only that group's sensors unavailable while valid height/other groups remain available. A later validated reply restores the group. Old values may remain in memory for diagnosis but are not published as current settings or used to authorize movement. Initial setup and calibration verification still require complete replies. A timeout, disconnect, changed capabilities or invalid height reference can still make the whole session unavailable; this change does not ignore those failures or lower polling frequency.
+
 ## Choose the symptom
 
 Find the closest symptom and collect the next missing evidence. The [shared glossary](README.md#terms-used-in-these-guides) explains the transport terms.

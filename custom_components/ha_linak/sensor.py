@@ -65,6 +65,16 @@ class LinakSensor(LinakEntity, SensorEntity):
             self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        if self.key in ("height", "offset"):
+            return True
+        desk = self.coordinator.desk
+        group = "memories" if self.key.startswith("memory_") else "reminders"
+        return desk is not None and desk.settings_health[group].valid
+
+    @property
     def native_value(self):
         state = self.coordinator.data
         if self.key == "height":

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Log a stable movement-failure reason and the connection backend before cleanup, distinguishing no progress, reverse travel, overshoot, invalid bounds and lost links.
 - Preserve one bounded Bluetooth session through setup and transfer it to the coordinator instead of reconnecting between forms. Release abandoned sessions and avoid immediate connection retries after preparation connection failure.
 - Activate an inactive panel client only during confirmed calibration, preserving its identifier and verifying the status before the offset write. Require the panel acknowledgement and report rejected setting statuses.
 - Accept a single 0.1 mm position quantum between the calibration preview and fresh stationary checks; distinguish rejected preflight checks from uncertain writes.

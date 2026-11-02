@@ -141,6 +141,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 translation_domain=DOMAIN, translation_key="range_not_configured"
             )
         settings = self.controls
+        backend = self.bluetooth_backend or "not_connected"
         try:
             if action == "stop":
                 await self.desk.stop()
@@ -156,11 +157,15 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             TimeoutError,
             ValueError,
         ) as err:
-            _LOGGER.debug(
-                "LINAK %s failed during %s: %s",
+            reason = (
+                err.reason.value if isinstance(err, MotionError) else type(err).__name__
+            )
+            _LOGGER.warning(
+                "LINAK %s failed during %s: reason=%s backend=%s",
                 action,
                 self.desk.stage,
-                type(err).__name__,
+                reason,
+                backend,
             )
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

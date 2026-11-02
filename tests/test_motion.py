@@ -9,6 +9,7 @@ import pytest
 from custom_components.ha_linak.motion import (
     MotionController,
     MotionError,
+    MotionFailure,
     STOP,
     WAKE,
     TravelLimits,
@@ -90,19 +91,20 @@ async def test_already_at_height_does_not_wake_or_target():
 
 
 @pytest.mark.parametrize(
-    "positions,reason",
+    "positions,reason,code",
     [
-        ((1400,), "progress"),
-        ((1400, 1300), "away"),
-        ((1400, 1600), "passed"),
-        ((1400, 6500), "limits"),
+        ((1400,), "progress", MotionFailure.STALLED),
+        ((1400, 1300), "away", MotionFailure.REVERSE),
+        ((1400, 1600), "passed", MotionFailure.OVERSHOOT),
+        ((1400, 6500), "limits", MotionFailure.OUTSIDE_LIMITS),
     ],
 )
-async def test_feedback_abort_always_stops(positions, reason):
+async def test_feedback_abort_always_stops(positions, reason, code):
     transport = Transport(positions)
     motion = controller(transport)
-    with pytest.raises(MotionError, match=reason):
+    with pytest.raises(MotionError, match=reason) as error:
         await motion.move_to_cm(83)
+    assert error.value.reason == code
     assert transport.writes[-1] == STOP
 
 

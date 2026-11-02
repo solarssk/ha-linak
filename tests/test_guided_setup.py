@@ -2,7 +2,7 @@
 
 from unittest.mock import AsyncMock, patch
 
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 import pytest
 
@@ -127,7 +127,7 @@ async def test_options_can_rename_only_in_home_assistant(hass, desk_transport):
     with patch(
         "homeassistant.config_entries.ConfigEntries.async_reload",
         new=AsyncMock(return_value=True),
-    ):
+    ) as reload_entry:
         result = await hass.config_entries.options.async_init(entry.entry_id)
         assert result["type"] == "menu"
         result = await hass.config_entries.options.async_configure(
@@ -143,8 +143,9 @@ async def test_options_can_rename_only_in_home_assistant(hass, desk_transport):
         )
         assert device.name_by_user == "Study desk"
         assert entry.runtime_data.name == "Study desk"
-        assert fake.writes == before
         await hass.async_block_till_done()
+        reload_entry.assert_not_awaited()
+        assert fake.writes == before
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -182,6 +183,11 @@ async def test_ha_records_whole_centimeters_but_keeps_exact_protocol_values(
     coordinator._changed()
     await hass.async_block_till_done()
     assert coordinator.data.height_cm == 82.5
+    height_id = er.async_get(hass).async_get_entity_id(
+        "sensor", "ha_linak", f"{entry.data['address']}_height"
+    )
+    assert height_id is not None
+    assert hass.states.get(height_id).state == "83"
     for state in hass.states.async_all("sensor"):
         if state.attributes.get("unit_of_measurement") == "cm":
             assert float(state.state).is_integer()

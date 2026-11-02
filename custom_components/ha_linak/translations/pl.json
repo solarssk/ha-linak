@@ -193,7 +193,7 @@
       },
       "calibration_confirm": {
         "title": "Potwierdź korektę wysokości",
-        "description": "**{desk_name}**\n\n- Wysokość: {old_height} cm → {measured_height} cm\n- Zakres ruchu: {minimum_height}–{maximum_height} cm\n\nZapiszemy korektę w panelu i sprawdzimy odczyt. Wyświetlane wysokości pamięci również się zmienią, ale zapisane pozycje mechanizmu pozostaną takie same. W razie potrzeby przygotujemy połączenie panelu z HA. Ten krok może zostać zapisany w pamięci panelu. Pozostaw biurko nieruchomo; samo zatwierdzenie nie poruszy biurkiem."
+        "description": "**{desk_name}**\n\n- Wysokość: {old_height} cm → {measured_height} cm\n\nZapiszemy korektę w panelu i sprawdzimy odczyt. Wyświetlane wysokości pamięci również się zmienią, ale zapisane pozycje mechanizmu pozostaną takie same. W razie potrzeby przygotujemy połączenie panelu z HA. Ten krok może zostać zapisany w pamięci panelu. Pozostaw biurko nieruchomo; samo zatwierdzenie nie poruszy biurkiem."
       },
       "calibration_apply": {
         "title": "Zapisywanie korekty wysokości"

@@ -434,10 +434,7 @@ class LinakOptionsFlow(OptionsFlowWithReload):
     async def async_step_init(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
             return await self.async_step_range(user_input)
-        options = ["name", "connect"]
-        if self._has_bounds():
-            options.append("height")
-        options.append("range")
+        options = ["name", "connect", "height", "range"]
         return self.async_show_menu(step_id="init", menu_options=options)
 
     # Named HA flow steps must be coroutines; renaming only updates HA registries.
@@ -480,23 +477,12 @@ class LinakOptionsFlow(OptionsFlowWithReload):
             step_id="connect", data_schema=vol.Schema({}), errors=errors
         )
 
-    def _has_bounds(self) -> bool:
-        return all(
-            key in self.config_entry.options for key in (MINIMUM_HEIGHT, MAXIMUM_HEIGHT)
-        )
-
     async def async_step_height(self, user_input=None) -> ConfigFlowResult:
-        if not self._has_bounds():
-            self._calibration_error = "range_required"
-            return await self.async_step_range()
         return await _guide_height(
             self, user_input, self._current_state(), "confirm_height"
         )
 
     async def async_step_measure(self, user_input=None) -> ConfigFlowResult:
-        if not self._has_bounds():
-            self._calibration_error = "range_required"
-            return await self.async_step_range()
         return await _guide_measure(
             self, user_input, self._current_state(), "confirm_height"
         )
@@ -599,6 +585,8 @@ class LinakOptionsFlow(OptionsFlowWithReload):
 
     async def async_step_calibration_finish(self, user_input=None) -> ConfigFlowResult:
         if not self._calibration_error:
+            if not self._pending_range:
+                return await self.async_step_range()
             try:
                 _validate_range(
                     self._pending_range, self.config_entry.runtime_data.data

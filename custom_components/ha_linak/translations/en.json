@@ -193,7 +193,7 @@
       },
       "calibration_confirm": {
         "title": "Confirm height correction",
-        "description": "**{desk_name}**\n\n- Height: {old_height} cm → {measured_height} cm\n- Travel range: {minimum_height}–{maximum_height} cm\n\nThe correction will be saved to the panel and verified. Displayed saved heights will also change; their mechanism positions stay the same. If needed, the panel connection will be prepared for HA. This step may be stored in the panel memory. Keep the desk still; confirmation will not move it."
+        "description": "**{desk_name}**\n\n- Height: {old_height} cm → {measured_height} cm\n\nThe correction will be saved to the panel and verified. Displayed saved heights will also change; their mechanism positions stay the same. If needed, the panel connection will be prepared for HA. This step may be stored in the panel memory. Keep the desk still; confirmation will not move it."
       },
       "calibration_apply": {
         "title": "Saving height correction"

@@ -294,14 +294,36 @@ async def test_preparation_while_moving_stays_on_form_and_can_retry(
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_height_correction_is_not_offered_without_bounds(hass, desk_transport):
+async def test_height_correction_before_bounds_repairs_invalid_offset(
+    hass, desk_transport
+):
     entry = await setup_calibration_entry(hass, desk_transport)
     hass.config_entries.async_update_entry(entry, options={})
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert "height" not in result["menu_options"]
+    assert "height" in result["menu_options"]
     assert "range" in result["menu_options"]
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "height"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"height_correct": False}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"measured_height": 75.5}
+    )
+    assert result["step_id"] == "calibration_confirm"
     assert not writes(desk_transport)
-    hass.config_entries.options.async_abort(result["flow_id"])
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    result = await complete_progress(hass, result, options=True)
+    assert result["step_id"] == "range"
+    assert desk_transport.offset == 6112
+    assert not entry.options
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], BOUNDS
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"] == BOUNDS
+    await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 

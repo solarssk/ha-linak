@@ -30,6 +30,7 @@ Evidence labels mean manufacturer-documented product behavior, community protoco
 | Reminder light/presentation | Capability and raw reminder data only | Manufacturer feature and community bit candidates | Confirm exact state bits; a light capability is not on/off state |
 | Display units | No setter | Manufacturer/community evidence | Verify encoding while preserving the HA centimeter contract |
 | Automatic up/down | Capability flags only | Manufacturer/community evidence | Distinguish panel automatic drive from host-driven target keepalives |
+| Wake preference | No setter | Community settings-bit candidate, distinct from the implemented control wake command | Verify bit semantics and persistence |
 | Firmware upper/lower limits | No remote setter or verified query | Manufacturer UI function | Discover supported protocol before claiming automatic limit import |
 | Key lock / timeout | No setter | Manufacturer UI function | Verify remote semantics; do not assume physical lock blocks BLE motion |
 | Reset operations | No reset button | Manufacturer UI function | Destructive scope and exact preservation/recovery behavior |
@@ -37,6 +38,18 @@ Evidence labels mean manufacturer-documented product behavior, community protoco
 | Error/display-logo functions | No runtime interface | Product/catalogue candidates only | Demonstrate an exposed GATT contract |
 
 Unsupported candidates do not create dummy controls. A verified capability model must handle absent/OEM-disabled functions and honest unavailable states.
+
+## Unsupported command candidates
+
+The pinned community catalogue contains additional opcodes. Their presence is not evidence that this panel accepts them or that the integration implements them.
+
+| Command | Catalogue meaning | Boundary |
+| --- | --- | --- |
+| `87` | Reminder time | Candidate only; not interchangeable with the implemented `88` configuration read |
+| `08` | Product information | No runtime support or response layout established here |
+| `0a` | Setup | The source marks its setup entry nonworking; do not use it for recovery |
+| `90` | Log | No verified diagnostic-event feed inferred from the name |
+| `89`–`8c` setting forms | Stored-position writes | Reads are implemented; setters, slot verification and persistence remain unverified |
 
 ## Height calibration contract
 

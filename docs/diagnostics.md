@@ -62,7 +62,7 @@ The first failed operation determines the next investigation. Later cleanup erro
 | `movement_prepare` | Bounds, offset or selected slot cannot authorize movement | Current measured reference, configured range and exact slot read |
 | `movement` / `stop` | Control loop or cleanup failed | Use the movement reason table below |
 
-A rejected setting logs its protocol status without raw payloads. `0b` has been observed; its detailed vendor meaning is not established. A successful GATT write is not an application acknowledgement or a verified physical result.
+Calibration/preparation flows log a rejected setting's protocol status without raw payloads. Movement currently reports the `SettingRejected` exception class, so its warning alone does not expose the status byte. `0b` has been observed in scoped setting tests; its detailed vendor meaning is not established. A successful GATT write is not an application acknowledgement or a verified physical result.
 
 ## Interpret a movement failure
 

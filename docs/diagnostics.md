@@ -80,6 +80,7 @@ A warning records action, phase, reason and the backend captured before cleanup.
 | `outside_limits` | Feedback is outside configured relative bounds | Verify calibration and real bounds before another command |
 | `link_lost` | The transport was disconnected during movement | Capture the actual link-loss event and backend evidence |
 | `stop_failed` | Stop could not complete on the session | Use physical stopping and investigate transport/cleanup |
+| `unknown` | A movement/preflight error has no dedicated guard code | Use its phase, connection state and request validity; no raw exception message is exposed |
 | Exception class, such as `TimeoutError` | Transport, deadline or validation failed outside a named motion guard | Use phase and preceding events; raw backend messages are intentionally omitted |
 
 The client currently discards the session after a movement exception. A subsequent `Connection: Disconnected` therefore cannot prove that radio loss caused the original failure.

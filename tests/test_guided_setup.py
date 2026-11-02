@@ -88,6 +88,11 @@ async def test_guided_setup_activates_after_name_and_measures_after_range(
         assert fake.offset == 6050
         assert len(writes(fake)) == 2
         assert fake.identity == identity
+        from custom_components.ha_linak.setup_session import take_session
+
+        session = take_session(hass, DEVICE.address)
+        assert session is not None
+        await session.disconnect()
         await hass.async_block_till_done()
 
 
@@ -371,3 +376,120 @@ async def test_rejected_setting_logs_status_without_identifier(
     assert all(desk_transport.identity.hex() not in message for message in messages)
     hass.config_entries.options.async_abort(result["flow_id"])
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_wizard_uses_one_connection_when_reconnect_is_unavailable(
+    hass, desk_transport
+):
+    fake = desk_transport
+    fake.activation = 0
+    attempts = 0
+
+    def connect_once(*args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        if attempts > 1:
+            raise ConnectionError("Panel no longer accepts new connections")
+        return fake.reconnect()
+
+    with (
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            side_effect=connect_once,
+        ),
+    ):
+        result = await initial_form(hass, fake, guide=False)
+        assert fake.is_connected
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"name": "Office"}
+        )
+        result = await complete_progress(hass, result)
+        assert result["step_id"] == "finish"
+        assert fake.activation == 1
+        assert fake.is_connected
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], BOUNDS
+        )
+        result = await complete_progress(hass, result)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"height_correct": False}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"measured_height": 75.5}
+        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        result = await complete_progress(hass, result)
+        assert result["type"] == "create_entry"
+        assert attempts == 1
+        assert fake.offset == 6112
+        entry = result["result"]
+        assert entry.runtime_data.desk is not None
+        assert entry.runtime_data.desk.connected
+        assert fake.is_connected
+        assert len(writes(fake)) == 2
+        await hass.async_block_till_done()
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        assert not fake.is_connected
+
+
+async def test_aborting_name_page_releases_retained_connection(hass, desk_transport):
+    result = await initial_form(hass, desk_transport, guide=False)
+    assert desk_transport.is_connected
+    assert not writes(desk_transport)
+    hass.config_entries.flow.async_abort(result["flow_id"])
+    await hass.async_block_till_done()
+    assert not desk_transport.is_connected
+    assert not writes(desk_transport)
+
+
+async def test_idle_wizard_releases_connection_and_can_resume(hass, desk_transport):
+    import asyncio
+
+    with patch("custom_components.ha_linak.config_flow.SETUP_IDLE_TIMEOUT", 0.01):
+        result = await initial_form(hass, desk_transport, guide=False)
+        await asyncio.wait_for(desk_transport.disconnected.wait(), timeout=1)
+        await hass.async_block_till_done()
+        assert not desk_transport.is_connected
+        assert not writes(desk_transport)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await complete_progress(hass, result)
+    assert result["step_id"] == "finish"
+    assert desk_transport.is_connected
+    hass.config_entries.flow.async_abort(result["flow_id"])
+    await hass.async_block_till_done()
+    assert not desk_transport.is_connected
+
+
+async def test_failed_preparation_connection_does_not_retry_read_only(
+    hass, desk_transport
+):
+    result = await initial_form(hass, desk_transport, guide=False)
+    desk_transport.is_connected = False
+    with patch(
+        "custom_components.ha_linak.client.establish_connection",
+        side_effect=ConnectionError,
+    ) as connect:
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        result = await complete_progress(hass, result)
+        assert result["step_id"] == "name"
+        assert result["errors"] == {"base": "client_preparation_failed"}
+        assert connect.call_count == 1
+        assert not writes(desk_transport)
+    hass.config_entries.flow.async_abort(result["flow_id"])
+    await hass.async_block_till_done()
+
+
+async def test_unused_handoff_expires_without_replaying_settings(hass, desk_transport):
+    import asyncio
+    from custom_components.ha_linak.client import DeskClient
+    from custom_components.ha_linak.setup_session import offer_session, take_session
+
+    desk = DeskClient(DEVICE, lambda: None)
+    await desk.refresh()
+    with patch("custom_components.ha_linak.setup_session.HANDOFF_TIMEOUT", 0.01):
+        offer_session(hass, desk)
+        await asyncio.wait_for(desk_transport.disconnected.wait(), timeout=1)
+    await hass.async_block_till_done()
+    assert take_session(hass, DEVICE.address) is None
+    assert not desk_transport.is_connected
+    assert not writes(desk_transport)

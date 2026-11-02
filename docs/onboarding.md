@@ -5,8 +5,8 @@
 1. Put the panel into Bluetooth pairing mode and close other connected desk apps.
 2. In Home Assistant, select the discovered custom LINAK integration (`ha_linak`), or select a desk through Add integration.
 3. Submit the selection. The form immediately changes to Home Assistant's native progress screen while the integration connects, authenticates and reads the panel.
-4. Successful validation releases the validation connection and shows height calibration/range. If the panel reading is wrong, enter the current tape measurement and review the separate correction confirmation. The confirmed correction is checked before the measured range and entry creation. An unchanged or omitted correction sends no setting write. A failed connection shows a translated retry form. Re-enable pairing before retrying if needed.
-5. Home Assistant then starts the entry, opens the runtime connection and loads the sensors. A transient failure here enters HA's setup-retry state.
+4. Successful validation retains the connection through naming, explicit client preparation, range collection and height correction. If the panel reading is wrong, enter the current tape measurement and review the separate correction confirmation. The confirmed correction is checked before the measured range and entry creation. An unchanged or omitted correction sends no setting write. A failed connection shows a translated retry form. Re-enable pairing before retrying if needed.
+5. Home Assistant then starts the entry, takes ownership of the validated connection and loads the sensors. A transient failure here enters HA's setup-retry state.
 
 Discovery uses the native name and a short address suffix, matching the Idasen presentation: `Office desk (EEFF)`. The flow checks current HA connectable metadata and BLEDevice names as well as the original discovery snapshot. Generic `LINAK` and address-only names do not hide a usable native name. Discovery does not connect, request an active scan or read GATT solely to obtain a card title. If no native name is cached yet, the card shows `LINAK (EEFF)`.
 
@@ -83,3 +83,7 @@ Next, enter measured lowest/highest heights. Physical panel movement while measu
 Configure opens a menu for the HA name, explicit connection preparation, height checking/correction and travel bounds. Height correction can run before travel bounds are stored. After a verified correction, Configure asks for missing bounds or revised bounds if the corrected reference makes existing ones invalid. Sensor states use whole centimeters; calibration inputs and all internal checks retain precision. No previous measurement is replayed after cancellation or restart.
 
 On the height-correct path, setup performs another bounded read-only validation before saving travel bounds. Movement while the height question is open therefore cannot validate bounds against the older preview. In Configure, height checking/correction is also available without stored bounds, so an incorrect panel reference cannot block the first valid range.
+
+## Foreground setup session
+
+The wizard reuses one transport across its read, preparation and calibration steps. Five minutes without a Bluetooth operation release the idle session; continuing then attempts a fresh connection. Aborting releases the session. Successful setup transfers it once to the coordinator without reconnecting. An unconsumed transfer expires after 60 seconds or HA shutdown. Every I/O operation retains its existing deadline. A failed connection does not trigger a second automatic read-only recovery attempt; failures after calibration still allow one read-only recovery without replaying a setting write.

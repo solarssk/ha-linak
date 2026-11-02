@@ -297,6 +297,11 @@ async def test_onboarding_calibrates_before_validating_measured_bounds(hass):
         assert result["type"] == "create_entry"
         assert result["options"] == BOUNDS
         assert len(writes(fake)) == 1
+        from custom_components.ha_linak.setup_session import take_session
+
+        session = take_session(hass, ADDRESS)
+        assert session is not None
+        await session.disconnect()
         assert not fake.is_connected
         await hass.async_block_till_done()
 

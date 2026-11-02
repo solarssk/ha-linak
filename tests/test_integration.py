@@ -148,6 +148,11 @@ async def test_config_flow_tests_connection_and_prevents_duplicates(hass):
         result = await finish_progress(hass, result)
         assert result["type"] == "create_entry", result
         assert result["data"] == {CONF_ADDRESS: ADDRESS, "name": "Desk"}
+        from custom_components.ha_linak.setup_session import take_session
+
+        session = take_session(hass, ADDRESS)
+        assert session is not None
+        await session.disconnect()
         assert not fake.is_connected
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_init(
@@ -436,39 +441,6 @@ async def test_hanging_initial_entry_setup_becomes_ha_setup_retry(hass):
         assert entry.state is ConfigEntryState.SETUP_RETRY
         assert not fake.is_connected
         assert not hass.states.async_all("sensor")
-
-
-async def test_failed_disconnect_after_validation_never_creates_entry(hass):
-    from unittest.mock import AsyncMock
-
-    info = SimpleNamespace(
-        address=ADDRESS,
-        name="Desk",
-        device=DEVICE,
-        service_uuids=[SERVICE_UUID],
-        connectable=True,
-    )
-    with (
-        patch(
-            "custom_components.ha_linak.config_flow.bluetooth.async_discovered_service_info",
-            return_value=[info],
-        ),
-        patch("custom_components.ha_linak.config_flow.DeskClient.refresh", AsyncMock()),
-        patch(
-            "custom_components.ha_linak.config_flow.DeskClient.disconnect",
-            AsyncMock(side_effect=ConnectionError),
-        ),
-    ):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}
-        )
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_ADDRESS: ADDRESS}
-        )
-        result = await finish_progress(hass, result)
-        assert result["step_id"] == "retry"
-        assert result["errors"] == {"base": "cannot_connect"}
-        assert not hass.config_entries.async_entries(DOMAIN)
 
 
 def test_desk_name_ignores_the_address_home_assistant_uses_as_a_name():

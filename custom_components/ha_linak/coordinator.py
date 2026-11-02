@@ -17,6 +17,7 @@ from .client import DeskClient, DeskState
 from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError
+from .setup_session import take_session
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         )
         self.controls = ControlSettings.from_options(dict(entry.options))
         self.address = entry.data[CONF_ADDRESS]
-        self.desk: DeskClient | None = None
+        self.desk = take_session(hass, self.address)
+        if self.desk is not None:
+            self.desk.changed = self._changed
+            self.desk.device_callback = self._device
 
     @property
     def signal_strength(self) -> int | None:

@@ -44,8 +44,10 @@ from .const import DOMAIN
 from .entity import whole_centimeters
 from .naming import DEFAULT_NAME, cached_bluez_names, desk_name, discovery_title
 from .protocol import SERVICE_UUID
+from .setup_session import offer_session
 
 _LOGGER = logging.getLogger(__name__)
+SETUP_IDLE_TIMEOUT = 300
 
 
 def _validation_error(error: Exception, stage: str) -> str:
@@ -97,6 +99,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._calibration_task: asyncio.Task[str | None] | None = None
         self._preparing = False
         self._final_height_check = False
+        self._desk: DeskClient | None = None
+        self._idle_timer: asyncio.TimerHandle | None = None
+        self._session_cleanup: asyncio.Task[bool] | None = None
 
     async def async_step_bluetooth(
         self, discovery_info: bluetooth.BluetoothServiceInfoBleak
@@ -188,13 +193,69 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             raise ConnectionError("Desk is not reachable through Bluetooth")
         return device
 
+    async def _setup_desk(self) -> DeskClient:
+        """Keep the validated transport through the foreground wizard."""
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+            self._idle_timer = None
+        if self._session_cleanup is not None:
+            await asyncio.shield(self._session_cleanup)
+            self._session_cleanup = None
+        if self._desk is None:
+            self._desk = DeskClient(self._device(), lambda: None, self._device)
+        return self._desk
+
+    def _keep_session(self) -> None:
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+        self._idle_timer = self.hass.loop.call_later(
+            SETUP_IDLE_TIMEOUT, self._expire_session
+        )
+
+    @callback
+    def _expire_session(self) -> None:
+        """Release an abandoned form without any panel-setting write."""
+        self._idle_timer = None
+        desk, self._desk = self._desk, None
+        if desk is not None:
+            self._session_cleanup = self.hass.async_create_task(
+                self._close_session(desk)
+            )
+
+    @callback
+    def async_remove(self) -> None:
+        """HA removes completed and aborted flows through this callback."""
+        super().async_remove()
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+        self._expire_session()
+
+    async def _close_session(self, desk: DeskClient) -> bool:
+        settled = asyncio.gather(desk.disconnect(), return_exceptions=True)
+        await _drain_cleanup(settled)
+        if isinstance(settled.result()[0], Exception):
+            _LOGGER.warning("LINAK setup session cleanup failed")
+            return False
+        return True
+
+    async def _release_session(self) -> bool:
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+            self._idle_timer = None
+        desk, self._desk = self._desk, None
+        if desk is not None:
+            return await self._close_session(desk)
+        return True
+
     async def _validate(self) -> str | None:
         desk: DeskClient | None = None
         self._validated_state = None
         error = None
+        succeeded = False
         try:
-            desk = DeskClient(self._device(), lambda: None, self._device)
+            desk = await self._setup_desk()
             self._validated_state = await desk.refresh()
+            succeeded = True
             if not self._user_named:
                 self._name = desk_name(
                     desk.device.address, self._name, desk.device_name
@@ -206,13 +267,10 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             error = "unknown"
         finally:
             stage = desk.stage if desk else "device_lookup"
-            if desk is not None:
-                try:
-                    await desk.disconnect()
-                except BleakError, ConnectionError, TimeoutError:
-                    if error is None:
-                        stage = "disconnect"
-                        error = "cannot_connect"
+            if succeeded:
+                self._keep_session()
+            else:
+                await self._release_session()
         if error:
             _LOGGER.warning(
                 "LINAK setup failed during %s: %s",
@@ -346,8 +404,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _apply_calibration(self) -> str | None:
         desk: DeskClient | None = None
         error = None
+        succeeded = False
         try:
-            desk = DeskClient(self._device(), lambda: None, self._device)
+            desk = await self._setup_desk()
             await desk.refresh()
             if self._preparing:
                 assert desk.state.height_cm is not None
@@ -358,6 +417,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             self._validated_state = await desk.calibrate_height(
                 self._calibration, activate_client=self._preparing
             )
+            succeeded = True
         except SettingRejected as err:
             _log_setting_rejection(err, desk)
             error = "setting_rejected"
@@ -378,15 +438,15 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         finally:
             self._calibration = None
-            if desk is not None:
-                settled = asyncio.gather(desk.disconnect(), return_exceptions=True)
-                await _drain_cleanup(settled)
-                if isinstance(settled.result()[0], Exception):
-                    error = "calibration_failed"
+            if succeeded:
+                self._keep_session()
+            else:
+                await self._release_session()
         if error:
-            # Read-only recovery cannot replay the uncertain setting write.
+            # Do not immediately repeat a failed connection or uncertain write.
             self._validated_state = None
-            await self._validate()
+            if desk is not None and desk.stage != "connection":
+                await self._validate()
         return error
 
     async def async_step_calibration_apply(self, user_input=None) -> ConfigFlowResult:
@@ -415,6 +475,12 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         except ValueError:
             self._error = "invalid_limits"
             return await self.async_step_finish()
+        if self._desk is not None:
+            if self._idle_timer is not None:
+                self._idle_timer.cancel()
+                self._idle_timer = None
+            offer_session(self.hass, self._desk)
+            self._desk = None
         return self.async_create_entry(
             title=self._name,
             data={CONF_ADDRESS: self._address, CONF_NAME: self._name},

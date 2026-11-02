@@ -1,6 +1,6 @@
 # README presentation in HACS and GitHub
 
-Reviewed 2026-10-31. This reference is for maintainers updating the product pages. The goal is a readable desk-integration page in HACS while retaining the accepted GitHub layout. The two renderers need separate source files.
+This reference explains how HACS loads and transforms the product README, which Markdown features render reliably and how to verify a change. GitHub and HACS use separate source files because their rendering contracts differ.
 
 ## Official documentation and implementation
 
@@ -28,7 +28,7 @@ HACS's frontend pins the HA frontend revision shown above. The host HA version a
 
 For an installed repository, HACS's documentation loader selects its installed version/commit. Before installation it selects the available version. The link transformer can use the available version for relative assets. An older installed README can therefore remain visible after a repository merge; refreshing the browser does not install newer files. Update the integration through HACS, restart HA for integration changes, then reopen its description. No published release is currently required because this repository uses its default branch.
 
-A reported screenshot showed installed ref `2563810`, whose README predates the native slider. That explains its old read-only text; it is separate from the rendering defects. Old `info.md`/`render_readme` advice does not select a second document in this loader; see [HACS's documentation issue](https://github.com/hacs/integration/issues/3994).
+When content is outdated, compare the installed revision with the intended source before changing markup. Version selection and rendering defects are separate causes. Old `info.md`/`render_readme` advice does not select a second document in this loader; see [HACS's documentation issue](https://github.com/hacs/integration/issues/3994).
 
 ## Compatible Markdown choices
 
@@ -60,4 +60,4 @@ Run the repository metadata check for all four files, including local links and 
 4. Inspect the GitHub diff separately and preserve its accepted layout.
 5. After merge and HACS update, check the installed HACS page. A local source-pipeline preview reproduces parsing and sanitization, but its page shell is not a live HA installation.
 
-The 2026-10-31 local preview passed these parser/image checks in both languages and themes, including a 390-pixel-wide viewport. The five images (official logo and four badges) loaded in each desktop preview. No live HA configuration was changed.
+The recorded local preview passed the parser/image checks in both languages and themes, including a 390-pixel-wide viewport. The official logo and four badges loaded in the desktop previews. That result validates the inspected parser/source combination; confirm the installed HA/HACS view when its frontend revision changes.

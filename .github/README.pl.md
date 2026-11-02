@@ -126,7 +126,7 @@ Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**
 | `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
 | `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
 
-Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu. Przyciskiem **Stop** zatrzymasz jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
+Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu. Przyciskiem **Stop** zatrzymasz jazdę. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu. Przed wykonaniem polecenia integracja sprawdza klienta panelu i w razie potrzeby przygotowuje go, zachowując jego identyfikator.
 
 Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
 

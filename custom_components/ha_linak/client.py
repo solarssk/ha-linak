@@ -417,14 +417,14 @@ class DeskClient:
         await self.client.write_gatt_char(DPG_UUID, payload, response=True)
         return await self._pending
 
-    async def _activate_calibration_client(self) -> None:
-        """Only a confirmed calibration may activate the existing panel identity."""
-        self._set_stage("calibration_activation_check")
+    async def _activate_client(self, phase: str) -> None:
+        """Prepare the existing identity only for explicit foreground control."""
+        self._set_stage(f"{phase}_activation_check")
         identity = await self._query(ReadCommand.USER_ID, 17)
         payload = activation_request(identity)
         if payload is None:
             return
-        self._set_stage("calibration_activation_write")
+        self._set_stage(f"{phase}_activation_write")
         await self._write_setting(payload)
         verified = await self._query(ReadCommand.USER_ID, 17)
         if verified != identity[:2] + b"\x01" + identity[3:]:
@@ -474,7 +474,7 @@ class DeskClient:
                         "Desk position or reference changed; measure again"
                     )
                 if proposal.changed or activate_client:
-                    await self._activate_calibration_client()
+                    await self._activate_client("calibration")
                     fresh_offset = decode_offset(
                         await self._query(ReadCommand.OFFSET, 3)
                     )
@@ -568,6 +568,7 @@ class DeskClient:
         settings: ControlSettings,
         memory_index: int | None,
     ) -> None:
+        controller: MotionController | None = None
         async with self._lock:
             try:
                 self._set_stage("movement_prepare")
@@ -586,6 +587,7 @@ class DeskClient:
                 assert height_cm is not None
                 limits.target(height_cm, offset)
                 self.state.offset_raw = offset
+                await self._activate_client("movement")
                 assert self.client is not None
                 transport = _LiveMotionTransport(self)
                 controller = MotionController(transport, limits, offset)
@@ -593,12 +595,32 @@ class DeskClient:
                 await controller.move_to_cm(height_cm)
                 self._set_stage("ready")
             except BaseException:
-                # Stop cleanup in the controller settles before this discards the link.
+                # A controller settles its own Stop. Preparation has no controller,
+                # so an explicit Stop still needs one bounded write before release.
                 cleanup = asyncio.gather(
-                    self._disconnect_link(), return_exceptions=True
+                    self._finish_failed_move(controller is None), return_exceptions=True
                 )
                 await _drain_cleanup(cleanup)
+                result = cleanup.result()[0]
+                if isinstance(result, BaseException):
+                    raise result
                 raise
+
+    async def _finish_failed_move(self, before_motion: bool) -> None:
+        try:
+            if (
+                before_motion
+                and not self._motion_stop_sent
+                and self._stop_task is not None
+                and not self._stop_task.done()
+            ):
+                client = self._check_control_properties()
+                self._set_stage("stop")
+                async with asyncio.timeout(MOTION_IO_TIMEOUT):
+                    await client.write_gatt_char(CONTROL_UUID, STOP, response=False)
+                self._motion_stop_sent = True
+        finally:
+            await self._disconnect_link()
 
     async def stop(self) -> None:
         if self._stop_task is None or self._stop_task.done():

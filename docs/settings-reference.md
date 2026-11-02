@@ -1,21 +1,143 @@
-# DPG1C settings and implementation reference
+# Panel settings and height calibration
 
-Reviewed 2026-11-02. This inventory distinguishes implemented features from research candidates. Native slider/button movement, protected client activation and confirmed height calibration are implemented; other panel-setting writes remain planned. Keep native Home Assistant/Raspberry Pi operation and the owner's goal of configuring supported features without a mandatory phone app.
+This reference distinguishes implemented panel settings, host-side HA configuration and unverified protocol candidates. Use the [control guide](controls.md) to configure a desk and the [protocol reference](protocol.md) for exact frames. Manufacturer features do not automatically imply a writable BLE interface on a particular firmware.
 
-## Evidence levels
+## Configuration layers
 
-- **O**: LINAK documents a product/UI function. This does not establish a BLE command, permissions or support on this particular firmware.
-- **C**: An independent implementation provides a protocol candidate; neither manufacturer authority nor our hardware verification.
-- **H**: Recorded read results on the owner's DPG1C; see [hardware results](hardware-results.md).
-- **S**: Automated simulation proves software behavior, not physical operation.
-- **P**: Maintainer-requested design, pending implementation and relevant hardware validation.
+Panel settings, HA preferences and presentation have different owners and side effects.
 
+| Layer | Examples | Where it changes | Effect |
+| --- | --- | --- | --- |
+| Panel configuration | Height reference, stored positions, reminder profiles | Only through a verified, scoped panel operation | Can affect the panel and another connected application |
+| HA preferences | HA name and measured command bounds | Setup/Configure | Does not rename the radio or program firmware limits |
+| Presentation | Whole-centimeter sensor/history values and slider steps | Entity boundary | Does not round raw position, calibration or stored-position targets |
+
+Client activation is a separate application-readiness operation. It preserves the existing identifier and verifies status. It is not Bluetooth bonding, a radio-name setter or permission to overwrite ownership data.
+
+## Feature inventory
+
+Evidence labels mean manufacturer-documented product behavior, community protocol candidate, observed hardware behavior or simulated software validation. See the source register and [hardware evidence](hardware-results.md) for the underlying limits.
+
+| Feature | Current HA surface | Implementation and evidence | Remaining requirement |
+| --- | --- | --- | --- |
+| Actual height | Ordinary centimeter sensor | Read from position plus panel offset; hardware reads observed | Compare physical height after any correction |
+| Target height / Stop | Native number and button | Bounded controller and HA tests; limited movement feedback observed | Complete arrival, both directions and physical Stop accuracy |
+| Drive to stored position | Buttons for supported slots | Fresh slot/reference read and common controller | Physical destination validation |
+| Stored positions | Read-only ordinary sensors | Four read slots on the tested panel | Verified save/replace payload, slot identity and persistence before setters |
+| Height reference | Read-only diagnostic sensor; protected calibration in Configure | Activation, acknowledgement and reference readback observed on one panel | Power-cycle persistence and other firmware |
+| Existing client readiness | Foreground preparation | Preserved-identifier activation and verification | Status lifetime and behavior across firmware/restart conditions |
+| HA device name | Name option and device registry | Implemented without BLE writes/reload | Radio/app-name writing is separate and unverified |
+| Active reminder profile | Read-only ordinary sensor | Profile decoded from reminder flags | Verify writable selection and off-state encoding |
+| Sitting/standing durations | Three read-only profile pairs | Read configuration durations in minutes | Verify write bounds, encoding and persistence |
+| Reminder light/presentation | Capability and raw reminder data only | Manufacturer feature and community bit candidates | Confirm exact state bits; a light capability is not on/off state |
+| Display units | No setter | Manufacturer/community evidence | Verify encoding while preserving the HA centimeter contract |
+| Automatic up/down | Capability flags only | Manufacturer/community evidence | Distinguish panel automatic drive from host-driven target keepalives |
+| Wake preference | No setter | Community settings-bit candidate, distinct from the implemented control wake command | Verify bit semantics and persistence |
+| Firmware upper/lower limits | No remote setter or verified query | Manufacturer UI function | Discover supported protocol before claiming automatic limit import |
+| Key lock / timeout | No setter | Manufacturer UI function | Verify remote semantics; do not assume physical lock blocks BLE motion |
+| Reset operations | No reset button | Manufacturer UI function | Destructive scope and exact preservation/recovery behavior |
+| Statistics/counters | Raw research fields | Bytes retained without meaning claims | Establish semantics before labeling occupancy, cycles, uptime or calories |
+| Error/display-logo functions | No runtime interface | Product/catalogue candidates only | Demonstrate an exposed GATT contract |
+
+Unsupported candidates do not create dummy controls. A verified capability model must handle absent/OEM-disabled functions and honest unavailable states.
+
+## Unsupported command candidates
+
+The pinned community catalogue contains additional opcodes. Their presence is not evidence that this panel accepts them or that the integration implements them.
+
+| Command | Catalogue meaning | Boundary |
+| --- | --- | --- |
+| `87` | Reminder time | Candidate only; not interchangeable with the implemented `88` configuration read |
+| `08` | Product information | No runtime support or response layout established here |
+| `0a` | Setup | The source marks its setup entry nonworking; do not use it for recovery |
+| `90` | Log | No verified diagnostic-event feed inferred from the name |
+| `89`–`8c` setting forms | Stored-position writes | Reads are implemented; setters, slot verification and persistence remain unverified |
+
+## Height calibration contract
+
+Offset correction belongs to a dedicated measured-height workflow, not a dashboard number that can be changed accidentally. It adjusts the height reference without commanding the mechanism to move.
+
+For a current stationary position, the proposed reference is:
+
+```text
+new_offset_raw = round(measured_height_cm * 100) - position_raw
+reported_height_cm = (position_raw + offset_raw) / 100
+```
+
+| Check | Required behavior | Reason |
+| --- | --- | --- |
+| Measurement | Positive finite numeric desktop height; valid current position/reference | Reject invalid input and missing connection data |
+| Encoding | Unsigned raw reference within the supported range | Do not invent a generic safe offset interval |
+| Unchanged reference | Difference within half a 1 mm display step counts as unchanged | Avoid a setting write for display-rounding noise |
+| Preview consistency | At most one 0.1 mm quantum from the old preview | Permit encoding jitter, not a moved desk |
+| Immediate preflight | Two fresh position reads match exactly, speed zero and original offset unchanged | Tie the confirmed measurement to a stationary mechanism |
+| Ownership | Reserve the client/query lock; reject competing movement/calibration | Do not interleave settings and targets |
+| Confirmation | Present old/proposed heights and conversion effects before writing | A reference change also changes displayed saved heights |
+| Client readiness | Check status, preserve identifier, acknowledge and verify activation if needed | Valid reads alone do not establish setting readiness |
+| Offset write | Send the one allowlisted reference request once | No generic setting-write API or automatic replay |
+| Readback | Full refresh with a different-type barrier before reference readback; exact position verification | Do not accept a setting echo as independent confirmation |
+| Publication | Refresh height, stored-height conversions and bound validity together | Keep every height in the same reference |
+
+The complete calibration budget is 60 seconds plus bounded cleanup. It does not issue wake, target, saved-position writes or firmware-limit changes. The [protocol reference](protocol.md#protected-setting-exchanges) defines acknowledgement and payload validation.
+
+If preflight detects changed position/reference, it rejects the proposal before a correction. If a write was sent but verification fails, the outcome is uncertain: read state again through a healthy session before proposing another correction. Do not retry or blindly restore an old offset. Measurement inputs are transient and never replayed at startup.
+
+## Client activation contract
+
+Confirmed setup preparation, confirmed calibration and explicit movement can check the existing client. Ordinary discovery, pairing, polling, reconnect and idle Stop cannot activate it.
+
+```mermaid
+flowchart TD
+    accTitle: Protected client readiness check
+    accDescr: Preserve the existing identifier, skip active clients or verify activation before continuing.
+    Read[Read and validate status and identifier] --> Active{Valid active client?}
+    Active -->|Yes| Continue[Continue authorized operation]
+    Active -->|Invalid frame or identity| Abort[Abort without motion or replacement]
+    Active -->|Valid but inactive| Write[Activate same identifier once]
+    Write --> Verify{Acknowledgement and matching readback?}
+    Verify -->|No| Abort
+    Verify -->|Yes| Continue
+```
+
+The implementation does not generate or replace the 16 identifier bytes. A successful reconnect in one experiment does not prove that active status persists in all future sessions. Each explicit control validates readiness rather than caching that assumption.
+
+## Product and firmware constraints
+
+Manufacturer sources constrain the investigation even when they do not expose command encodings:
+
+| Documented constraint | Design consequence |
+| --- | --- |
+| DPG1C Full and Limited variants differ in app/automatic-drive support | Record exact variant; a generic model label or capability bit cannot prove writable support |
+| OEM configuration can hide positions 3/4 from software 1.29 | Respect the reported/configured slot count |
+| Display supports different units and height correction | Keep panel presentation separate from raw units and HA centimeters |
+| Firmware/user upper/lower limits differ from host command bounds | Never present favorites or a fixed IKEA range as measured mechanical limits |
+| Owner/Guest behavior and one connected Bluetooth client | Isolate diagnostic clients; keep application readiness separate from bonding |
+| App statistics can accrue while connected without a person | Do not infer occupancy from connection, height or unknown counters |
+| Reset can preserve configurator/OEM settings while clearing user data | Do not use factory reset as routine debugging or assume it removes every restriction |
+
+Button symbols may disappear during PDF text extraction. Consult the visual manufacturer procedure before prescribing a physical-button sequence. Older Desk Control descriptions and newer Desk Connect naming are not automatically the same firmware/API contract.
+
+## Requirements for another setting
+
+A new setter needs a complete contract before its HA entity is added:
+
+1. Pin the source and identify model/firmware/variant support.
+2. Establish read/write formats, units, valid bounds and permissions.
+3. Preserve unrelated bits and ownership data.
+4. Define transport acknowledgement, application acknowledgement and independent readback.
+5. Test reconnect/restart persistence, physical-panel edits and interaction with another app.
+6. Define failure, uncertain-write recovery, cancellation and HA UI behavior.
+7. Add synthetic fixtures, English/Polish labels/errors and scoped hardware evidence.
+
+Connection/device reconfiguration remains planned; deleting/re-adding a desk is not the desired configuration model. Consult the [roadmap](roadmap.md) for delivery work, not this inventory's unsupported candidates.
 ## Source register
+
+Use these exact source revisions when checking a protocol or product-behavior claim.
 
 | ID | Source | Scope and version |
 | --- | --- | --- |
 | O1 | [LINAK DPG User Manual](https://assets.linak.com/asset/590184044899/document_hub5bdnb5l13pc4ebsja0cc702?content-disposition=inline) | 35 pages, 2026-04, LIT-13-02-060 B. Printed pages 18–19: calibration/units/limits; 25–27: memories/drive; 29–32: reminders/lock/reset. Product installation/operation reference, not a public BLE SDK. |
-| O2 | [DPG1C data sheet](https://assets.linak.com/asset/590184044899/document_1660ji82jh2118i2b6r62ilc56?content-disposition=inline) | 7 pages, retrieved 2026-10-31. Page 3: features/options; page 5: variant ordering restrictions. |
+| O2 | [DPG1C data sheet](https://assets.linak.com/asset/590184044899/document_1660ji82jh2118i2b6r62ilc56?content-disposition=inline) | 7 pages. Page 3: features/options; page 5: variant ordering restrictions. |
 | O3 | [LINAK DPG1C getting started](https://www.linak.com/work-res/start/dpg1c) | Manufacturer instructions/videos for favourites, reminders, pairing and operation. |
 | O4 | [LINAK Desk Control App and FAQ](https://www.linak.co.uk/products/controls/desk-control-app/) | Manufacturer explanations of app settings, ownership, connection limits and statistics. App-version behavior must be checked separately. |
 | O5 | [LINAK DPG family page](https://www.linak.com/products/controls/dpg-with-reminder) | Product family and current document-download entry point. |
@@ -26,109 +148,15 @@ Reviewed 2026-11-02. This inventory distinguishes implemented features from rese
 
 The downloaded O1 PDF has SHA-256 `7a58ee951c42d39817c2f623525b69d7cd834c19c84959d007623dea0afdcd9e`; O2 has `1b33c711169ff370057af4cc39759f202d9825e0cfba558efae54f400a1af53c`. Copies and a source manifest are retained in the local research workspace, not redistributed in this repository. Search snippets can still describe older 71/76-page editions; use the downloaded 35-page edition for O1 page references. Button symbols can disappear from PDF text extraction: consult the original visual instructions before giving an exact physical-button sequence.
 
-## Manufacturer facts that affect design
+## Additional implementation sources and SDK boundary
 
-O1 describes correcting displayed height without moving the desk, changing display units, upper/lower height limits, a configurable key lock, and different reminder presentations. Positions 3/4 can be disabled by OEM configuration from software 1.29. Its factory reset preserves configurator/OEM settings while clearing user changes. These functions' remote interfaces are not established here. O1 uses Desk Connect naming; older Desk Control material is not automatically a matching firmware/API specification.
+These references provide the initialization and calibration comparison used by the protected operations.
 
-O2 distinguishes Limited and Full product variants: Limited lacks app-driven motion and automatic drive; Full permits them. It lists display units including cm/mm/inch and separates optional functions from standard features. Record the exact product/firmware variant before enabling writes. A generic DPG1C model label or a capability bit does not independently establish writable support.
+| Source | Scope |
+| --- | --- |
+| [Pinned idasen implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py) | DPG1C initialization, target/Stop implementation and comparison baseline |
+| [DPG1C initialization discussion](https://github.com/rhyst/linak-controller/issues/32#issuecomment-1784055470) | Independent reports of readable height with failed movement and initialization candidates |
+| [Pinned height setter](https://github.com/anetczuk/linak_bt_desk/blob/7ac5fe1b69638976326842b27d76e52f0cc958fd/linak_dpg_bt/linak_device.py#L507) | Measured height minus relative position, encoded as the panel reference |
+| [Pinned position encoder](https://github.com/anetczuk/linak_bt_desk/blob/7ac5fe1b69638976326842b27d76e52f0cc958fd/linak_dpg_bt/datatype/desk_position.py#L62) | LE uint16 position representation |
 
-O3 documents four possible favourites, hold-to-drive operation, optional automatic travel with physical-panel stopping, three preset reminder intervals and an off state. Its advertised pairing procedure and visible panel indications describe user interaction, not proof of successful host bonding or GATT initialization.
-
-O4 distinguishes Owner and Guest storage/transfer behavior, describes settings for favourites, height correction, light/app reminders and automatic drive, and limits the desk to one connected Bluetooth client. App statistics can accrue while connected without a person at the desk. These are reasons to investigate ownership and app conflicts, not to implement a guessed occupancy or lifetime-usage sensor.
-
-## Capability and settings inventory
-
-| Feature | Evidence | Intended HA surface | Current boundary / required proof |
-| --- | --- | --- | --- |
-| Actual height | H, O2 | Regular distance sensor in cm | Implemented. Verify against a physical measurement/panel after calibration. |
-| Target height and Stop | O3, C3, S | Native number in cm and Stop button | Registered by default. Target height needs a configured travel range; Stop works with a ready connection. Simulated HA coverage, physical movement/Stop evidence pending. |
-| Drive to favourite 1–4 | O3, H, C1 | Buttons using the common motion path | Drive buttons re-read the selected slot; drive not physically verified. Respect configured/available slots. |
-| Save/replace favourite | O4, C1 | Separate explicit save operation | Write payload, slot identity and persistence unverified; read back the exact slot. |
-| Height offset/reference | O1, H, C1, P | Read-only diagnostic sensor plus protected calibration flow | Read and protected confirmed calibration flow implemented. Activation and offset write/readback were verified on one DPG1C and persisted across a separate Bluetooth connection. Failures/cancellation have simulated tests; power-cycle persistence remains unverified. |
-| Panel display units | O1, O2, C2 | Configuration choice if verified | Preserve the integration's centimeter interface; changing panel units must not reinterpret raw positions or cause motion. |
-| Active reminder profile / off | O3, H, C2 | Configuration select after write validation | Profile read works; confirm the encoding/meaning of the off state before writing. |
-| Sitting/standing duration per profile | O3/O4, H, C2 | Configuration values with validated ranges | Three profiles read; units, encoding limits and write persistence require validation. |
-| Reminder light / presentation | O1, O3, C2 | Configuration control only for verified settings | A light capability is not its on/off state; distinguish panel light from HA/app notifications. |
-| Automatic up/down / automatic drive | O2/O3, C2 | Explicit configuration opt-in if supported | Do not equate the firmware's favourite-drive feature with our host-driven target loop. |
-| Wake behavior | C2 | Research candidate | Meaning and side effects not hardware-confirmed; no guessed switch. |
-| Upper/lower firmware limits | O1 | Research candidate | Keep firmware limits distinct from integration command bounds; no known verified remote setter. |
-| Key lock / lock timeout | O1/O2 | Research candidate | Read/write interface unverified; never assume remote movement is blocked by a physical key lock. |
-| Reminder/memory/factory reset | O1/O3 | Outside initial controls | Destructive scope; do not add a casual reset button or use reset as routine recovery. |
-| Name and connection identity | O4, S | HA device name, discovery label, reconfigure flow | GAP name reads exist in code; radio-name writing and app-name persistence are separate unverified functions. |
-| Owner/Guest or user ID | O4, C1 | Research before application initialization | BLE pairing, app ownership and DPG user ID are separate layers. No automatic ownership/user-ID overwrite. |
-| Error codes / display logo | O2 | Diagnostics/research where exposed | Display support does not prove a GATT error feed or writable logo. |
-| Statistics / counters | O4, H | Preserve unknown raw fields in research | Do not label unexplained counters as occupancy, cycles, uptime or calories. |
-
-The inventory's HA surfaces are project plans, not claims made by LINAK. Some firmware/OEM variants can permanently lack a listed function. Prefer a capability model and honest unavailable/unsupported states over dummy controls.
-
-## Protocol notebook
-
-Existing UUIDs and parsing are recorded in [protocol.md](protocol.md). The suffix for proprietary characteristics is `-338a-1024-8a49-009c0215f78a`.
-
-| Item | Candidate / known representation | Evidence and limit |
-| --- | --- | --- |
-| DPG channel | `99fa0011` | H reads; serialize requests. |
-| Height feedback | `99fa0021`, position and unclassified speed/flags | H reads; relative position units used by current decoder. |
-| Capabilities | `0x80` | H read; capability flags are not settings acknowledgements. |
-| Offset | `0x81` | Protected setter implemented and physically verified on one DPG1C with client activation, acknowledgement and readback. |
-| User ID | `0x86` | Confirmed calibration activates the existing identifier only when inactive; no identifier replacement. |
-| Reminder time | `0x87` | C1 candidate; distinct from the implemented `0x88` query. |
-| Reminder settings | `0x88` | H read; C2 exposes light/wake/automatic-up/down/units/profile candidates. |
-| Memory 1–4 | `0x89`–`0x8c` | H reads; C1 proposes get/set operations. |
-| Product info / setup / log | `0x08`, `0x0a`, `0x90` | C1 catalogue only; its setup entry is marked nonworking. No runtime support inferred. |
-| Read framing | `7f <command> 00` | H verified for the seven allowlisted queries. |
-| Write framing | `7f <command> 80 <payload>` | C1 research candidate, not permission to construct arbitrary writes. |
-| Movement | `99fa0002` control and `99fa0031` target | C3/S; physical behavior remains gated in movement.md. |
-
-C2's settings UI writes and then reads reminder state. Preserve that verification principle, but do not copy every flag exposed there into HA. Our parser retains unknown flags/counters; setters must retain unrelated bits and validate payload lengths, response types and ordering. Memory responses lack a slot identifier, so ambiguous failures require discarding the session rather than advancing to another slot.
-
-## Maintainer decisions: protected offset calibration
-
-The latest owner decision supersedes a general proposal to expose offset as an editable configuration number. Offset stays a read-only diagnostic sensor; changing it belongs to a dedicated calibration step in post-install settings.
-
-1. Read current panel data and present the current height/reference in cm.
-2. Ask for a measured height with a clear description of what is being calibrated. Derive any raw reference value using verified semantics and encoding bounds; do not invent a generic safe range.
-3. Show the old/proposed values and effects on displayed/stored-height conversions; require a separate final confirmation before sending a write.
-4. Reject calibration while movement/Stop cleanup owns the session. Acquire the same exclusive operation ownership used by other commands.
-5. Write only the verified setting, then read it back. Publish the actual result; a successful transmission is not confirmation.
-6. Refresh offset, actual height, memories and validated command-bound conversions together. Calibration must not issue a move, wake request or replay a previous target.
-7. If the result is uncertain, report it and read state again through a healthy session. Do not silently retry or blindly restore an old value that another controller might have changed.
-8. On startup/reconnect, read panel state. Stored HA options must not cause automatic replay of a calibration write.
-
-The offset sensor remains read-only. Setup and Configure implement the protected calibration flow, not an unrestricted service or dashboard setter. Physical validation must still confirm that the wire-level reference matches displayed-height correction and persists on this firmware.
-
-## Post-install settings and reconfiguration
-
-Use native configuration entities for ordinary, verified panel settings. Use an Options Flow for integration behavior and the protected calibration workflow. Plan a Reconfigure flow for supported connection changes without making delete/re-add the usual UX; changing physical devices requires an explicit identity/unique-ID design.
-
-Keep three layers distinct: physical/firmware travel limits, HA command bounds, and presentation/calibration settings. Changing an integration option must not claim to program firmware limits. Reload/unload resulting from configuration changes must settle Stop and release the transport safely; no queued move resumes afterward.
-
-For each new setting record: source/revision, model/firmware and characteristics, read format, write format, permissions, bounds/units, preserved bits, acknowledgement/readback, persistence across reconnect/restart, interaction with physical controls/other apps, side effects, recovery and the HA UI contract. Use synthetic fixtures and English/Polish labels/errors. Keep device names/addresses/user IDs out of public evidence.
-
-## SDK and manufacturer questions
-
-No complete public DESKLINE GATT command contract or downloadable developer SDK was obtained in this review. The historically indexed O6 brochure advertises an SDK; its existence in marketing does not establish current access, supported firmware, licensing or open-source/PyPI redistribution rights. The newer publicly readable product documents provide behavior and variant constraints, not executable API permission.
-
-Questions to retain for LINAK or the desk OEM: exact SKU/firmware and Full/Limited capability, SDK access/licensing, supported pairing/ownership initialization, offset and settings payloads/readback/persistence, variant/OEM restrictions, firmware-limit and key-lock APIs, Stop/connection-loss behavior, and permissible use/redistribution of protocol libraries. No inquiry has been sent.
-
-## Delivery order
-
-Native slider/Stop and favourite-drive entities support the first supervised HA tests. Record physical movement/Stop evidence before claiming hardware validation or recommending unattended use. Verify memory/offset/reminder writes separately while designing post-install configuration alongside the control work. This reference does not enable a runtime feature or authorize hardware writes. Keep detailed private progress and captures in the local handoff/research workspace.
-
-
-## Implemented height-calibration payload (0.1.0a8)
-
-The pinned community [send_desk_height implementation](https://github.com/anetczuk/linak_bt_desk/blob/7ac5fe1b69638976326842b27d76e52f0cc958fd/linak_dpg_bt/linak_device.py#L507) subtracts the relative mechanism position from the measured height and writes a validity byte followed by the offset. Its [position encoder](https://github.com/anetczuk/linak_bt_desk/blob/7ac5fe1b69638976326842b27d76e52f0cc958fd/linak_dpg_bt/datatype/desk_position.py#L62) uses a little-endian unsigned 16-bit word, with 100 raw units per centimeter. Combined with its write framing, the allowlisted request is `7f 81 80 01 <offset-low> <offset-high>`. The implementation here is independent and does not add a generic setting-write API.
-
-Calibration proposes `round(measured_cm * 100) - position_raw`, treats differences up to half a 1 mm display step as unchanged, checks encoding bounds and requires a stationary snapshot. The confirmed operation owns the same client lock as reads and movement, rechecks position twice and validates the original reference before writing once. A full refresh begins with capabilities before offset readback so an offset echo cannot satisfy verification. Updated height and saved-height conversions are published together. Failed, timed-out or cancelled operations discard the session; they do not retry or restore a previous reference.
-
-The calibration operation has a 60-second budget plus bounded disconnect cleanup. First-time setup also opens and validates a connection before that operation. Calibration input is transient and is never stored as a startup action. This is community protocol evidence plus simulated validation, not an official public GATT specification. The subsequent activation experiment below records physical calibration evidence.
-
-
-## Confirmed client activation (0.1.0a9)
-
-The supervised DPG1C experiment returned `0b 00` for an offset-only write while the USER_ID response reported an inactive status. After changing only that status byte from 0 to 1 and preserving the existing 16 identifier bytes, the panel acknowledged activation and calibration with `01 00`. Three reads returned the requested offset, with unchanged mechanism position. A separate connection verified active status and the corrected height. Power-cycle persistence and other firmware remain unverified.
-
-The [idasen wakeup implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py) and its [upstream DPG1C discussion](https://github.com/rhyst/linak-controller/issues/32#issuecomment-1784055470) document this initialization requirement. Here the confirmed calibration reads `7f 86 00`, validates the `01 11 <status> <16-byte identifier>` response, skips active clients, and writes `7f 86 80 01 <same identifier>` once for an inactive client. It verifies status and identifier before calibration. Identifier bytes are neither generated nor replaced, stored in HA options, or included in integration logs. Redact them from low-level Bluetooth traces before sharing.
-
-Neither polling nor reconnect performs activation. Setup preparation, post-install connection preparation and calibration confirmation explain the possible persistent panel change. Each setting requires an application acknowledgement, separately from the Bluetooth transport acknowledgement. A non-success two-byte response aborts without retry; `0b` has been observed but its detailed vendor meaning is not established. A read barrier precedes each setting exchange, and offset readback remains mandatory.
+No complete public DESKLINE GATT specification or downloadable developer SDK was obtained. An indexed SDK brochure does not establish current access, supported firmware, licensing or redistribution rights. Open manufacturer questions include exact variant support, official pairing/client initialization, setting permissions/persistence, firmware limits, lock behavior and Stop behavior under connection loss. No manufacturer inquiry has been sent.

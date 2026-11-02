@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+- Deliver a requested Stop during offset, memory and client-activation preparation before disconnecting; retain shared cleanup through cancellation and report failed or timed-out Stop delivery.
+- Reorganize technical documentation into task-based manuals, protocol/lifecycle references and question-based hardware evidence, with diagrams, diagnostic decision tables and a shared authoring convention.
+- Check and prepare the existing panel client before explicit height and stored-position commands. Verify activation before sending motion; background reads, reconnect and Stop remain free of activation writes.
 - Log a stable movement-failure reason and the connection backend before cleanup, distinguishing no progress, reverse travel, overshoot, invalid bounds and lost links.
 - Preserve one bounded Bluetooth session through setup and transfer it to the coordinator instead of reconnecting between forms. Release abandoned sessions and avoid immediate connection retries after preparation connection failure.
-- Activate an inactive panel client only during confirmed calibration, preserving its identifier and verifying the status before the offset write. Require the panel acknowledgement and report rejected setting statuses.
+- Prepare an inactive panel client during confirmed calibration, preserving its identifier and verifying the status before the offset write. Require the panel acknowledgement and report rejected setting statuses.
 - Accept a single 0.1 mm position quantum between the calibration preview and fresh stationary checks; distinguish rejected preflight checks from uncertain writes.
 - Recover fresh readings after failed calibration without replaying writes, hide disconnected cached heights and reject oversized measurements before conversion.
 - Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.

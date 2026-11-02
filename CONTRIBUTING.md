@@ -17,11 +17,29 @@ Tests run against real Home Assistant with simulated Bluetooth and no network so
 
 Use Conventional Commit titles and scoped branches. Update English/Polish docs and translation keys together. In a pull request describe the behavior, verification and Documentation impact. The maintainer merges after required checks pass; reviews are not mandatory while there is one maintainer.
 
-HACS validation and hassfest check packaging; they do not prove physical hardware behavior. Only HA 2026.10.4 is currently validated. Movement uses native slider/button controls with simulated tests; physical validation is pending. Only confirmed height-reference calibration writes are implemented; activation and offset write/readback were verified on one DPG1C, including reconnect persistence; power-cycle persistence remains pending. Other panel-setting writes are not implemented.
+HACS validation and hassfest check packaging; they do not prove physical hardware behavior. Only HA 2026.10.4 is currently validated. Movement uses native slider/button controls with simulated tests and a bounded hardware observation; complete target arrival and physical Stop accuracy remain pending. Protected client activation and confirmed height-reference calibration writes are implemented. Activation/offset readback and one reconnect were observed on one DPG1C; this does not establish permanent client readiness or power-cycle persistence. Other panel-setting writes are not implemented.
 
 ## Markdown source format
 
 Do not use em dashes. Use periods, commas or colons. Write each prose paragraph on one source line and let the editor, GitHub or HACS wrap it visually. Keep a list item's prose on one line too; nested lists and multi-paragraph items retain their Markdown structure. Do not wrap prose to a fixed column width. Preserve paragraph separators, headings, tables, code fences, HTML layouts, image/badge blocks, GitHub alert marker lines and intentional hard line breaks. Keep consecutive CHANGELOG.md bullets compact, without blank lines between them.
+
+## Technical documentation structure
+
+Organize public documentation around a reader's task, following the separation of procedures, reference and explanation described by [Diátaxis](https://diataxis.fr/). Use the [document responsibility map](docs/README.md#document-responsibilities) as the content plan: it identifies each page's audience, purpose and information owner. Do not introduce another page without a distinct reader need.
+
+| Content | Structure | Home |
+| --- | --- | --- |
+| Procedure | Prerequisites, ordered actions, expected results and recovery | Control guide, diagnostic manual or standalone experiment |
+| Reference | Defined terms, tables of formats/states/constraints and precise limits | Protocol, settings, movement and connection references |
+| Explanation | Component/lifecycle diagram, rationale, alternatives and consequences | Architecture and library comparison |
+| Investigation/evidence | Question, method, observation, conclusion, uncertainty and next discriminating test | Investigation guide and hardware evidence register |
+| Work chronology | Private attempts, temporary access details and next-agent instructions | Ignored local handoff; public release history belongs in CHANGELOG.md |
+
+Integrate a finding into the section that owns the behavior. Rewrite obsolete conclusions and link to evidence instead of appending dated follow-ups. Preserve source revisions and environment metadata where they support reproducibility, but do not use dates or alpha versions as the manual's navigation. Separate implemented behavior, candidate semantics, simulated validation and physical observations.
+
+Use Markdown tables for comparisons and fields, numbered lists for procedures and fenced Mermaid diagrams for meaningful control flow, sequence or ownership. Use charts only for measured quantitative comparisons; do not invent data to fill a visualization. Add a short explanation and outcome/limit beside each visual. Keep diagrams to one question and preserve equivalent technical details in text/tables for readers whose renderer lacks Mermaid. Product HACS Markdown has separate constraints in docs/hacs-presentation.md.
+
+Before handing off documentation, follow one reader path from the index, check internal links/anchors, verify code/command names against the implementation and remove contradictory status claims. Keep one source of truth per fact. The [writing review checklist](https://github.com/vercel-labs/writing-guidelines/blob/main/command.md) helps with voice and readability; repository Markdown conventions take precedence over framework-specific front matter, MDX or frontend requirements.
 
 ## Updating dependencies
 

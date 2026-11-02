@@ -37,6 +37,9 @@ class MotionBleak(FakeBleak):
         self.target_written = asyncio.Event()
         self.fail_stop = False
         self.stall = False
+        self.activation = 1
+        self.identity = bytes(range(16))
+        self.reject_activation = False
         self.responses = []
         self.services = SimpleNamespace(
             get_characteristic=lambda uuid: SimpleNamespace(
@@ -51,6 +54,18 @@ class MotionBleak(FakeBleak):
 
     async def write_gatt_char(self, uuid, data, response):
         self.responses.append((uuid, response))
+        if uuid == DPG_UUID and data[:2] == b"\x7f\x86":
+            self.writes.append((uuid, bytes(data)))
+            if data[2] == 0:
+                reply = b"\x01\x11" + bytes([self.activation]) + self.identity
+            elif self.reject_activation:
+                reply = b"\x0b\x00"
+            else:
+                assert data[4:] == self.identity
+                self.activation = 1
+                reply = b"\x01\x00"
+            self.callbacks[DPG_UUID](None, bytearray(reply))
+            return
         if uuid == DPG_UUID:
             await super().write_gatt_char(uuid, data, response)
             return
@@ -416,7 +431,7 @@ async def test_invalid_offset_readback_rejects_before_motion():
     assert not desk.connected
 
 
-async def test_stop_before_motion_preparation_completes_is_not_silent():
+async def test_stop_before_motion_preparation_completes_sends_stop():
     desk, fake = await connected_desk()
     prepared = asyncio.Event()
 
@@ -428,11 +443,13 @@ async def test_stop_before_motion_preparation_completes_is_not_silent():
     with patch.object(desk, "_query", side_effect=pending):
         operation = asyncio.create_task(desk.move_to_cm(83, settings))
         await prepared.wait()
-        with pytest.raises(MotionError):
-            await desk.stop()
+        await desk.stop()
         with pytest.raises(MotionError):
             await operation
+    assert fake.writes[-1] == (CONTROL_UUID, STOP)
     assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert desk.last_control_result == "stop_sent"
+    assert not desk.connected
 
 
 async def test_stop_caller_cancellation_keeps_reservation_until_write_finishes():
@@ -664,3 +681,221 @@ async def test_failed_fresh_range_read_does_not_create_entry(hass):
         assert not hass.config_entries.async_entries(DOMAIN)
         assert not fake.is_connected
         assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
+
+
+@pytest.mark.parametrize("memory", [False, True])
+async def test_inactive_client_is_prepared_before_explicit_motion(memory):
+    fake = MotionBleak()
+    fake.activation = 0
+    desk, _ = await connected_desk(fake)
+    assert fake.activation == 0
+    assert not any(data[2:3] == b"\x80" for uuid, data in fake.writes)
+    identity = fake.identity
+    if memory:
+        await desk.move_to_memory(0, ControlSettings(70, 125))
+    else:
+        await desk.move_to_cm(83, ControlSettings(70, 125))
+    activation = (DPG_UUID, b"\x7f\x86\x80\x01" + identity)
+    assert fake.writes.count(activation) == 1
+    first_target = next(
+        i for i, (uuid, _) in enumerate(fake.writes) if uuid == TARGET_UUID
+    )
+    assert fake.writes.index(activation) < first_target
+    assert fake.identity == identity
+    assert desk.connected
+    await desk.move_to_cm(84, ControlSettings(70, 125))
+    assert fake.writes.count(activation) == 1
+    await desk.disconnect()
+
+
+async def test_rejected_activation_never_sends_movement_commands():
+    fake = MotionBleak()
+    fake.activation = 0
+    fake.reject_activation = True
+    desk, _ = await connected_desk(fake)
+    from custom_components.ha_linak.calibration import SettingRejected
+
+    settings = ControlSettings(70, 125)
+    with pytest.raises(SettingRejected):
+        await desk.move_to_cm(83, settings)
+    assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
+    assert not desk.connected
+    assert fake.activation == 0
+
+
+async def test_new_connection_rechecks_inactive_identity_before_motion():
+    fake = MotionBleak()
+    desk, _ = await connected_desk(fake)
+    await desk.move_to_cm(83, ControlSettings(70, 125))
+    await desk.disconnect()
+    fake.activation = 0
+    with patch(
+        "custom_components.ha_linak.client.establish_connection",
+        side_effect=fake.reconnect,
+    ):
+        await desk.refresh()
+    assert fake.activation == 0
+    await desk.stop()
+    assert fake.activation == 0
+    await desk.move_to_cm(84, ControlSettings(70, 125))
+    assert fake.activation == 1
+    assert sum(data[:4] == b"\x7f\x86\x80\x01" for _, data in fake.writes) == 1
+    await desk.disconnect()
+
+
+async def test_cancelled_activation_never_reaches_target_or_replays():
+    fake = MotionBleak()
+    fake.activation = 0
+    desk, _ = await connected_desk(fake)
+    started = asyncio.Event()
+    original = fake.write_gatt_char
+
+    async def hang_activation(uuid, data, response):
+        if data[:4] == b"\x7f\x86\x80\x01":
+            started.set()
+            await asyncio.Event().wait()
+        await original(uuid, data, response)
+
+    with patch.object(fake, "write_gatt_char", side_effect=hang_activation):
+        task = asyncio.create_task(desk.move_to_cm(83, ControlSettings(70, 125)))
+        await asyncio.wait_for(started.wait(), timeout=1)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
+    assert not desk.connected
+    assert fake.activation == 0
+
+
+@pytest.mark.parametrize(
+    "phase", ["offset", "memory", "status", "barrier", "activation", "verification"]
+)
+@pytest.mark.parametrize("failed_stop", [False, True])
+async def test_stop_during_preparation_writes_before_disconnect(phase, failed_stop):
+    fake = MotionBleak()
+    fake.activation = 0
+    desk, _ = await connected_desk(fake)
+    entered = asyncio.Event()
+    events = []
+    original_write = fake.write_gatt_char
+    original_disconnect = fake.disconnect
+    query = {
+        "offset": b"\x7f\x81\x00",
+        "memory": b"\x7f\x89\x00",
+        "status": b"\x7f\x86\x00",
+        "barrier": b"\x7f\x80\x00",
+        "activation": b"\x7f\x86\x80\x01" + fake.identity,
+        "verification": b"\x7f\x86\x00",
+    }[phase]
+
+    async def paused_write(uuid, data, response):
+        verification = phase != "verification" or fake.activation == 1
+        if uuid == DPG_UUID and data == query and verification:
+            entered.set()
+            await asyncio.Event().wait()
+        await original_write(uuid, data, response)
+        if uuid == CONTROL_UUID and data == STOP:
+            events.append("stop")
+
+    async def record_disconnect():
+        events.append("disconnect")
+        await original_disconnect()
+
+    fake.fail_stop = failed_stop
+    with (
+        patch.object(fake, "write_gatt_char", side_effect=paused_write),
+        patch.object(fake, "disconnect", side_effect=record_disconnect),
+    ):
+        operation = asyncio.create_task(
+            desk.move_to_memory(0, ControlSettings(70, 125))
+        )
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        if failed_stop:
+            with pytest.raises(MotionError):
+                await desk.stop()
+        else:
+            await desk.stop()
+        with pytest.raises((MotionError, ConnectionError)):
+            await operation
+    assert events == (["disconnect"] if failed_stop else ["stop", "disconnect"])
+    assert sum(uuid == CONTROL_UUID and data == STOP for uuid, data in fake.writes) == 1
+    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not any(uuid == CONTROL_UUID and data != STOP for uuid, data in fake.writes)
+    assert not desk.connected
+    assert not desk.control_busy
+    assert desk.last_control_result == ("stop_failed" if failed_stop else "stop_sent")
+
+
+async def test_repeated_stop_caller_cancellation_during_preparation_drains_once():
+    desk, fake = await connected_desk()
+    preparation, stop_entered, release = (
+        asyncio.Event(),
+        asyncio.Event(),
+        asyncio.Event(),
+    )
+    original = fake.write_gatt_char
+    settings = ControlSettings(70, 125)
+
+    async def paused_write(uuid, data, response):
+        if uuid == DPG_UUID and data == b"\x7f\x86\x00":
+            preparation.set()
+            await asyncio.Event().wait()
+        if uuid == CONTROL_UUID and data == STOP:
+            stop_entered.set()
+            await release.wait()
+        await original(uuid, data, response)
+
+    with patch.object(fake, "write_gatt_char", side_effect=paused_write):
+        operation = asyncio.create_task(desk.move_to_cm(83, settings))
+        await asyncio.wait_for(preparation.wait(), timeout=1)
+        first = asyncio.create_task(desk.stop())
+        await asyncio.wait_for(stop_entered.wait(), timeout=1)
+        second = asyncio.create_task(desk.stop())
+        first.cancel()
+        await asyncio.sleep(0)
+        first.cancel()
+        await asyncio.sleep(0)
+        assert desk.control_busy
+        assert fake.is_connected
+        with pytest.raises(MotionError):
+            await desk.move_to_cm(84, settings)
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await first
+        await second
+        with pytest.raises(MotionError):
+            await operation
+    assert sum(uuid == CONTROL_UUID and data == STOP for uuid, data in fake.writes) == 1
+    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)
+    assert not fake.is_connected
+    assert not desk.control_busy
+
+
+async def test_preparation_stop_timeout_is_bounded_and_reported():
+    desk, fake = await connected_desk()
+    preparation = asyncio.Event()
+    original = fake.write_gatt_char
+    settings = ControlSettings(70, 125)
+
+    async def paused_write(uuid, data, response):
+        if uuid == DPG_UUID and data == b"\x7f\x86\x00":
+            preparation.set()
+            await asyncio.Event().wait()
+        if uuid == CONTROL_UUID and data == STOP:
+            await asyncio.Event().wait()
+        await original(uuid, data, response)
+
+    with (
+        patch.object(fake, "write_gatt_char", side_effect=paused_write),
+        patch("custom_components.ha_linak.client.MOTION_IO_TIMEOUT", 0.01),
+    ):
+        operation = asyncio.create_task(desk.move_to_cm(83, settings))
+        await asyncio.wait_for(preparation.wait(), timeout=1)
+        with pytest.raises(MotionError):
+            await desk.stop()
+        with pytest.raises(TimeoutError):
+            await operation
+    assert desk.last_control_result == "stop_failed"
+    assert not desk.connected
+    assert not desk.control_busy
+    assert not any(uuid == TARGET_UUID for uuid, _ in fake.writes)

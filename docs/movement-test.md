@@ -4,6 +4,8 @@ This document describes the standalone research runner. Native HA entities are d
 
 ## Prepare
 
+Complete these prerequisites before opening a dedicated diagnostic connection:
+
 1. Be present at the panel, clear the desk's travel path and have physical stopping available. Do not deliberately interrupt radio or power during this first experiment.
 2. Disable the LINAK integration and any IKEA Idasen entry for this desk in HA. Close phone/desktop desk apps. Wait for their connections to close. The script cannot enforce exclusion against another computer.
 3. Record measured minimum/maximum desk heights, current physical height and the current read-only offset from HA before disabling it. Use centimeters. Bounds must come from measurements, not favourite positions. The offset argument is a conversion input only; it does not program the panel.

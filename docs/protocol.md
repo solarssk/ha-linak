@@ -89,6 +89,8 @@ Activation is permitted during confirmed preparation/calibration or an explicit 
 
 ## Motion frames
 
+The controller sends these allowlisted frames on the dedicated motion characteristics.
+
 | Channel | Bytes | Meaning in the current implementation |
 | --- | --- | --- |
 | Control `99fa0002` | `ff 00` | Stop |

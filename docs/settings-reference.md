@@ -4,6 +4,8 @@ This reference distinguishes implemented panel settings, host-side HA configurat
 
 ## Configuration layers
 
+Panel settings, HA preferences and presentation have different owners and side effects.
+
 | Layer | Examples | Where it changes | Effect |
 | --- | --- | --- | --- |
 | Panel configuration | Height reference, stored positions, reminder profiles | Only through a verified, scoped panel operation | Can affect the panel and another connected application |
@@ -130,6 +132,8 @@ A new setter needs a complete contract before its HA entity is added:
 Connection/device reconfiguration remains planned; deleting/re-adding a desk is not the desired configuration model. Consult the [roadmap](roadmap.md) for delivery work, not this inventory's unsupported candidates.
 ## Source register
 
+Use these exact source revisions when checking a protocol or product-behavior claim.
+
 | ID | Source | Scope and version |
 | --- | --- | --- |
 | O1 | [LINAK DPG User Manual](https://assets.linak.com/asset/590184044899/document_hub5bdnb5l13pc4ebsja0cc702?content-disposition=inline) | 35 pages, 2026-04, LIT-13-02-060 B. Printed pages 18–19: calibration/units/limits; 25–27: memories/drive; 29–32: reminders/lock/reset. Product installation/operation reference, not a public BLE SDK. |
@@ -145,6 +149,8 @@ Connection/device reconfiguration remains planned; deleting/re-adding a desk is 
 The downloaded O1 PDF has SHA-256 `7a58ee951c42d39817c2f623525b69d7cd834c19c84959d007623dea0afdcd9e`; O2 has `1b33c711169ff370057af4cc39759f202d9825e0cfba558efae54f400a1af53c`. Copies and a source manifest are retained in the local research workspace, not redistributed in this repository. Search snippets can still describe older 71/76-page editions; use the downloaded 35-page edition for O1 page references. Button symbols can disappear from PDF text extraction: consult the original visual instructions before giving an exact physical-button sequence.
 
 ## Additional implementation sources and SDK boundary
+
+These references provide the initialization and calibration comparison used by the protected operations.
 
 | Source | Scope |
 | --- | --- |

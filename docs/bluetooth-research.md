@@ -77,6 +77,8 @@ Do not reduce traffic by making stale telemetry look current. A future refresh d
 
 ## Next tests that can change a conclusion
 
+Choose the test that distinguishes the remaining explanations, rather than repeating a successful read-only baseline.
+
 | Open question | Discriminating test | Required limits |
 | --- | --- | --- |
 | Full target movement after readiness preparation | Supervised short upward and downward targets with fresh feedback and tape measurement | Bounded target, physical stopping access, no unattended replay |

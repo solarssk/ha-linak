@@ -4,6 +4,8 @@ This register explains what was tested, how it was tested and which conclusions 
 
 ## Test environment and evidence classes
 
+Read each conclusion within the recorded environment and its evidence class. Unknown firmware details remain unknown.
+
 | Item | Recorded environment or constraint |
 | --- | --- |
 | Panel | DPG1C; standard device information reports LINAK A/S and model family DPG |

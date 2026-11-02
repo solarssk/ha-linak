@@ -24,6 +24,8 @@ Polling, connection establishment and idle Stop never activate a client. Foregro
 
 ## Conversion and target selection
 
+The controller uses the live panel reference to convert the requested height into a relative mechanism position.
+
 | Input | Conversion | Constraint |
 | --- | --- | --- |
 | Slider height in cm | `round(height_cm * 100 - offset_raw)` | Must be within configured relative bounds |

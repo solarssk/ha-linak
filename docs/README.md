@@ -52,7 +52,24 @@ Each reference owns one kind of information. Follow its links for related detail
 | [Library comparison](communication-review.md) | Maintainer evaluating dependency reuse | Upstream contracts, differences and migration constraints |
 | [Standalone experiment](movement-test.md) | Maintainer running a separate BLE tool | Runner prerequisites, arguments, result interpretation and recovery |
 
+## Terms used in these guides
+
+The guides distinguish radio discovery, transport authentication and application control readiness. These terms name those boundaries.
+
+| Term | Meaning here |
+| --- | --- |
+| BLE | Bluetooth Low Energy, the radio/protocol stack used by the panel |
+| GATT | Generic Attribute Profile: services, characteristics, reads, writes and notifications carried by the connection |
+| BlueZ | Linux Bluetooth stack used by the local HA adapter |
+| Backend / proxy | Software transport implementation / remote Bluetooth path managed by HA |
+| RSSI | Received Signal Strength Indicator for an observed advertisement; not proof of a working control connection |
+| Bond / pairing | Host-level Bluetooth authentication and retained keys |
+| DPG client readiness | Application status checked separately from host pairing before protected control |
+| Acknowledgement / readback | The panel accepts an application request / a later read verifies resulting state |
+
 ## Project maintenance
+
+These references cover repository and presentation work rather than desk operation.
 
 | Document | Purpose |
 | --- | --- |

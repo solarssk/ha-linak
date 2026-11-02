@@ -101,6 +101,8 @@ Changing physical devices or Bluetooth identity is not a general reconfigure wor
 
 ## Implementation and validation references
 
+The implementation follows these HA contracts; the evidence register defines the tested hardware scope.
+
 - [HA config flows](https://contributors.home-assistant.io/core/integrations/config-flow/)
 - [HA progress steps](https://contributors.home-assistant.io/core/integrations/flow-steps/#show-progress)
 - [HA Bluetooth integration APIs](https://contributors.home-assistant.io/core/integrations/bluetooth/)

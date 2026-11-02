@@ -4,6 +4,8 @@ Use this manual to locate the failing layer before changing pairing, bounds or p
 
 ## Choose the symptom
 
+Find the closest symptom and collect the next missing evidence. The [shared glossary](README.md#terms-used-in-these-guides) explains the transport terms.
+
 | Symptom | What is established | Next check |
 | --- | --- | --- |
 | Desk is not discovered | HA has no usable discovery record | Panel pairing indication, HA Bluetooth advertisements and connectable adapter availability |
@@ -16,6 +18,8 @@ Use this manual to locate the failing layer before changing pairing, bounds or p
 | Displayed height disagrees with a tape measure | The height reference may be wrong | Protected calibration; do not invent different measurements to satisfy bounds |
 
 ## Understand the layers
+
+Each layer requires its own success evidence before the next operation can rely on it.
 
 ```mermaid
 flowchart TD

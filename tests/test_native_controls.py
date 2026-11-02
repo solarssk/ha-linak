@@ -713,8 +713,9 @@ async def test_rejected_activation_never_sends_movement_commands():
     desk, _ = await connected_desk(fake)
     from custom_components.ha_linak.calibration import SettingRejected
 
+    settings = ControlSettings(70, 125)
     with pytest.raises(SettingRejected):
-        await desk.move_to_cm(83, ControlSettings(70, 125))
+        await desk.move_to_cm(83, settings)
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     assert not desk.connected
     assert fake.activation == 0

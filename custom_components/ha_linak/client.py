@@ -29,6 +29,8 @@ from .motion import (
     IO_TIMEOUT as MOTION_IO_TIMEOUT,
     MotionController,
     MotionError,
+    MotionFailure,
+    MotionStopped,
     _drain_cleanup,
 )
 from .naming import DEFAULT_NAME, desk_name
@@ -552,7 +554,9 @@ class DeskClient:
         memory_index: int | None = None,
     ) -> None:
         if self.control_busy or self._lock.locked():
-            raise MotionError("The desk is busy; commands are not queued")
+            raise MotionError(
+                "The desk is busy; commands are not queued", MotionFailure.BUSY
+            )
         self._check_control_properties(target=True)
         # Reserve before the first await; a competing action cannot queue a move.
         task = self._motion_task = asyncio.create_task(
@@ -582,7 +586,12 @@ class DeskClient:
         """Translate only worker cancellation; preserve HA caller cancellation."""
         current = asyncio.current_task()
         if current is not None and not current.cancelling():
-            raise MotionError("Movement was interrupted by Stop") from None
+            stop_pending = self._stop_task is not None and not self._stop_task.done()
+            if stop_pending and self._motion_stop_sent:
+                raise MotionStopped("Movement was stopped") from None
+            raise MotionError(
+                "Movement was interrupted without confirmed Stop"
+            ) from None
 
     async def _move(
         self,

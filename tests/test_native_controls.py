@@ -353,8 +353,7 @@ async def test_coordinator_poll_does_not_disconnect_active_movement(hass):
         await entry.runtime_data.async_refresh()
     assert fake.is_connected
     await entry.runtime_data.async_stop()
-    with pytest.raises(HomeAssistantError):
-        await operation
+    await operation
     await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -502,8 +501,7 @@ async def test_ha_unload_during_move_stops_before_disconnect(hass):
     operation = asyncio.create_task(entry.runtime_data.async_move_to_cm(83))
     await fake.target_written.wait()
     assert await hass.config_entries.async_unload(entry.entry_id)
-    with pytest.raises(HomeAssistantError):
-        await operation
+    await operation
     assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
     assert not fake.is_connected
 
@@ -633,8 +631,7 @@ async def test_stalled_move_preserves_measured_sensor_and_slider_height(hass):
     assert entry.runtime_data.data.height_cm == before
     assert float(hass.states.get(target_id).state) == round(before)
     await entry.runtime_data.async_stop()
-    with pytest.raises(HomeAssistantError):
-        await operation
+    await operation
     await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -1023,4 +1020,115 @@ async def test_slider_without_an_initial_measurement_has_no_invented_height(hass
     entry.runtime_data.data = DeskState()
     number = LinakTargetHeight(entry.runtime_data)
     assert number.native_value is None
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("first_action", ["target", "memory"])
+async def test_mixed_control_burst_is_rejected_without_queued_writes(
+    hass, first_action
+):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    coordinator = entry.runtime_data
+    fake.stall = True
+    original_write = fake.write_gatt_char
+    stop_entered, release_stop = asyncio.Event(), asyncio.Event()
+
+    async def hold_stop(uuid, data, **kwargs):
+        if uuid == CONTROL_UUID and data == STOP and fake.target_written.is_set():
+            stop_entered.set()
+            await release_stop.wait()
+        await original_write(uuid, data, **kwargs)
+
+    fake.write_gatt_char = hold_stop
+    with patch("custom_components.ha_linak.motion.COMMAND_INTERVAL", 60):
+        first = asyncio.create_task(
+            coordinator.async_move_to_cm(83)
+            if first_action == "target"
+            else coordinator.async_move_to_memory(0)
+        )
+        await asyncio.wait_for(fake.target_written.wait(), 1)
+        before = list(fake.writes)
+        results = await asyncio.gather(
+            *(coordinator.async_move_to_cm(84) for _ in range(12)),
+            *(coordinator.async_move_to_memory(i % 4) for i in range(12)),
+            return_exceptions=True,
+        )
+        assert all(isinstance(result, HomeAssistantError) for result in results)
+        assert all(result.translation_key == "control_busy" for result in results)
+        assert fake.writes == before
+        stops = [asyncio.create_task(coordinator.async_stop()) for _ in range(12)]
+        await asyncio.wait_for(stop_entered.wait(), 1)
+        with pytest.raises(HomeAssistantError) as error:
+            await coordinator.async_move_to_cm(84)
+        assert error.value.translation_key == "control_busy"
+        assert coordinator.desk.control_busy
+        release_stop.set()
+        await asyncio.gather(first, *stops)
+    assert fake.writes[len(before) :] == [
+        (CONTROL_UUID, STOP),
+        (TARGET_UUID, REFERENCE_STOP),
+    ]
+    assert coordinator.desk.connected
+    assert not coordinator.desk.control_busy
+    # A new explicit request is accepted only after cleanup; rejected goals never run.
+    fake.stall = False
+    await coordinator.async_move_to_cm(83)
+    assert coordinator.desk.last_control_result == "completed"
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_native_stop_interrupts_service_without_false_action_error(hass):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    fake.stall = True
+    target = hass.states.async_all("number")[0]
+    stop = next(
+        s for s in hass.states.async_all("button") if s.entity_id.endswith("_stop")
+    )
+    with patch("custom_components.ha_linak.motion.COMMAND_INTERVAL", 60):
+        movement = asyncio.create_task(
+            hass.services.async_call(
+                "number",
+                "set_value",
+                {"entity_id": target.entity_id, "value": 83},
+                blocking=True,
+            )
+        )
+        await asyncio.wait_for(fake.target_written.wait(), 1)
+        await hass.services.async_call(
+            "button", "press", {"entity_id": stop.entity_id}, blocking=True
+        )
+        await movement
+    assert entry.runtime_data.desk.connected
+    assert entry.runtime_data.desk.last_control_result in {"interrupted", "stop_sent"}
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_failed_stop_still_fails_both_ha_actions(hass):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    fake.stall = True
+    with patch("custom_components.ha_linak.motion.COMMAND_INTERVAL", 60):
+        movement = asyncio.create_task(entry.runtime_data.async_move_to_cm(83))
+        await asyncio.wait_for(fake.target_written.wait(), 1)
+        fake.fail_stop = True
+        with pytest.raises(HomeAssistantError) as stop_error:
+            await entry.runtime_data.async_stop()
+        assert stop_error.value.translation_key == "stop_failed"
+        with pytest.raises(HomeAssistantError) as movement_error:
+            await movement
+        assert movement_error.value.translation_key == "movement_failed"
+    assert not fake.is_connected
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_unrequested_worker_cancellation_remains_a_ha_error(hass):
+    entry, fake = await setup_entry(hass, OPTIONS)
+    fake.stall = True
+    with patch("custom_components.ha_linak.motion.COMMAND_INTERVAL", 60):
+        movement = asyncio.create_task(entry.runtime_data.async_move_to_cm(83))
+        await asyncio.wait_for(fake.target_written.wait(), 1)
+        entry.runtime_data.desk._motion_task.cancel()
+        with pytest.raises(HomeAssistantError) as error:
+            await movement
+        assert error.value.translation_key == "movement_failed"
+    assert not fake.is_connected
     await hass.config_entries.async_unload(entry.entry_id)

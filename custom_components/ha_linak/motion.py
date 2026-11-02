@@ -49,6 +49,7 @@ async def _drain_cleanup(settled: asyncio.Future) -> None:
 
 class MotionFailure(StrEnum):
     UNKNOWN = "unknown"
+    BUSY = "busy"
     LINK_LOST = "link_lost"
     OUTSIDE_LIMITS = "outside_limits"
     REVERSE = "reverse_motion"
@@ -63,6 +64,10 @@ class MotionError(Exception):
     def __init__(self, message: str, reason: MotionFailure = MotionFailure.UNKNOWN):
         super().__init__(message)
         self.reason = reason
+
+
+class MotionStopped(MotionError):
+    """An explicit Stop interrupted movement and its release was delivered."""
 
 
 @dataclass(frozen=True)

@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
 from .const import DOMAIN
 from .control_settings import ControlSettings
-from .motion import MotionError
+from .motion import MotionError, MotionFailure, MotionStopped
 from .setup_session import take_session
 
 _LOGGER = logging.getLogger(__name__)
@@ -147,6 +147,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                     await self.desk.move_to_memory(int(value), settings)
                 else:
                     await self.desk.move_to_cm(value, settings)
+        except MotionStopped:
+            # Intentional interruption is a normal control outcome. Failed Stop
+            # cleanup raises an ordinary MotionError and remains visible.
+            return
         except (
             MotionError,
             BleakError,
@@ -154,6 +158,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             TimeoutError,
             ValueError,
         ) as err:
+            if isinstance(err, MotionError) and err.reason == MotionFailure.BUSY:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN, translation_key="control_busy"
+                ) from err
             _LOGGER.warning(
                 "LINAK %s failed during %s: reason=%s backend=%s",
                 action,

@@ -49,7 +49,7 @@ The slider uses 1 cm steps inside inward-rounded measured bounds. The height sen
 
 Before either a target or stored-position drive, the integration checks client readiness and prepares the existing identifier only if inactive. It verifies preparation before wake/target commands. Stored-position drive re-reads that slot and the reference; it does not overwrite the saved position.
 
-Stop preempts an active request. Stop sends control Stop and reference-input release, with no activation, wake or height target. A successful interruption retains the ready link for the next command; failed or ambiguous cleanup still discards it. An interrupted target can report an action error even when Stop succeeds. Failed commands are not queued or resumed after reload/reconnect.
+Stop preempts an active request. Stop sends control Stop and reference-input release, with no activation, wake or height target. A successful interruption retains the ready link for the next command; failed or ambiguous cleanup still discards it. A successful Stop completes the interrupted action without an error notice. A failed Stop remains an error. During an operation, another slider or stored-position request is rejected with a busy message. Wait for completion or press Stop, then select the new target. Repeated Stop clicks during cleanup share that operation. Failed commands are not queued or resumed after reload/reconnect.
 
 ## Test native controls at the panel
 

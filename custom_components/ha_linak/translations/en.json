@@ -275,6 +275,9 @@
     },
     "startup_timeout": {
       "message": "The initial desk connection or read timed out. Home Assistant will retry automatically."
+    },
+    "control_busy": {
+      "message": "The desk is completing another operation. Wait for it to finish or press Stop before choosing a new target. This request was not queued."
     }
   }
 }

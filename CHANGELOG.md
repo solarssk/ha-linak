@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Treat successful Stop interruption as a normal HA action outcome and give competing movement requests a clear busy response without queueing or sending extra commands.
+- Cover rapid mixed slider/favorite requests, repeated Stop cleanup and failed Stop propagation with simulated HA regression tests.
 - Bound the first connection/read during integration setup to 20 seconds before cleanup and let Home Assistant retry in the background, instead of waiting for successive long connection attempts during startup.
 - Log the allowlisted backend after connecting and identify diagnostic RSSI as advertisement data, which may come from a different scanner than the active connection.
 - Release both movement command channels on Stop and retain a ready connection after a successful explicit interruption, so the next target or saved position does not require reconnecting.

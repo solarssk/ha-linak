@@ -600,14 +600,7 @@ class DeskClient:
                 await controller.move_to_cm(height_cm)
                 self._set_stage("ready")
             except BaseException as error:
-                if (
-                    isinstance(error, asyncio.CancelledError)
-                    and controller is not None
-                    and self._stop_task is not None
-                    and not self._stop_task.done()
-                    and self._motion_stop_sent
-                    and self.connected
-                ):
+                if self._can_retain_after_stop(error, controller):
                     # Explicit Stop completed both channel writes. Its cancelled
                     # movement can release ownership without dropping a sound link.
                     self._set_stage("ready")
@@ -622,6 +615,14 @@ class DeskClient:
                 if isinstance(result, BaseException):
                     raise result
                 raise
+
+    def _can_retain_after_stop(
+        self, error: BaseException, controller: MotionController | None
+    ) -> bool:
+        if not isinstance(error, asyncio.CancelledError) or controller is None:
+            return False
+        stop_pending = self._stop_task is not None and not self._stop_task.done()
+        return stop_pending and self._motion_stop_sent and self.connected
 
     async def _finish_failed_move(self, before_motion: bool) -> None:
         try:

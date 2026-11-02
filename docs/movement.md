@@ -44,8 +44,10 @@ The current sequence sends control Stop, then wake, then repeated target writes.
 | `COMMAND_INTERVAL` | 0.2 seconds | Wait within each target/read iteration; not a guaranteed end-to-end packet interval |
 | `IO_TIMEOUT` | 1 second | Deadline for each motion I/O operation |
 | `STALL_TIMEOUT` | 2 seconds | Maximum interval without a new best position toward the target |
-| `MOVE_TIMEOUT` | 30 seconds | Overall motion deadline |
+| `MOVE_TIMEOUT` | 30 seconds | Target/feedback-loop deadline, excluding preparation and final cleanup |
 | `TOLERANCE_RAW` | 10 raw units, or 1 mm | Arrival/reversal threshold; not a physical positioning-accuracy claim |
+
+Preparation uses the DPG exchange budgets in the [connection reference](onboarding.md#session-lifetime-and-deadlines); there is no single 30-second budget for preparation plus travel plus cleanup.
 
 A target inside arrival tolerance sends final Stop without wake or target packets. Otherwise the controller tracks directional progress against the best position reached. A new best position resets the stall timer; reverse movement, returning to the same best or small jitter does not.
 

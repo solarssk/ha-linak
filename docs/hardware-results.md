@@ -121,15 +121,27 @@ Offset, name and stored-position settings were not written. This evidence suppor
 
 **Limits:** OLED state and physical double-tap response were not observable remotely. The release frame is therefore not proof that the reported physical-panel freeze is resolved. The official [DPG user manual](https://cdn.linak.com/-/media/files/user-manual-source/en/deskline-dpg-desk-panels-and-desk-control-app-user-manual-eng.pdf) distinguishes the height OLED from the reminder light strip and documents a four-hour reminder-light timeout; that is not an OLED sleep specification. The inspected `idasen-ha` connection manager also retains a connection. A persistent GATT link alone does not establish why this panel's display remained lit. A controlled visual comparison with and without periodic reads remains necessary before changing connection policy or firmware settings.
 
-## Validation still required
+## Hardware acceptance matrix
 
-| Claim | Current status | Evidence needed |
-| --- | --- | --- |
-| Full upward/downward target arrival | Short arrival trace-observed; full-range and independent measurement unverified | Supervised travel with feedback, physical measurement and actual direction |
-| Physical Stop and overshoot | Unverified | Interruption during observed motion and measured stopping behavior |
-| Automatic first pairing from an unbonded host | Unverified end to end | Scoped fresh-host/backend test without reusing the working bond |
-| ESPHome-only and mixed-adapter control | Unverified | Controlled path comparison with actual backend recorded |
-| Power-cycle persistence of settings/readiness | Unverified | Agreed restart experiment with before/after reads |
-| Other firmware, OEM variants or device families | Unverified | Identified model/variant and independent protocol/control validation |
+This matrix is a test plan and evidence index, not eleven successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.
+
+| ID | Scenario | Acceptance evidence | Current evidence |
+| --- | --- | --- | --- |
+| H1 | Start/reconnect on a bonded local host | Valid reads, bounded setup/retry and no activation or movement from background setup | Local reads/reconnect observed; repeated-start acceptance pending |
+| H2 | Fresh unbonded onboarding | Complete pairing and setup without a manual agent; no movement | Manual bond evidence only; automatic fresh-host run pending |
+| H3 | Targets in both directions | Feedback, physical direction and measured final height within the declared test tolerance; no replay | Nearby arrivals trace-observed; complete acceptance pending |
+| H4 | Stop during target travel | Physical stop, measured delay/overshoot, two-channel cleanup and a new explicit command afterward | Stop/release and next-command sequence trace-observed; physical accuracy pending |
+| H5 | Slider/favorite/Stop bursts | No competing packet streams or delayed goals; physical panel remains usable | Simulated burst/Stop ownership tests; supervised hardware run pending |
+| H6 | Link loss during motion | Observe local controller behavior, bound failed operations and never resume the old goal after recovery | Simulated failure paths; scoped physical observation pending |
+| H7 | HA reload/restart during motion | Distinguish graceful unload's Stop attempt from abrupt process loss; no goal replay afterward | Simulated unload cleanup; physical lifecycle run pending |
+| H8 | Physical panel handback | Manual controls and double-tap favorites work after HA move/Stop without unplugging | Owner-reported freeze prompted release fix; physical recovery unverified |
+| H9 | Proxy-only and mixed adapters | Repeat onboarding, reads, travel and Stop with actual backend/path evidence for each environment | Local BlueZ control evidence only |
+| H10 | Calibration/settings persistence | Before/after reference and exact raw memories, no unintended movement, agreed restart/power-cycle readback | Activation/calibration and one reconnect observed; power-cycle result pending |
+| H11 | Idle session and display | Count settings queries/control writes, reconnects and freshness gaps; visually compare OLED with/without periodic reads | Short idle capture had no outgoing writes; periodic-poll/OLED comparison pending |
+| H12 | Competing local client/integration | Actionable conflict, no silent takeover and no unexpected movement | Ownership policy exists; cross-integration guard and hardware acceptance pending |
+
+Choose travel distances, repetitions and stopping tolerances before the test. Respect manufacturer duty-cycle and local safety constraints, keep physical stopping access and terminate on a failure. Loss of BLE can prevent remote Stop; a successful API call cannot prove the mechanism stopped. Do not induce destructive interference or clear a working bond as an incidental test setup step.
+
+For an idle soak, select and report the duration rather than implying that a short quiet capture represents days of stability. Do not infer OLED sleep from a reminder-light timeout. A second independent device/firmware result is needed before broad compatibility claims.
 
 Use the [investigation method](bluetooth-research.md) to design each next test. Update this register by research question and conclusion, not by appending a personal work diary. Detailed chronology and private captures remain in the local handoff workspace.

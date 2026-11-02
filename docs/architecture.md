@@ -92,3 +92,44 @@ A backend disconnect cancels pending I/O. Ambiguous query failures invalidate th
 ## Supported environment and evidence
 
 Automated tests run against HA 2026.10.4 with simulated Bluetooth. The [hardware evidence](hardware-results.md) covers one DPG1C on macOS and a Raspberry Pi 4B. Complete target arrival, physical Stop accuracy, fresh unbonded onboarding and mixed-adapter stability remain open validation work. No Home Assistant quality-scale award or HACS default-catalog acceptance is claimed.
+
+## Proposed state and library contracts
+
+This section defines the intended refactoring boundary, not implemented state fields or a published library API. The [delivery plan](roadmap.md#delivery-order) sequences migration and acceptance tests. Keep runtime fixes small while the contract is established.
+
+| Model | Required information | Trust boundary |
+| --- | --- | --- |
+| Telemetry sample | Raw position, speed word, observation time and connection generation | A sample from a closed generation cannot become current after reconnect |
+| Configuration snapshot | Reference, memories, reminders, per-group read time and validity | Last-read configuration is not permission to move; unknown/unsupported differs from a failed read |
+| Connection state | Disconnected, connecting, authenticating, ready, recovering or deliberately suspended | Suspension must not trigger a polling-driven reconnect; readiness is not a movement result |
+| Operation result | Operation identifier, kind, requested goal, phase, start/end time and typed outcome/reason | Reject competing goals without queueing; successful explicit Stop is interrupted rather than failed |
+| Device capabilities | Protocol flags, implemented operations and evidence-supported model/firmware scope | An advertised bit does not establish a working setter or compatibility with another family |
+
+A settings snapshot may be displayed as last-read data only with explicit freshness semantics. Fresh height needs a valid sample and reference for the current connection. An offset change invalidates derived height and configured control assumptions until reconciled; it must not silently reinterpret old measurements. Reconnect can recover telemetry before optional settings, but cannot authorize target travel from an uncertain reference or memory response.
+
+```mermaid
+flowchart TD
+    accTitle: Proposed library and HA ownership boundary
+    accDescr: HA owns discovery and entities while one injected library session owns protocol and movement.
+    HA[HA discovery and adapter selection] --> Session[One injected BLE session]
+    Session --> Protocol[Protocol and response correlation]
+    Protocol --> State[Telemetry and settings models]
+    Protocol --> Motion[Exclusive bounded movement]
+    State --> Adapter[HA coordinator and entities]
+    Motion --> Result[Typed operation result]
+    Result --> Adapter
+```
+
+| Responsibility | Future library | HA integration |
+| --- | --- | --- |
+| Transport | Accept injected BLE device/connector and callbacks; own one session | Resolve HA Bluetooth candidates and connection policy; do not add a second reconnect manager |
+| Protocol | Validate/decode frames, correlate requests, invalidate ambiguous generations | Translate supported data and errors into HA concepts |
+| Movement | Bound targets and I/O, prioritize Stop, retain cleanup ownership | Accept explicit actions and provide translated busy/error messages |
+| Settings | Separate pure preview from explicit acknowledged writes/readback | Present confirmation and persist host preferences |
+| Lifetime | Explicit async connect/close, removable subscriptions and bounded cancellation | Config-entry startup/retry, unload and registry lifecycle |
+| Diagnostics | Typed reasons, durations and counts with no raw private identifiers by default | HA diagnostics/redaction, repairs and diagnostic entities |
+| Capabilities | Describe known protocol support without assuming every model works | Create only supported entities and preserve existing entity identity |
+
+Start with the existing protocol/calibration models and narrow transport interfaces. Library modules must not import HA, and entities must not parse wire packets. Use typed immutable snapshots/events at the boundary rather than exporting the client's mutable state or backend exceptions as a public API. Select public method and package names in the extraction design; this table is not a promise that a `python-linak` package already exists.
+
+Before changing the import path, run the same synthetic frame, duplicate-response, cancellation, Stop, bounds and redaction cases against the candidate library and HA adapter. Keep packet-order or polling-policy changes in separate reviewed patches. Validate dependency license compatibility, source distribution, tagged version and public build/publish provenance before publishing or adding a package dependency. The [HA library requirements](https://contributors.home-assistant.io/core/integrations/api-library/) own those external acceptance rules.

@@ -43,12 +43,12 @@ Each reference owns one kind of information. Follow its links for related detail
 | [Controls](controls.md) | Desk owner performing a task | Configuration steps and supervised HA test procedure |
 | [Diagnostics](diagnostics.md) | Desk owner or maintainer investigating a failure | Symptom triage, evidence collection, diagnostic fields and privacy |
 | [Onboarding](onboarding.md) | Developer tracing setup or reconnect | Authentication, wizard steps, session lifetime and error routing |
-| [Architecture](architecture.md) | Contributor changing integration behavior | Component boundaries, entity model, state and operation ownership |
+| [Architecture](architecture.md) | Contributor changing integration behavior | Current boundaries and proposed state/library contracts, entity model and operation ownership |
 | [Protocol](protocol.md) | Developer implementing or reviewing exchanges | UUIDs, frames, units, parsing and response correlation |
 | [Movement](movement.md) | Developer reviewing control behavior | Preparation, control loop, guards, deadlines and Stop cleanup |
 | [Settings reference](settings-reference.md) | Contributor evaluating a new setting | Supported setters, calibration contract, feature inventory and source register |
 | [Bluetooth investigation](bluetooth-research.md) | Maintainer designing a protocol experiment | Questions, investigation method, findings and unresolved tests |
-| [Hardware evidence](hardware-results.md) | Reviewer assessing a behavior claim | Test method, observation, conclusion and limits for each finding |
+| [Hardware evidence](hardware-results.md) | Reviewer assessing a behavior claim | Observations, limits and the hardware acceptance matrix |
 | [Library comparison](communication-review.md) | Maintainer evaluating dependency reuse | Upstream contracts, differences and migration constraints |
 | [Standalone experiment](movement-test.md) | Maintainer running a separate BLE tool | Runner prerequisites, arguments, result interpretation and recovery |
 
@@ -73,7 +73,7 @@ These references cover repository and presentation work rather than desk operati
 
 | Document | Purpose |
 | --- | --- |
-| [Roadmap](roadmap.md) | Remaining implementation and validation work |
+| [Roadmap](roadmap.md) | Assessed findings, delivery order, release gates and the path to HA Core |
 | [Governance](governance.md) | CI gates, dependencies, repository policy and release boundaries |
 | [Branding](branding.md) | Asset provenance, naming and artwork use |
 | [HACS presentation](hacs-presentation.md) | Separate GitHub/HACS renderers, supported Markdown and rendering checks |

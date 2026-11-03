@@ -114,11 +114,14 @@ async def test_new_motion_rejected_but_stop_remains_available(hass, action):
     coordinator = entry.runtime_data
     other = ikea_entry(hass)
     fake.writes.clear()
+    operation = (
+        coordinator.async_move_to_cm
+        if action == "target"
+        else coordinator.async_move_to_memory
+    )
+    value = 84 if action == "target" else 0
     with pytest.raises(HomeAssistantError) as error:
-        if action == "target":
-            await coordinator.async_move_to_cm(84)
-        else:
-            await coordinator.async_move_to_memory(0)
+        await operation(value)
     assert error.value.translation_key == "idasen_conflict"
     assert not fake.writes
     await coordinator.async_stop()

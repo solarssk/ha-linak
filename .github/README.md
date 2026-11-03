@@ -203,7 +203,7 @@ After submitting, HA shows a progress screen. The attempt has a **60-second** li
 - Find your sensors under **Settings → Devices & services → LINAK**.
 - Add the height sensor to your dashboard with a standard HA card.
 - View the heights saved on your panel. Viewing a saved height does not move the desk.
-- Height updates arrive through Bluetooth. Settings refresh every **60 seconds**.
+- Height updates arrive through Bluetooth, with a reference/position check every **60 seconds**. Saved positions and reminders refresh every **5 minutes**, after reconnecting or when their reference changes.
 - If the connection fails, sensors become unavailable and HA retries while they are loaded.
 
 <details>

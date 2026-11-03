@@ -203,7 +203,7 @@ Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a z
 - Znajdziesz czujniki w **Ustawienia → Urządzenia i usługi → LINAK**.
 - Dodaj wysokość biurka do pulpitu za pomocą standardowej karty HA.
 - Podejrzyj wysokości zapisane na panelu. Ich przeglądanie nie porusza biurkiem.
-- Wysokość aktualizuje się przez Bluetooth. Ustawienia odświeżają się co **60 sekund**.
+- Wysokość aktualizuje się przez Bluetooth, a odczyt pozycji i punktu odniesienia jest sprawdzany co **60 sekund**. Zapisane pozycje i przypomnienia odświeżają się co **5 minut**, po ponownym połączeniu lub zmianie punktu odniesienia.
 - Po błędzie połączenia czujniki stają się niedostępne, a HA ponawia próby, gdy są załadowane.
 
 <details>

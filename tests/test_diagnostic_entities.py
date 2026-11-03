@@ -14,7 +14,10 @@ from custom_components.ha_linak.const import DOMAIN
 from custom_components.ha_linak.coordinator import LinakCoordinator
 from custom_components.ha_linak.binary_sensor import LinakConnectionSensor
 from custom_components.ha_linak.diagnostics import async_get_config_entry_diagnostics
-from custom_components.ha_linak.sensor import LinakDiagnosticSensor
+from custom_components.ha_linak.sensor import (
+    LinakDiagnosticSensor,
+    LinakOperationSensor,
+)
 from test_client import FakeBleak
 from test_integration import ADDRESS, DEVICE
 
@@ -64,7 +67,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         entries = er.async_entries_for_config_entry(registry, entry.entry_id)
-        assert len(entries) == 22
+        assert len(entries) == 23
         by_key = {item.unique_id.removeprefix(ADDRESS + "_"): item for item in entries}
         for key in [
             "height",
@@ -78,7 +81,13 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         ]:
             assert by_key[key].entity_category is None
         assert registry.async_get(memory.entity_id).name == "My saved height"
-        for key in ["target_height", "stop", "go_to_memory_1", "go_to_memory_4"]:
+        for key in [
+            "target_height",
+            "stop",
+            "go_to_memory_1",
+            "go_to_memory_4",
+            "operation",
+        ]:
             assert by_key[key].disabled_by is None
             assert by_key[key].entity_category is None
         for key in ["offset", "connection", "signal_strength", "bluetooth_backend"]:
@@ -108,6 +117,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         await hass.async_block_till_done()
         assert hass.states.get(connected_id).state == "off"
         assert hass.states.get(by_key["height"].entity_id).state == "unavailable"
+        assert hass.states.get(by_key["operation"].entity_id).state == "idle"
         assert hass.states.get(signal.entity_id).state == "-65"
         assert hass.states.get(backend.entity_id).state == "unavailable"
         fake.is_connected = True
@@ -205,6 +215,10 @@ async def test_no_session_has_no_backend_and_connection_is_off(hass):
     connection = LinakConnectionSensor(coordinator, "connection")
     assert connection.available
     assert not connection.is_on
+    operation = LinakOperationSensor(coordinator, "operation")
+    assert operation.available
+    assert operation.native_value == "idle"
+    assert operation.extra_state_attributes is None
     coordinator.desk = SimpleNamespace(client=None)
     assert coordinator.bluetooth_backend is None
 

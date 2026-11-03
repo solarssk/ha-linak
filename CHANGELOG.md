@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add an Operation sensor that shows preparing, moving, stopping and then the last result (completed, interrupted or failed with a reason) for explicit movement requests. It stays available when the connection drops, ignores refused requests and reports the request, not physical arrival.
 - Replay duplicate, late, lost and malformed DPG replies at every request position with a deterministic synthetic transport, and document the one late-copy case a response-type barrier cannot detect. No runtime behavior changes.
 - Classify rejected competing movement commands as HA action validation, preserving the busy message, original movement and no-queue policy while keeping actual movement and Stop failures distinct.
 - Keep the connector's normal retry policy within the existing refresh deadline so two failed local attempts do not prevent HA from selecting a working proxy before setup fails; document the measured connectability limits.

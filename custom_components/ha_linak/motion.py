@@ -5,8 +5,10 @@ Physical behavior still requires supervised validation; see docs/movement.md.
 """
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+import logging
 import math
 import struct
 from typing import Protocol
@@ -19,6 +21,8 @@ from .protocol import (
     PositionSample,
     decode_position,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 CONTROL_UUID = "99fa0002-338a-1024-8a49-009c0215f78a"
 TARGET_UUID = "99fa0031-338a-1024-8a49-009c0215f78a"
@@ -152,11 +156,18 @@ class MotionController:
     """One explicit target at a time; cancellation and failures attempt Stop."""
 
     def __init__(
-        self, transport: MotionTransport, limits: TravelLimits, offset_raw: int
+        self,
+        transport: MotionTransport,
+        limits: TravelLimits,
+        offset_raw: int,
+        on_start: Callable[[], None] | None = None,
+        on_cleanup: Callable[[], None] | None = None,
     ) -> None:
         self.transport = transport
         self.limits = limits
         self.offset_raw = offset_raw
+        self._on_start = on_start
+        self._on_cleanup = on_cleanup
         self._task: asyncio.Task[None] | None = None
         self._stop_task: asyncio.Task[None] | None = None
         self._closed = False
@@ -170,6 +181,16 @@ class MotionController:
     async def _control(self, payload: bytes) -> None:
         async with asyncio.timeout(IO_TIMEOUT):
             await self.transport.write_control(payload)
+
+    @staticmethod
+    def _announce(observer: Callable[[], None] | None) -> None:
+        """Tell an observer a step began; its failure must never alter the move or Stop."""
+        if observer is None:
+            return
+        try:
+            observer()
+        except Exception:
+            _LOGGER.debug("Movement notification failed", exc_info=True)
 
     async def _read(self) -> int:
         if not self.transport.connected:
@@ -230,6 +251,7 @@ class MotionController:
     async def _move(self, target: int) -> None:
         discard = False
         try:
+            self._announce(self._on_start)
             async with asyncio.timeout(MOVE_TIMEOUT):
                 position = await self._read()
                 if abs(target - position) <= TOLERANCE_RAW:
@@ -281,6 +303,7 @@ class MotionController:
             discard = True
             raise
         finally:
+            self._announce(self._on_cleanup)
             # Stop uses its own deadline, outside the movement deadline. Shield it
             # so cancellation of an HA action cannot cancel the Stop packet.
             cleanup = asyncio.create_task(self._finish_move(discard))

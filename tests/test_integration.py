@@ -96,7 +96,7 @@ async def test_setup_reads_centimeters_and_unload_disconnects(hass):
         await hass.async_block_till_done()
         assert entry.runtime_data.data.height_cm == 82.38
         states = hass.states.async_all("sensor")
-        assert len(states) == 13
+        assert len(states) == 14
         assert any(
             s.state == "82" and s.attributes.get("unit_of_measurement") == "cm"
             for s in states
@@ -105,7 +105,10 @@ async def test_setup_reads_centimeters_and_unload_disconnects(hass):
         fake.is_connected = False
         entry.runtime_data._changed()
         await hass.async_block_till_done()
-        assert all(s.state == "unavailable" for s in hass.states.async_all("sensor"))
+        sensors = hass.states.async_all("sensor")
+        operation = [s for s in sensors if s.entity_id.endswith("_operation")]
+        assert [s.state for s in operation] == ["idle"]
+        assert all(s.state == "unavailable" for s in sensors if s not in operation)
         fake.is_connected = True
         await entry.runtime_data.async_refresh()
         await hass.async_block_till_done()
@@ -215,6 +218,7 @@ async def test_diagnostics_do_not_contain_device_identifiers(hass):
         async_get_config_entry_diagnostics,
     )
     from custom_components.ha_linak.client import DeskState
+    from custom_components.ha_linak.operation import OperationStatus
     import json
 
     entry = MockConfigEntry(
@@ -226,6 +230,7 @@ async def test_diagnostics_do_not_contain_device_identifiers(hass):
         data=DeskState(),
         signal_strength=None,
         bluetooth_backend=None,
+        operation=OperationStatus(),
     )
     result = await async_get_config_entry_diagnostics(hass, entry)
     serialized = json.dumps(result)

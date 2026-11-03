@@ -16,6 +16,7 @@ from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
 from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError, MotionFailure, MotionStopped
+from .operation import OperationStatus
 from .setup_session import take_session
 from .ownership import has_idasen_conflict
 
@@ -72,6 +73,13 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             return None
         return backend_category(self.desk.client)
 
+    @property
+    def operation(self) -> OperationStatus:
+        """The latest explicit operation, kept apart from the Bluetooth link."""
+        if self.desk is None:
+            return OperationStatus()
+        return self.desk.operation.status
+
     @callback
     def _changed(self) -> None:
         if self.desk is not None and self.desk.connected:
@@ -83,9 +91,14 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             else:
                 self.async_set_updated_data(self.desk.state)
         else:
+            already_failed = not self.last_update_success
             self.async_set_update_error(
                 UpdateFailed("Desk disconnected or invalid position")
             )
+            if already_failed:
+                # HA notifies listeners only on the first error; the always
+                # available Operation sensor must still follow later changes.
+                self.async_update_listeners()
 
     def _validate_control_reference(self, state: DeskState) -> None:
         """A changed calibration can invalidate previously configured bounds."""

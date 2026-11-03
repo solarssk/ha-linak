@@ -46,6 +46,7 @@ Centimeters are the primary height interface. A `number` entity supports that in
 | Target height number | Whole-centimeter target within measured bounds; state follows actual feedback | Control |
 | Stored-position buttons | Freshly read slot passed to the common movement controller | Controls |
 | Stop button | Interrupt an active operation or send Stop while idle | Control |
+| Operation sensor | Phase of the explicit request, its last result and reason; never a measurement | Ordinary sensor, available without a Bluetooth link |
 | Offset sensor | Technical reference used in height conversion | Diagnostic |
 | Connection binary sensor | Current client readiness | Diagnostic, enabled by default |
 | Signal strength and backend sensors | Advertisement RSSI and active backend category | Diagnostic, disabled by default |
@@ -77,7 +78,7 @@ Config-entry setup defers all radio work until HA reaches running, using HA's st
 | Invalid group | A completed matching reply failed decoding | That group's entities are unavailable; another group's valid read can remain available |
 | Lost or ambiguous session | Disconnect, timeout, invalid reference or other transport failure | All ordinary readings become unavailable; cached objects are diagnostic history only |
 
-The five-minute interval is an explicit software read policy, not evidence of an overloaded controller or proof that the OLED sleeps. During an unchanged four-slot session, the synthetic request count is two extended reads per normal check instead of ten; a due full check retains the existing memory barriers. Polling yields while control owns the client, so deadlines are not hard real-time guarantees. The number entity holds its last settled height during travel while the measurement sensor stays live. All timeouts still invalidate the transport generation; recovery creates a session with fresh required data and settings, never a cached height or queued target. Operation-result entities and deliberate connection ownership remain separate roadmap work.
+The five-minute interval is an explicit software read policy, not evidence of an overloaded controller or proof that the OLED sleeps. During an unchanged four-slot session, the synthetic request count is two extended reads per normal check instead of ten; a due full check retains the existing memory barriers. Polling yields while control owns the client, so deadlines are not hard real-time guarantees. The number entity holds its last settled height during travel while the measurement sensor stays live. All timeouts still invalidate the transport generation; recovery creates a session with fresh required data and settings, never a cached height or queued target. The operation sensor reports explicit requests apart from this telemetry, and deliberate connection ownership remains separate roadmap work.
 
 ## Operation ownership
 
@@ -113,7 +114,7 @@ This section defines the intended refactoring boundary, not implemented state fi
 | Telemetry sample | Raw position, speed word, observation time and connection generation | A sample from a closed generation cannot become current after reconnect |
 | Configuration snapshot | Reference, memories, reminders, per-group read time and validity | Last-read configuration is not permission to move; unknown/unsupported differs from a failed read |
 | Connection state | Disconnected, connecting, authenticating, ready, recovering or deliberately suspended | Suspension must not trigger a polling-driven reconnect; readiness is not a movement result |
-| Operation result | Operation identifier, kind, requested goal, phase, start/end time and typed outcome/reason | Reject competing goals without queueing; successful explicit Stop is interrupted rather than failed |
+| Operation result | Operation identifier, kind, requested goal, phase, start/end time and typed outcome/reason | Reject competing goals without queueing; successful explicit Stop is interrupted rather than failed. The operation sensor implements the phase, requested goal, outcome and reason; the identifier, kind and timestamps remain proposed |
 | Device capabilities | Protocol flags, implemented operations and evidence-supported model/firmware scope | An advertised bit does not establish a working setter or compatibility with another family |
 
 A settings snapshot may be displayed as last-read data only with explicit freshness semantics. Fresh height needs a valid sample and reference for the current connection. An offset change invalidates derived height and configured control assumptions until reconciled; it must not silently reinterpret old measurements. Reconnect can recover telemetry before optional settings, but cannot authorize target travel from an uncertain reference or memory response.

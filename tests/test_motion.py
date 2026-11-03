@@ -716,3 +716,95 @@ async def test_position_read_has_separate_budget_from_stop():
     ):
         await controller(transport).move_to_cm(83)
     assert transport.writes == [STOP]
+
+
+CLEANUP_POSITIONS = {
+    "arrival": (1400, 1450, 1500),
+    "already_at_height": (1500,),
+    "guard": (1400,),
+    "timeout": (1400, 1450, 1500),
+    "cancelled": (1400, 1450, 1500),
+}
+
+
+@pytest.mark.parametrize("exit_kind", list(CLEANUP_POSITIONS))
+async def test_cleanup_is_announced_once_before_the_final_stop(exit_kind):
+    transport = Transport(CLEANUP_POSITIONS[exit_kind])
+    transport.hang_target = exit_kind in ("timeout", "cancelled")
+    seen = []
+    motion = MotionController(
+        transport,
+        TravelLimits(0, 6000),
+        6800,
+        on_cleanup=lambda: seen.append(list(transport.writes)),
+    )
+    if exit_kind == "cancelled":
+        task = asyncio.create_task(motion.move_to_cm(83))
+        await transport.target_written.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    elif exit_kind in ("guard", "timeout"):
+        with pytest.raises((MotionError, TimeoutError)):
+            await motion.move_to_cm(83)
+    else:
+        await motion.move_to_cm(83)
+    assert len(seen) == 1
+    assert seen[0].count(STOP) == transport.writes.count(STOP) - 1
+    assert transport.writes[-1] == STOP
+
+
+async def test_a_failing_cleanup_notification_cannot_skip_the_final_stop():
+    def broken():
+        raise RuntimeError("observer failure")
+
+    transport = Transport()
+    motion = MotionController(transport, TravelLimits(0, 6000), 6800, on_cleanup=broken)
+    await motion.move_to_cm(83)
+    assert transport.writes[-1] == STOP
+
+
+@pytest.mark.parametrize("exit_kind", ["arrival", "already_at_height", "guard"])
+async def test_start_is_announced_once_before_any_write(exit_kind):
+    transport = Transport(CLEANUP_POSITIONS[exit_kind])
+    seen = []
+    motion = MotionController(
+        transport,
+        TravelLimits(0, 6000),
+        6800,
+        on_start=lambda: seen.append(list(transport.writes)),
+    )
+    if exit_kind == "guard":
+        with pytest.raises(MotionError):
+            await motion.move_to_cm(83)
+    else:
+        await motion.move_to_cm(83)
+    assert seen == [[]]
+
+
+async def test_a_failing_start_notification_cannot_prevent_the_move():
+    def broken():
+        raise RuntimeError("observer failure")
+
+    transport = Transport()
+    motion = MotionController(transport, TravelLimits(0, 6000), 6800, on_start=broken)
+    await motion.move_to_cm(83)
+    assert transport.target_written.is_set()
+    assert transport.writes[-1] == STOP
+
+
+async def test_nothing_is_announced_when_the_move_is_never_reserved():
+    transport = Transport()
+    transport.connected = False
+    seen = []
+    motion = MotionController(
+        transport,
+        TravelLimits(0, 6000),
+        6800,
+        on_start=lambda: seen.append("start"),
+        on_cleanup=lambda: seen.append("cleanup"),
+    )
+    with pytest.raises(MotionError):
+        await motion.move_to_cm(83)
+    assert seen == []
+    assert transport.writes == []

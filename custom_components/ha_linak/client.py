@@ -34,6 +34,7 @@ from .motion import (
     _drain_cleanup,
 )
 from .naming import DEFAULT_NAME, desk_name
+from .operation import OperationTracker, Phase, Reason
 from .pairing import BlueZAgentUnavailable, pair_bluez
 from .protocol import (
     DPG_UUID,
@@ -164,6 +165,11 @@ class DeskClient:
         self._stop_task: asyncio.Task[None] | None = None
         self.last_control_result = "not_requested"
         self._motion_stop_sent = False
+        self._stop_requested = False
+        self.operation = OperationTracker(self._operation_changed)
+
+    def _operation_changed(self) -> None:
+        self.changed()
 
     def _set_stage(self, stage: str) -> None:
         now = monotonic()
@@ -196,6 +202,7 @@ class DeskClient:
         if self._operation is not None:
             self._operation.cancel()
         if not self._closing:
+            self.operation.link_lost()
             self.changed()
 
     def _notification(self, generation: int, data: bytearray) -> None:
@@ -684,34 +691,96 @@ class DeskClient:
         )
         self.last_control_result = "moving"
         self._motion_stop_sent = False
+        self._stop_requested = False
+        self.operation.begin(height_cm)
+        failure: BaseException | None = None
+        stop_error: BaseException | None = None
         try:
             await task
             self.last_control_result = "completed"
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as cancelled:
             self.last_control_result = "interrupted"
-            self._raise_if_child_interrupted()
+            failure = cancelled
+            # A Stop that cancelled a move before it started writes its own Stop;
+            # its delivery decides whether this was an interruption.
+            stop_error = await self._stop_outcome()
+            try:
+                self._raise_if_child_interrupted()
+            except MotionError as translated:
+                failure = translated
+                raise
             raise
-        except Exception:
+        except Exception as error:
             self.last_control_result = "failed"
+            failure = error
             raise
         finally:
             settled = asyncio.gather(task, return_exceptions=True)
             try:
                 await _drain_cleanup(settled)
             finally:
+                if stop_error is None:
+                    stop_error = await self._stop_outcome()
                 self._motion_task = None
+                self._settle_operation(failure, stop_error)
                 self.changed()
+
+    async def _stop_outcome(self) -> BaseException | None:
+        """Wait for a Stop requested during this operation; return its failure."""
+        stop = self._stop_task
+        if not self._stop_requested or stop is None:
+            return None
+        settled = asyncio.gather(stop, return_exceptions=True)
+        await _drain_cleanup(settled)
+        result = settled.result()[0]
+        return result if isinstance(result, BaseException) else None
 
     def _raise_if_child_interrupted(self) -> None:
         """Translate only worker cancellation; preserve HA caller cancellation."""
         current = asyncio.current_task()
         if current is not None and not current.cancelling():
-            stop_pending = self._stop_task is not None and not self._stop_task.done()
-            if stop_pending and self._motion_stop_sent:
+            if self._stop_requested and self._motion_stop_sent:
                 raise MotionStopped("Movement was stopped") from None
             raise MotionError(
                 "Movement was interrupted without confirmed Stop"
             ) from None
+
+    def _settle_operation(
+        self, error: BaseException | None, stop_error: BaseException | None = None
+    ) -> None:
+        """Publish the final outcome once the movement's own cleanup has settled."""
+        if stop_error is not None:
+            self.operation.fail(Reason.STOP_FAILED)
+        elif error is None:
+            self.operation.complete()
+        elif isinstance(error, MotionStopped):
+            self.operation.interrupt()
+        elif isinstance(error, asyncio.CancelledError):
+            # The caller went away. Cancellation before any target was sent has
+            # nothing to stop; otherwise only a delivered final Stop is clean.
+            if self._motion_stop_sent or self.operation.origin is Phase.PREPARING:
+                self.operation.interrupt()
+            else:
+                self.operation.fail(Reason.STOP_FAILED)
+        else:
+            self.operation.fail(self._failure_reason(error))
+
+    def _failure_reason(self, error: BaseException) -> Reason:
+        """Name what the software detected; never expose a raw exception message."""
+        if isinstance(error, DeskLinkLost):
+            return Reason.LINK_LOST
+        if self._stop_requested and not self._motion_stop_sent:
+            return Reason.STOP_FAILED
+        if isinstance(error, TimeoutError):
+            return Reason.TIMEOUT
+        if isinstance(error, MotionError) and error.reason is not MotionFailure.UNKNOWN:
+            try:
+                return Reason(error.reason.value)
+            except ValueError:
+                return Reason.UNKNOWN
+        if self.operation.origin is Phase.PREPARING:
+            return Reason.PREPARATION_FAILED
+        return Reason.UNKNOWN
 
     async def _move(
         self,
@@ -735,13 +804,20 @@ class DeskClient:
                     if memory.position_raw is None:
                         raise MotionError("Stored position is empty")
                     height_cm = (memory.position_raw + offset) / 100
+                    self.operation.request(height_cm)
                 assert height_cm is not None
                 limits.target(height_cm, offset)
                 self.state.offset_raw = offset
                 await self._activate_client("movement")
                 assert self.client is not None
                 transport = _LiveMotionTransport(self)
-                controller = MotionController(transport, limits, offset)
+                controller = MotionController(
+                    transport,
+                    limits,
+                    offset,
+                    on_start=self.operation.moving,
+                    on_cleanup=self.operation.stopping,
+                )
                 self._set_stage("movement")
                 await controller.move_to_cm(height_cm)
                 self._set_stage("ready")
@@ -801,7 +877,12 @@ class DeskClient:
 
     async def _stop_control(self) -> None:
         task = self._motion_task
+        # The request owns its operation until it settles, even after its task ends.
+        during_operation = task is not None
+        if task is not None:
+            self._stop_requested = True
         if task is not None and not task.done():
+            self.operation.stopping()
             task.cancel()
             settled = asyncio.gather(task, return_exceptions=True)
             await _drain_cleanup(settled)
@@ -825,9 +906,13 @@ class DeskClient:
             async with asyncio.timeout(MOTION_IO_TIMEOUT):
                 await BleakMotionTransport(client).write_control(STOP)
             self.last_control_result = "stop_sent"
+            self._motion_stop_sent = True
             self._set_stage("ready")
         except Exception as err:
             self.last_control_result = "stop_failed"
+            if not during_operation:
+                # A running request settles its own operation; a lone Stop records itself.
+                self.operation.stop_failed_while_idle()
             await self._disconnect_link()
             raise MotionError("Stop failed; check physical Stop") from err
         finally:

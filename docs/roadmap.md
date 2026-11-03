@@ -17,7 +17,7 @@ The external architecture review examined revision `e909e8f`. Its findings are a
 | Memory replies can cross request boundaries | Protocol ambiguity remains: type `07` has no slot identifier | Implemented in simulation: replay of duplicate, late, lost and malformed replies at every request position, with the [case a barrier cannot detect](protocol.md#the-case-a-barrier-cannot-detect) recorded; retain fail-closed behavior. Whether a copy crosses the barrier on a real stack needs the hardware test in the [investigation guide](bluetooth-research.md#next-tests-that-can-change-a-conclusion) |
 | Successful Stop appears as an action failure | Addressed by the competing-control fix | Keep HA regressions for confirmed Stop, failed Stop, bursts and unexpected cancellation |
 | Settings read cadence | Runtime reference/position checks every 60 seconds; independent five-minute memory/reminder due checks | Synthetic request-count regressions verify skipped reads; measure latency and OLED behavior on hardware before claiming load/sleep improvements |
-| Connection controls and operation status | Useful missing user-facing behavior | Expose deliberate connection ownership and separate commanded goal, measured height and operation result |
+| Connection controls and operation status | Useful missing user-facing behavior | Operation status is implemented as a separate sensor for the request, its phase, result and reason, apart from measured height; deliberate connection ownership remains open |
 | Separate PyPI library | Required for a Core contribution; not needed to repair each current bug | Define and test the boundary, then extract behavior without changing wire ordering in the same PR |
 | Additional settings and desk panels | Research candidates, not supported features | Validate each setter/model independently before exposing entities |
 
@@ -29,11 +29,11 @@ Each row is a scoped change with its own tests and review. Hardware validation r
 
 | Order | Deliverable | Acceptance condition |
 | --- | --- | --- |
-| 1 | Telemetry/configuration state contract | Implemented reference/setting freshness contract and monotonic group ages; operation state remains a separate UI deliverable; no cached height represented as live |
+| 1 | Telemetry/configuration state contract | Implemented reference/setting freshness contract and monotonic group ages; operation state is delivery row 4; no cached height represented as live |
 | 2 | Split settings refresh from live telemetry | Implemented per-group validity/ages and independent due reads, notification-safe reference polling and full reconnect recovery. Keep timeout/generation and fresh-control regressions; physical idle/backend validation remains |
 | 3 | Cross-integration conflict handling | Implemented normalized-address checks and EN/PL recovery messages; disabled/ignored entries and other desks do not block. Registry checks cannot arbitrate an unfinished external wizard or an operation already underway |
-| 4 | Optional monitoring and explicit connection ownership | Monitoring performs no activation, calibration or motion; deliberate disconnect suppresses background reconnect until the user requests connection; unload removes callbacks and pending tasks |
-| 5 | Operation state for UI and automations | Distinguish preparing, moving, stopping, completed, interrupted and failed; report a reason without recording every feedback tick as a new goal |
+| 4 | Operation state for UI and automations | Implemented in simulation as the operation sensor: preparing, moving, stopping, completed, interrupted and failed with a reason, and no goal recorded per feedback tick; physical validation remains |
+| 5 | Optional monitoring and explicit connection ownership | Monitoring performs no activation, calibration or motion; deliberate disconnect suppresses background reconnect until the user requests connection; unload removes callbacks and pending tasks |
 | 6 | Protocol replay and capability model | Simulated replay of duplicate, late-response, lost-link and malformed-reply sequences is implemented; distinguishing advertised flags, implemented support and hardware validation remains open |
 | 7 | Library extraction and package release | Preserve transport injection, single ownership, bounds, Stop, cancellation and redaction through parity tests; reproducible public package release before consuming it as a dependency |
 | 8 | Verified settings and more desk panels | One scoped setter/model at a time with acknowledgement, readback, preserved unknown bits and independent hardware evidence |

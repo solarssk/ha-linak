@@ -67,7 +67,7 @@ Every exit attempts both control Stop and reference-input release. A failed moti
 
 One operation owns the client from preparation through final cleanup. New slider or stored-position requests are rejected immediately while that reservation or a settings exchange is active. The busy response asks the user to wait or press Stop; it does not schedule a later move or send another packet. Choosing a new target requires a fresh request after the current operation settles.
 
-The HA action reports this refusal as `ServiceValidationError` with the translated `control_busy` message. The frontend receives `service_validation_error`, rather than the `home_assistant_error` used for device/transport failures. The original operation keeps its goal and result; rejecting another request does not mark the active movement failed. The rejected action remains unsuccessful for automations and scripts, so they cannot mistake it for an executed command. HA 2026.10.4 also logs frontend validation refusals at `ERROR`; severity alone does not identify a failed BLE session.
+The HA action reports this refusal as `ServiceValidationError` with the translated `control_busy` message. The frontend receives `service_validation_error`, rather than the `home_assistant_error` used for device/transport failures. The original operation keeps its goal and result; rejecting another request does not mark the active movement failed, and the [operation status](#operation-status) keeps showing that operation. The rejected action remains unsuccessful for automations and scripts, so they cannot mistake it for an executed command. HA 2026.10.4 also logs frontend validation refusals at `ERROR`; severity alone does not identify a failed BLE session.
 
 | Input during an active operation | Result | Additional target writes |
 | --- | --- | --- |
@@ -103,6 +103,55 @@ sequenceDiagram
 Movement completion, explicit Stop and close/unload retain ownership until their cleanup settles. Shielding prevents repeated caller cancellation from cancelling the final Stop packet. Late errors are observed and propagated. A Stop timeout closes/discards the session; it does not silently report successful stopping.
 
 Software can confirm that the transport call returned, not that the physical desk stopped. Radio loss can prevent Stop delivery. Initial hardware tests therefore require physical stopping access and direct observation.
+
+## Operation status
+
+The `Operation` sensor reports the explicit request that owns the client and, afterwards, how it ended. It is software state: it names the request and its cleanup, and it is not evidence that the desk reached the height or stopped. Measured height, the settled slider value and the Bluetooth connection keep their own entities, and the sensor never records feedback ticks.
+
+```mermaid
+stateDiagram-v2
+    accTitle: Operation status phases
+    accDescr: An accepted request prepares, moves and runs final Stop cleanup, then settles as completed, interrupted or failed. A request cancelled before any target settles as interrupted directly.
+    [*] --> idle
+    idle --> preparing: request accepted
+    preparing --> moving: preparation done
+    preparing --> stopping: Stop requested
+    preparing --> interrupted: caller cancelled before any target
+    moving --> stopping: final Stop starts
+    stopping --> completed: arrival and Stop confirmed
+    stopping --> interrupted: explicit Stop or cancelled caller, Stop confirmed
+    preparing --> failed: error or link lost
+    moving --> failed: error or link lost
+    stopping --> failed: Stop failed, error or link lost
+    completed --> preparing: next request
+    interrupted --> preparing: next request
+    failed --> preparing: next request
+```
+
+| State | Meaning |
+| --- | --- |
+| `idle` | No operation since the integration loaded |
+| `preparing` | The request owns the client while the reference, the selected slot and client readiness are checked |
+| `moving` | The command loop sends targets and checks feedback |
+| `stopping` | Final control Stop and reference release are running, after arrival, a guard failure, an error or an explicit Stop |
+| `completed` | The target was reached within tolerance and the final Stop was confirmed |
+| `interrupted` | An explicit Stop or a cancelled calling action ended the request, and its Stop and release were confirmed or no target had been sent yet |
+| `failed` | The request ended without a confirmed result; the `reason` attribute names what the software detected |
+
+| Situation | Status |
+| --- | --- |
+| A competing request is refused with `control_busy` | Unchanged: the active operation and the last result stay as they were |
+| Stop while no operation is active | Unchanged; a failed Stop records `failed` with reason `stop_failed` |
+| Stop during preparation, travel or final cleanup | `stopping`, then `interrupted` once Stop and release are confirmed, never `completed` |
+| Stop before the accepted request has started | The request waits for that Stop and settles with its outcome: `interrupted` when the Stop was delivered, `failed` with `stop_failed` when it was not |
+| Stop after the movement ended but before the request settled | The movement's own result stands, because it already finished with its confirmed final Stop, so a completed move stays `completed`; a Stop that fails there makes the result `failed` with `stop_failed` |
+| The calling action is cancelled | `interrupted` once the final Stop is delivered, or at once when no target was sent yet; `failed` with `stop_failed` when the Stop could not be confirmed |
+| The transport is lost during an operation | `failed` with `link_lost` at once; later cleanup errors do not rewrite it |
+| Reconnect | A settled result stays until the next accepted request; nothing resumes the old goal |
+| Reload or Home Assistant restart | Starts at `idle`; no result or goal is stored |
+| Calibration | Not an operation; setup and options flows report their own progress |
+
+The `requested_height_cm` attribute holds the requested goal, never a measurement. A target request records it when accepted; a stored-position request records it once the selected slot has been read. The sensor stays available when the connection drops, so a failed result keeps its reason visible. A refusal can also come from a read in progress, because the client serves one exchange at a time; the status then stays as it was. The reason codes are listed in the [diagnostic manual](diagnostics.md#interpret-a-movement-failure).
 
 ## Protocol differences still under investigation
 

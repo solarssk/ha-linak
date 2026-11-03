@@ -143,7 +143,8 @@ stateDiagram-v2
 | A competing request is refused with `control_busy` | Unchanged: the active operation and the last result stay as they were |
 | Stop while no operation is active | Unchanged; a failed Stop records `failed` with reason `stop_failed` |
 | Stop during preparation, travel or final cleanup | `stopping`, then `interrupted` once Stop and release are confirmed, never `completed` |
-| Stop before the accepted request has started, or after its movement ended but before it settled | The request waits for that Stop and settles with its outcome: `interrupted` when the Stop was delivered, `failed` with `stop_failed` when it was not |
+| Stop before the accepted request has started | The request waits for that Stop and settles with its outcome: `interrupted` when the Stop was delivered, `failed` with `stop_failed` when it was not |
+| Stop after the movement ended but before the request settled | The movement's own result stands, because it already finished with its confirmed final Stop, so a completed move stays `completed`; a Stop that fails there makes the result `failed` with `stop_failed` |
 | The calling action is cancelled | `interrupted` once the final Stop is delivered, or at once when no target was sent yet; `failed` with `stop_failed` when the Stop could not be confirmed |
 | The transport is lost during an operation | `failed` with `link_lost` at once; later cleanup errors do not rewrite it |
 | Reconnect | A settled result stays until the next accepted request; nothing resumes the old goal |

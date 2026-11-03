@@ -675,7 +675,7 @@ async def test_a_delivered_stop_reaching_a_request_still_waiting_for_the_client(
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_a_failed_stop_after_the_move_ended_still_fails_the_operation(hass):
+async def test_a_failed_stop_before_the_request_started_fails_the_operation(hass):
     entry, fake = await setup(hass)
     coordinator = entry.runtime_data
     desk = coordinator.desk

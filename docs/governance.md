@@ -53,3 +53,9 @@ Keep one compact taxonomy, with exactly one type per PR:
 | `security` | Supplement the type for security corrections |
 
 Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem labels or one-off blocking labels. Dependabot already supplies type: chore and dependencies explicitly. Before retiring a label, inspect all its issue/PR associations and migrate any useful classification first. Removing an obsolete status label also removes it from historical items; that must be deliberate.
+
+## Startup and version compatibility gates
+
+The existing required `Tests` job includes the supported-version full-process cold-boot/restart smoke. No required check name or live protection setting changes. `HA preview smoke` runs the separately pinned preview as an advisory compatibility signal. These complement the hash-locked in-process HA/pytest suite rather than replacing it. Both use official images pinned by digest and isolated temporary configurations; see [local reproduction and boundaries](../CONTRIBUTING.md#isolated-ha-startup-smoke).
+
+A successful no-radio startup confirms loading, expected setup retry, real core startup, platform imports and shutdown. It does not confirm a connected desk, UI rendering, firmware permissions or physical Stop. An image version mismatch, dependency/setup failure, recovery mode, import exception or unexpected ERROR log fails the smoke. A preview failure is visible with saved logs but does not block a supported-version fix or claim preview support.

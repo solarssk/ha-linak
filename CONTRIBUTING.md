@@ -19,6 +19,21 @@ Use Conventional Commit titles and scoped branches. Update English/Polish docs a
 
 HACS validation and hassfest check packaging; they do not prove physical hardware behavior. Only HA 2026.10.4 is currently validated. Movement uses native slider/button controls with simulated tests and a bounded hardware observation; complete target arrival and physical Stop accuracy remain pending. Protected client activation and confirmed height-reference calibration writes are implemented. Activation/offset readback and one reconnect were observed on one DPG1C; this does not establish permanent client readiness or power-cycle persistence. Other panel-setting writes are not implemented.
 
+## Isolated HA startup smoke
+
+CI also cold-boots and restarts a real HA Core process with minimal configuration in an official container image with this component copied into a fresh configuration. The supported-version smoke runs inside the required Tests job; the pinned preview job is advisory and does not expand the supported HA range. Images and expected versions are recorded in `.github/ha-smoke-targets.json`, with immutable digests. Update the supported target together with the HA test plugin, HACS minimum and generated component requirements; upgrade the preview deliberately.
+
+To reproduce with Docker:
+
+```sh
+python3 scripts/run_ha_smoke.py --target supported --output /tmp/ha-linak-smoke
+python3 scripts/run_ha_smoke.py --target preview --output /tmp/ha-linak-preview
+```
+
+The helper creates and removes its own internal Docker network and temporary configuration. The container runs with the invoking user ID so persisted files remain removable on Linux. It does not mount host D-Bus, Bluetooth devices or production config, expose ports, use privileged mode or permit external network egress. The test uses real bootstrap, config-entry restoration and platform imports, without pytest fixtures or a fake BLE transport. It requires HA to reach running with exactly one synthetic LINAK entry in the expected unavailable-device setup-retry state, and rejects unexpected ERROR logs, recovery mode or broken imports. Both process runs shut down before their container is removed. Reports also record pre-bootstrap and shutdown failures; cleanup attempts network removal even if container removal stalls. The Tests and preview job deadlines allow image download, both phases and cleanup, with extra room for dependency installation in Tests.
+
+This is a startup/dependency check without a desk, not a working BLE connection or hardware acceptance result. HA entity setup with simulated device feedback remains covered by pytest; pairing, proxy behavior, physical movement and stopping need the hardware acceptance matrix. Reports explicitly mark `readings_validated` false. CI retains only synthetic reports and logs for seven days; it never uploads the configuration directory.
+
 ## Markdown source format
 
 Do not use em dashes. Use periods, commas or colons. Write each prose paragraph on one source line and let the editor, GitHub or HACS wrap it visually. Keep a list item's prose on one line too; nested lists and multi-paragraph items retain their Markdown structure. Do not wrap prose to a fixed column width. Preserve paragraph separators, headings, tables, code fences, HTML layouts, image/badge blocks, GitHub alert marker lines and intentional hard line breaks. Keep consecutive CHANGELOG.md bullets compact, without blank lines between them.

@@ -355,3 +355,29 @@ def test_metadata_gate_reruns_when_handoff_fields_change():
         step.get("run") == "python3 scripts/check_pr_metadata.py"
         for step in workflow["jobs"]["docs"]["steps"]
     )
+
+
+def test_ha_smoke_targets_are_pinned_and_only_supported_version_is_a_gate():
+    targets = json.loads((ROOT / ".github/ha-smoke-targets.json").read_text())
+    hacs = json.loads((ROOT / "hacs.json").read_text())
+    assert targets["supported"]["version"] == hacs["homeassistant"]
+    for target in targets.values():
+        assert re.fullmatch(
+            r"ghcr\.io/home-assistant/home-assistant:[a-zA-Z0-9.]+@sha256:[a-f0-9]{64}",
+            target["image"],
+        )
+        assert f":{target['version']}@" in target["image"]
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    gate_steps = [
+        step
+        for step in workflow["jobs"]["tests"]["steps"]
+        if "--target supported" in step.get("run", "")
+    ]
+    assert len(gate_steps) == 1
+    assert not gate_steps[0].get("continue-on-error", False)
+    assert not workflow["jobs"]["tests"].get("continue-on-error", False)
+    assert workflow["jobs"]["ha-preview"]["continue-on-error"] is True
+    assert any(
+        "--target preview" in step.get("run", "")
+        for step in workflow["jobs"]["ha-preview"]["steps"]
+    )

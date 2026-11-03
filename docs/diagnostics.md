@@ -21,7 +21,7 @@ Find the closest symptom and collect the next missing evidence. The [shared glos
 | Height reads work, movement does not | The read path works | Fresh bounds, client readiness, requested memory and movement failure reason |
 | RSSI is available, controls are unavailable | A scanner still hears the desk | Connection/backend state; RSSI is not an active-link test |
 | Entities become unavailable after an action | The session no longer supplies valid state | Determine whether radio loss caused the error or cleanup deliberately disconnected |
-| Stored heights repeat or shift slots | Reply association may be wrong | Read-response ordering and the capabilities barriers between memory reads |
+| Stored heights repeat or shift slots | Reply association may be wrong | Read-response ordering, the capabilities barriers between memory reads and the [stale-frame table](protocol.md#stale-and-duplicate-frames) |
 | Displayed height disagrees with a tape measure | The height reference may be wrong | Protected calibration; do not invent different measurements to satisfy bounds |
 
 ## Understand the layers

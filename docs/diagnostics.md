@@ -14,6 +14,7 @@ Find the closest symptom and collect the next missing evidence. The [shared glos
 
 | Symptom | What is established | Next check |
 | --- | --- | --- |
+| IKEA ownership conflict | Another enabled `idasen_desk` entry claims the same normalized address | Disable that desk entry in IKEA Idasen Desk, then retry/reload LINAK; do not remove pairing or reset the panel |
 | Desk is not discovered | HA has no usable discovery record | Panel pairing indication, HA Bluetooth advertisements and connectable adapter availability |
 | Discovery works, connection times out | An advertisement was seen; no usable GATT session completed | `connection` stage, actual backend, competing desk clients and fresh advertisements |
 | Pairing or subscription fails | Connection progressed beyond discovery | Authentication result and the specific subscription stage |

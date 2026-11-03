@@ -173,7 +173,7 @@ Skopiuj [`custom_components/ha_linak`](../custom_components/ha_linak) do folderu
 
 W Home Assistant integracja nazywa się **Biurka LINAK**. Jej wewnętrzna domena pozostaje `ha_linak`.
 
-1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka.
+1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka. LINAK wykrywa włączony wpis IKEA dla tego samego biurka i wyjaśnia, jak rozwiązać konflikt, zachowując jego konfigurację.
 2. Włącz **tryb parowania Bluetooth** na panelu.
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **Biurka LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.

@@ -81,12 +81,14 @@
       "invalid_name": "Wpisz czytelną nazwę o długości od 1 do 80 znaków.",
       "connection_unavailable": "Połączenie z biurkiem jest niedostępne. Spróbuj ponownie po przywróceniu połączenia.",
       "client_preparation_failed": "Nie udało się przygotować panelu. Sprawdź połączenie Bluetooth i kontynuuj, aby ponowić sprawdzenie. Nie wysłano polecenia ruchu.",
-      "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji."
+      "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji.",
+      "idasen_conflict": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
       "no_devices_found": "Nie znaleziono zgodnego biurka. Włącz parowanie i sprawdź adapter Bluetooth lub aktywne proxy.",
-      "not_connectable": "Urządzenie zostało wykryte, ale nie można nawiązać z nim aktywnego połączenia Bluetooth. Sprawdź lokalny adapter lub aktywne proxy."
+      "not_connectable": "Urządzenie zostało wykryte, ale nie można nawiązać z nim aktywnego połączenia Bluetooth. Sprawdź lokalny adapter lub aktywne proxy.",
+      "idasen_conflict": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka."
     },
     "progress": {
       "connect": "Łączenie z biurkiem, uwierzytelnianie Bluetooth i odczytywanie danych. Próba trwa maksymalnie 60 sekund; zwolnienie połączenia po błędzie może zająć dodatkowe 10 sekund. Możesz anulować konfigurację.",
@@ -251,7 +253,8 @@
       "invalid_name": "Wpisz czytelną nazwę o długości od 1 do 80 znaków.",
       "desk_not_stationary": "Poczekaj, aż biurko się zatrzyma i pojawi się aktualny odczyt wysokości, a następnie spróbuj ponownie.",
       "range_required": "Najpierw zapisz najniższą i najwyższą wysokość biurka. Następnie wybierz sprawdzenie wysokości w Konfiguruj.",
-      "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji."
+      "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji.",
+      "idasen_conflict": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka."
     },
     "progress": {
       "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."
@@ -281,6 +284,9 @@
     },
     "startup_waiting": {
       "message": "Połączenie z biurkiem rozpocznie się po uruchomieniu Home Assistanta."
+    },
+    "idasen_conflict": {
+      "message": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka."
     }
   }
 }

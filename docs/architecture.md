@@ -81,7 +81,7 @@ The five-minute interval is an explicit software read policy, not evidence of an
 
 ## Operation ownership
 
-One desk must have one active owner of its BLE connection. The client reserves a foreground operation before awaiting I/O and uses one query lock to serialize its exchanges.
+One desk must have one active owner of its BLE connection. The [cross-integration check](onboarding.md#one-integration-per-desk) rejects known enabled IKEA entries for the same address before new LINAK I/O. Idle refresh releases our connection on conflict; Stop and cleanup retain their existing ownership rules. This registry check is not a system-wide Bluetooth mutex. The client reserves a foreground operation before awaiting I/O and uses one query lock to serialize its exchanges.
 
 | Operation | Shared lock/ownership | Possible panel side effects |
 | --- | --- | --- |

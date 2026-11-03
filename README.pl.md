@@ -73,7 +73,7 @@ Integracja działa bezpośrednio na urządzeniu z HA. Nie wymaga Maca ani osobne
 
 1. W HACS dodaj `https://github.com/solarssk/ha-linak` jako własne repozytorium typu **Integracja / Integration**.
 2. Pobierz **LINAK Desks**, a następnie uruchom ponownie Home Assistant.
-3. Zamknij aplikacje telefonu połączone z biurkiem i wyłącz integrację Idasen używającą tego samego biurka.
+3. Zamknij aplikacje telefonu połączone z biurkiem i wyłącz integrację Idasen używającą tego samego biurka. LINAK wykrywa włączony wpis IKEA dla tego samego biurka i wyjaśnia, jak rozwiązać konflikt, zachowując jego konfigurację.
 4. Włącz **parowanie Bluetooth** na panelu.
 5. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację**. Wyszukaj **Biurka LINAK**, a następnie wybierz swoje biurko. Możesz też użyć karty wykrytego urządzenia.
 

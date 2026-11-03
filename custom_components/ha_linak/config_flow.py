@@ -469,7 +469,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._calibration_task = None
         if self._preparing:
             next_step = "name" if self._error else "finish"
-            if self._error:
+            if self._error and self._error != "idasen_conflict":
                 self._error = "client_preparation_failed"
         else:
             next_step = "height" if self._error else "save_range"

@@ -1,5 +1,6 @@
 """Cross-integration ownership checks use synthetic registry entries only."""
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -100,7 +101,13 @@ async def test_wizard_rechecks_owner_before_preparation_and_final_handoff(hass):
     flow._address = ADDRESS
     flow._desk = entry.runtime_data.desk
     ikea_entry(hass)
-    assert await flow._apply_calibration() == "idasen_conflict"
+    flow._preparing = True
+    flow._calibration_task = asyncio.create_task(flow._apply_calibration())
+    assert await flow._calibration_task == "idasen_conflict"
+    result = await flow.async_step_calibration_apply()
+    assert result["step_id"] == "name"
+    form = await flow.async_step_name()
+    assert form["errors"] == {"base": "idasen_conflict"}
     assert not fake.is_connected
     # The final form must not create a LINAK entry if ownership changed meanwhile.
     flow._abort_if_unique_id_configured = Mock()
@@ -175,8 +182,6 @@ async def test_options_calibration_rechecks_owner_before_write(hass):
 
 
 async def test_conflict_during_motion_preserves_owned_cleanup_and_stop(hass):
-    import asyncio
-
     entry, fake = await setup_entry(hass, OPTIONS)
     coordinator = entry.runtime_data
     fake.stall = True

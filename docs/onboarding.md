@@ -82,7 +82,7 @@ Connection establishment does not activate the DPG application client. Setup pre
 
 ## Session lifetime and deadlines
 
-The connector receives a device callback so retries can use current HA adapter metadata. One progress task owns each attempt; revisiting a progress step does not start a second connection.
+The connector receives a device callback so retries can use current HA adapter metadata. HA reevaluates connection paths on each retry, including their previous failures and available slots. LINAK uses the installed connector's retry policy rather than stopping after two failures: a stronger local path can fail twice before HA prefers a working proxy. All retries and subsequent validation still share one 60-second refresh deadline. The deadline can interrupt the connector before its default retry count is reached; it does not grant each retry a new budget. One progress task owns each attempt; revisiting a progress step does not start a second connection.
 
 | Boundary | Budget or behavior |
 | --- | --- |

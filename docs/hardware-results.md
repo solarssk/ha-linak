@@ -22,6 +22,24 @@ Read each conclusion within the recorded environment and its evidence class. Unk
 | Simulated | Automated tests verify software behavior with synthetic BLE |
 | Unverified | The experiment did not establish the claimed behavior |
 
+## Local and proxy connection establishment
+
+**Question:** why can the first post-restart connection fail through a nearby local adapter while a later proxy attempt succeeds?
+
+**Method:** correlate HA Core 2026.10.4, habluetooth 7.1.2 and bleak-retry-connector 4.7.1 logs with actual scanner allocations and backend diagnostics. For bounded direct BlueZ comparisons, pause only LINAK, capture local HCI events, attempt a connection and read HEIGHT if connected, then close the diagnostic client and restore LINAK. Compare ordinary advertising, a temporary active scan and an owner-enabled pairing window. No movement or application-setting write is part of these comparisons.
+
+| Condition | Observation | Supported conclusion |
+| --- | --- | --- |
+| Post-restart mixed paths | Two local connection timeouts end setup after 41.446 seconds; the next HA setup retry connects through ESPHome in 1.85 seconds | The old two-attempt cap can end setup before HA's path selection reaches a working proxy |
+| Local direct connection | Timeout after 18 seconds despite roughly −60 dBm advertisements and free local slots; HCI reports `ADV_NONCONN_IND`, with no LE Create Connection command | Advertisement strength alone does not establish connectability; this capture does not show a failed over-the-air connection attempt |
+| Temporary active scanning | Another 18-second timeout with only nonconnectable advertisements | Active scanning alone did not restore local connectability in this comparison |
+| Pairing enabled on the panel | Connectable advertisement followed by LE Create Connection about 2 ms later; successful link completion about 7.15 seconds later and a four-byte HEIGHT read | The local host can connect and read when this panel advertises connectably |
+| Cleanup | Diagnostic clients closed and LINAK verified enabled/loaded after each comparison | The comparisons did not intentionally leave the integration disabled |
+
+**Implementation consequence:** preserve the connector's normal retry policy inside the existing refresh deadline, allowing HA to reconsider the path without an intervening failed config-entry setup. The regression test uses the real retry connector with synthetic transport failures; it does not emulate the radio or prove physical proxy failover after the change.
+
+**Uncertainty:** these observations do not establish why the proxy can recover when the local path waits, whether peer/bond state affects panel advertising, or whether the behavior generalizes to other firmware. They do not prove radio interference or command overload. A later controlled local/proxy reconnect comparison needs both peripheral advertising and actual connection ownership, not RSSI alone. The retry change still needs post-restart hardware acceptance and does not make two local timeouts fast.
+
 ## Extended configuration reads
 
 **Question:** can a DPG1C provide the configuration needed for centimeter sensors without movement or settings writes?

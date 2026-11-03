@@ -55,6 +55,8 @@ Capture one attempt with a known start time and expected outcome. Repeated retri
 
 Enable debug logging for `custom_components.ha_linak` when stage timing is needed. Lower-level Bleak/connector logs can expose names, addresses and raw application identifiers; use them only for a scoped capture and restore the previous logging level afterward. A Core log alone may not contain the Bluetooth controller's disconnect reason.
 
+Stage durations measure time since entering the previous stage. `ready completed after 60s; entering extended_reads` includes the idle interval between scheduled checks; it is not a 60-second settings query. Read the subsequent operation durations and the first failure separately. Another device's connector messages are not LINAK retries: correlate the device privately before sharing redacted logs.
+
 ## Interpret the failed stage
 
 The first failed operation determines the next investigation. Later cleanup errors do not replace that evidence.
@@ -115,6 +117,8 @@ That sequence was observed on local BlueZ. In a separate bounded experiment, act
 ## Diagnose multiple adapters without guessing
 
 HA selects an active connection path using signal and available slots. After a successful connection, a debug line records `BLE session connected: backend=...` using the same category as the optional backend sensor. Failed attempts may not yet have a selected client backend; use the backend library's preceding connection trace instead. A nearby adapter is not proof of the selected path, and the RSSI sensor can use an advertisement heard by another scanner.
+
+HA also penalizes paths with previous failures. A strong advertisement does not prove that its adapter can establish a connection. The connector can retry another path within the same bounded LINAK refresh; LINAK does not pin an adapter or clear HA's failure counters. This permits fallback but cannot guarantee an immediate connection or fix a peripheral that is not accepting connections. See the [local/proxy comparison](hardware-results.md#local-and-proxy-connection-establishment) for the observed distinction.
 
 | Evidence | What it can establish | What it cannot establish |
 | --- | --- | --- |

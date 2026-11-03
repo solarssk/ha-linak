@@ -51,6 +51,8 @@ Before either a target or stored-position drive, the integration checks client r
 
 Stop preempts an active request. Stop sends control Stop and reference-input release, with no activation, wake or height target. A successful interruption retains the ready link for the next command; failed or ambiguous cleanup still discards it. A successful Stop completes the interrupted action without an error notice. A failed Stop remains an error. During an operation, another slider or stored-position request is rejected with a busy message. Wait for completion or press Stop, then select the new target. Repeated Stop clicks during cleanup share that operation. Failed commands are not queued or resumed after reload/reconnect.
 
+A busy message means that the new command was not accepted; it does not mean that the desk disconnected or the ongoing movement failed. HA classifies it as action validation, and an automation calling the rejected action still receives an error. In HA 2026.10.4 this expected refusal can also appear at `ERROR` level in frontend logs. Check the message and connection state before treating a log entry as a device fault.
+
 ## Test native controls at the panel
 
 Clear the travel path, have physical stopping available and disable any other integration controlling the same desk. Use HA alone, not the standalone BLE runner at the same time. Review the actual/reference height and bounds before each attempt.

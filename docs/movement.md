@@ -67,6 +67,8 @@ Every exit attempts both control Stop and reference-input release. A failed moti
 
 One operation owns the client from preparation through final cleanup. New slider or stored-position requests are rejected immediately while that reservation or a settings exchange is active. The busy response asks the user to wait or press Stop; it does not schedule a later move or send another packet. Choosing a new target requires a fresh request after the current operation settles.
 
+The HA action reports this refusal as `ServiceValidationError` with the translated `control_busy` message. The frontend receives `service_validation_error`, rather than the `home_assistant_error` used for device/transport failures. The original operation keeps its goal and result; rejecting another request does not mark the active movement failed. The rejected action remains unsuccessful for automations and scripts, so they cannot mistake it for an executed command. HA 2026.10.4 also logs frontend validation refusals at `ERROR`; severity alone does not identify a failed BLE session.
+
 | Input during an active operation | Result | Additional target writes |
 | --- | --- | --- |
 | Slider or stored-position button, including repeats | Busy response; original goal continues | None from the rejected request |

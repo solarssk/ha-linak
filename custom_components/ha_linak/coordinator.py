@@ -9,7 +9,7 @@ from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
@@ -189,7 +189,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         self, action: str, backend: str, error: Exception
     ) -> HomeAssistantError:
         if isinstance(error, MotionError) and error.reason == MotionFailure.BUSY:
-            return HomeAssistantError(
+            return ServiceValidationError(
                 translation_domain=DOMAIN, translation_key="control_busy"
             )
         assert self.desk is not None

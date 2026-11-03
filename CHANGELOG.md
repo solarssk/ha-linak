@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replay duplicate, late, lost and malformed DPG replies at every request position with a deterministic synthetic transport, and document the one late-copy case a response-type barrier cannot detect. No runtime behavior changes.
 - Classify rejected competing movement commands as HA action validation, preserving the busy message, original movement and no-queue policy while keeping actual movement and Stop failures distinct.
 - Keep the connector's normal retry policy within the existing refresh deadline so two failed local attempts do not prevent HA from selecting a working proxy before setup fails; document the measured connectability limits.
 - Detect an enabled IKEA Idasen Desk entry for the same Bluetooth address before new LINAK reads, calibration or movement; explain the conflict without changing the IKEA entry, while retaining Stop and owned cleanup.

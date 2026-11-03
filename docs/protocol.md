@@ -48,7 +48,7 @@ Reminder durations are configuration values in minutes under the current interpr
 
 ## Correlate replies and reject ambiguity
 
-Reply type and length must match the pending command. A successful GATT write alone does not establish that the query completed. A timeout, malformed reply or lost link invalidates the session instead of advancing to the next request.
+Reply type and length must match the pending command. A successful GATT write alone does not establish that the query completed. A timeout or lost link invalidates the session instead of advancing to the next request. A malformed reply of the pending type does the same for required reads and foreground setup; during a runtime refresh it invalidates only its optional group, as listed [below](#failure-handling-by-event).
 
 All memory slots use response type `07` without a slot number. Duplicate signals can therefore be misassigned if consecutive slot requests have no intervening response type.
 
@@ -68,7 +68,58 @@ sequenceDiagram
     Desk-->>Client: 01 07 memory reply
 ```
 
-The client compares each barrier's capabilities with the initial snapshot. A change invalidates the refresh. An ordered stream of duplicates is filtered by response type; equal saved positions remain valid and are not deduplicated by value. Four memories add three capabilities barriers. This does not solve arbitrary out-of-order transport delivery or establish why BlueZ multiplied signals in the observed capture.
+The client compares each barrier's capabilities with the initial snapshot. A change invalidates the refresh. An ordered stream of duplicates is filtered by response type; equal saved positions remain valid and are not deduplicated by value. Four memories add three capabilities barriers. This does not solve arbitrary out-of-order transport delivery or establish why BlueZ multiplied signals in the observed capture. The next subsections state which late frames the barrier absorbs and which it cannot.
+
+### Stale and duplicate frames
+
+A frame is accepted only while a request with the same response type is pending on the current connection. The table lists every state in which a stale or duplicate frame can arrive and the resulting behavior.
+
+| Client state when the frame arrives | Outcome | Reason |
+| --- | --- | --- |
+| The pending request already has its reply, as with the rest of a duplicate burst | Ignored | A request accepts one reply |
+| A request with a different response type is pending, such as a barrier, the offset or the reminders | Ignored | Reply type must match |
+| No request is pending, as during the final height read | Ignored | Nothing is waiting |
+| A request with the same response type is pending | Accepted as its reply | Type is the only correlation the wire provides |
+| The frame comes from a closed connection | Ignored, nothing published | Callbacks carry their connection generation, which cleanup and reconnect advance |
+
+A complete refresh sends `80 81 89 80 8a 80 8b 80 8c 88`, with response types `02 03 07 02 07 02 07 02 07 0b`. No two consecutive requests share a type, so a copy of the previous reply meets a request of a different type, as in the second row. The fourth row, a late copy that meets a request of its own type, is the limit described next.
+
+### The case a barrier cannot detect
+
+A type `07` copy that arrives while the next slot's request is pending is accepted as that slot's reply. The genuine reply is then dropped, the session stays ready and nothing on the wire reveals the mix-up. When the genuine slot is empty, a populated stale frame makes it appear populated. The barrier protects an ordered stream, in which every copy arrives before the barrier reply. It cannot protect against a copy that crosses it. Whether a copy crosses the barrier on a real stack is not established; the test that would decide it is listed in the [investigation guide](bluetooth-research.md#next-tests-that-can-change-a-conclusion). Saved-position movement rereads the selected slot behind an offset read under exclusive ownership. That single read has the same type-only identity, and the configured bounds still apply.
+
+```mermaid
+sequenceDiagram
+    accTitle: A late copy that crosses the barrier
+    accDescr: A stale memory reply that arrives after the barrier reply is accepted for the next slot and the genuine reply is dropped.
+    participant Client
+    participant Desk
+    Client->>Desk: Read memory 1
+    Desk-->>Client: 01 07 memory 1 reply
+    Client->>Desk: Read capabilities barrier
+    Desk-->>Client: 01 02 capabilities
+    Client->>Desk: Read memory 2
+    Desk-->>Client: Late 01 07 copy of memory 1 (accepted as memory 2)
+    Desk-->>Client: 01 07 memory 2 reply (dropped)
+```
+
+### Failure handling by event
+
+The client discards the connection instead of guessing whenever request and reply assignment becomes uncertain. It degrades only an optional group when a completed reply of the right type fails decoding.
+
+| Event | Connection | Optional groups | Caller sees |
+| --- | --- | --- | --- |
+| Timeout of any query or of the final height read | Discarded; its callbacks are dropped | All invalid until a complete reread | `TimeoutError` |
+| Link lost while a request is pending, or in the same loop turn as its reply | Discarded, even if the reply arrived first | All invalid | `DeskLinkLost` |
+| Malformed capabilities, offset or barrier reply | Discarded, also in a runtime refresh | All invalid | `ValueError` |
+| Malformed memory or reminders reply during setup, calibration or the first read | Discarded | All invalid | `ValueError` |
+| Malformed memory or reminders reply during a runtime refresh | Kept | Only that group is invalid, with its cached value retained but unavailable; the other group stays valid and the remaining queries still run | No error; the next due check rereads only the invalid group |
+
+A refresh that fails never replaces the previously published snapshot. A refresh in flight replaces no capabilities, offset or settings until it completes; on a ready link, live height notifications still update the position.
+
+### Simulated replay coverage
+
+`tests/test_protocol_replay.py` replays these cases deterministically with synthetic frames and a scripted transport. It covers copies of every reply in a complete refresh, stale frames in each client state above, frames from an earlier connection, timeouts, link loss and malformed replies at every request position, and what a refresh in flight publishes. The two known-limit cases assert the accepted-copy behavior described above, so a future mitigation must change them together with this reference. These checks simulate the client's reaction. They do not show how often a real stack duplicates, delays or reorders notifications.
 
 ## Protected setting exchanges
 

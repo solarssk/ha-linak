@@ -377,7 +377,9 @@ class DeskClient:
                 self.device,
                 "LINAK desk",
                 disconnected_callback=self._disconnected,
-                max_attempts=2,
+                # HA reevaluates the adapter on each connector retry. A local
+                # two-attempt cap can end setup before a healthy path is chosen.
+                # Keep the connector policy inside refresh's overall deadline.
                 ble_device_callback=self.device_callback,
             )
             _LOGGER.debug(

@@ -4,15 +4,16 @@ import asyncio
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform, CONF_NAME
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
+from .client import REFRESH_TIMEOUT
 from .const import DOMAIN
 from .coordinator import LinakCoordinator
 from .naming import DEFAULT_NAME, desk_name
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.BUTTON]
-FIRST_REFRESH_TIMEOUT = 20
+FIRST_REFRESH_TIMEOUT = REFRESH_TIMEOUT
 
 
 async def _async_first_refresh(coordinator: LinakCoordinator) -> None:
@@ -29,6 +30,14 @@ async def _async_first_refresh(coordinator: LinakCoordinator) -> None:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    if hass.state is not CoreState.running:
+        # HA schedules ConfigEntryNotReady again on HOMEASSISTANT_STARTED.
+        # Do not race adapter/proxy startup or block the bootstrap on radio I/O.
+        raise ConfigEntryNotReady(
+            "Waiting for Home Assistant startup before connecting to the desk",
+            translation_domain=DOMAIN,
+            translation_key="startup_waiting",
+        )
     coordinator = LinakCoordinator(hass, entry)
     entry.runtime_data = coordinator
     try:

@@ -629,3 +629,87 @@ async def test_first_refresh_deadline_defers_setup_and_releases_resources(hass, 
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.desk.connected
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("initial_state", ["not_running", "starting"])
+async def test_bootstrap_defers_radio_until_home_assistant_started(hass, initial_state):
+    from homeassistant.core import CoreState
+    from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+    from homeassistant.config_entries import ConfigEntryState
+    from unittest.mock import AsyncMock
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    fake = FakeBleak()
+    connect = AsyncMock(return_value=fake)
+    hass.set_state(CoreState[initial_state])
+    with patch("custom_components.ha_linak.client.establish_connection", connect):
+        assert not await hass.config_entries.async_setup(entry.entry_id)
+        assert entry.state is ConfigEntryState.SETUP_RETRY
+        connect.assert_not_awaited()
+        assert not hass.states.async_all("sensor")
+        hass.set_state(CoreState.running)
+        hass.bus.async_fire(EVENT_HOMEASSISTANT_STARTED)
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert entry.state is ConfigEntryState.LOADED
+    connect.assert_awaited_once()
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_first_refresh_allows_connector_and_subscriptions_separate_from_bootstrap(
+    hass,
+):
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    fake = FakeBleak()
+    entered = asyncio.Event()
+    release = asyncio.Event()
+
+    async def connecting(*args, **kwargs):
+        entered.set()
+        await release.wait()
+        return fake
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.ha_linak.client.establish_connection",
+        AsyncMock(side_effect=connecting),
+    ):
+        setup = asyncio.create_task(hass.config_entries.async_setup(entry.entry_id))
+        await entered.wait()
+        # The overall post-start budget must exceed one connector attempt plus
+        # subscriptions/reads; the old outer 20 s deadline cut off that attempt.
+        from custom_components.ha_linak import FIRST_REFRESH_TIMEOUT
+        from bleak_retry_connector import BLEAK_TIMEOUT
+
+        assert FIRST_REFRESH_TIMEOUT > BLEAK_TIMEOUT
+        release.set()
+        assert await setup
+    assert entry.runtime_data.desk.connected
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_unload_waiting_entry_removes_startup_retry(hass):
+    from homeassistant.core import CoreState
+    from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+    from unittest.mock import AsyncMock
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    hass.set_state(CoreState.starting)
+    connect = AsyncMock()
+    with patch("custom_components.ha_linak.client.establish_connection", connect):
+        assert not await hass.config_entries.async_setup(entry.entry_id)
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        hass.set_state(CoreState.running)
+        hass.bus.async_fire(EVENT_HOMEASSISTANT_STARTED)
+        await hass.async_block_till_done(wait_background_tasks=True)
+    connect.assert_not_awaited()

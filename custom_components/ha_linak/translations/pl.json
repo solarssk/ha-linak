@@ -278,6 +278,9 @@
     },
     "control_busy": {
       "message": "Biurko wykonuje inne polecenie. Poczekaj na zakończenie lub naciśnij Stop przed wybraniem nowego celu. To polecenie nie zostało zapisane w kolejce."
+    },
+    "startup_waiting": {
+      "message": "Połączenie z biurkiem rozpocznie się po uruchomieniu Home Assistanta."
     }
   }
 }

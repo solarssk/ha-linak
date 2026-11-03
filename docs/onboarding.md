@@ -78,7 +78,8 @@ The connector receives a device callback so retries can use current HA adapter m
 
 | Boundary | Budget or behavior |
 | --- | --- |
-| Initial config-entry connection/read during HA setup | 20 seconds, then bounded cleanup and HA-managed setup retry |
+| Config-entry setup before HA reaches running | No radio work; HA retries on its started event |
+| First connection/read after HA reaches running | 60 seconds, then bounded cleanup and HA-managed setup retry |
 | Foreground wizard or later runtime read/connection attempt | 60 seconds |
 | Pairing phase | 30 seconds inside the complete attempt |
 | Individual ordinary I/O | 10 seconds, bounded by the outer attempt |
@@ -88,7 +89,7 @@ The connector receives a device callback so retries can use current HA adapter m
 | Unconsumed setup-to-runtime transfer | Release after 60 seconds or HA shutdown |
 | Abort | Cancel the progress task and drain owned cleanup |
 
-A configured desk that cannot connect or finish its initial read within the setup budget raises `ConfigEntryNotReady`. HA retains the entry and schedules setup retries without completing two long connector attempts inside the first setup call. Cleanup may add up to 10 seconds; the 20-second radio-work budget is not a promise about total HA startup time. Entities are forwarded only after a successful read. A setup-to-runtime session that is already connected uses the same budget for validation, without forcing another connection.
+Before HA is running, entry setup raises `ConfigEntryNotReady` without creating a client. HA schedules another setup attempt on `HOMEASSISTANT_STARTED`; unloading the waiting entry removes that retry. After startup, connection and reads share the 60-second refresh budget, with up to 10 seconds of cleanup. This permits the connector's own 20-second attempts and subsequent validation without blocking HA bootstrap. A failed attempt then uses HA's normal retry policy. Entities are forwarded only after a successful read; a transferred setup session is validated without forcing a reconnect.
 
 An expired idle session can be reopened when the wizard continues. Each new operation must validate fresh state. A failed preparation connection does not immediately launch another automatic read-only connection attempt. After a calibration failure beyond connection establishment, one read-only recovery may refresh the form without replaying the uncertain setting write.
 

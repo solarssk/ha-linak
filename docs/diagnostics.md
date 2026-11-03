@@ -60,7 +60,8 @@ The first failed operation determines the next investigation. Later cleanup erro
 
 | Stage/error | Interpretation | Required evidence or action |
 | --- | --- | --- |
-| Setup retry after the initial connection/read deadline | The first setup attempt exceeded its 20-second budget | HA retries the entry; inspect connection stages instead of restarting HA or deleting the entry |
+| Waiting for HA startup | Entry setup was deferred before HA reached running; no radio work attempted | HA retries on its started event; do not delete the entry |
+| Setup retry after the initial connection/read deadline | A post-start attempt exceeded the 60-second refresh budget | HA retries the entry; inspect connection stages instead of restarting HA or deleting the entry |
 | `device_lookup` | HA cannot supply a current connectable device | Inspect discovery freshness and connectable adapter support |
 | `connection` / `timeout` | Connector did not finish establishing a usable link | Record backend/path and advertisement presence; do not diagnose offset or parsing |
 | `pairing` / `pairing_agent_unavailable` | Local agent setup failed | Inspect BlueZ agent lifecycle; preserve existing bonds |
@@ -153,3 +154,5 @@ Enable optional diagnostics through **Settings → Devices & services → Entiti
 Downloaded integration diagnostics omit desk names, Bluetooth addresses, adapter identifiers and client identity bytes. Local device registries still contain name/address metadata; separate identity sensors are unnecessary. Screenshots and upstream debug logs need manual redaction.
 
 After a failed test, establish physical stopping first, end the diagnostic client and restore the intended integration/adapter configuration. Verify fresh reads before another action. Do not reset the panel, remove bonds, replace client identifiers or replay uncertain writes as routine troubleshooting. Use the [investigation method](bluetooth-research.md) when the evidence does not yet support a repair.
+
+A `DPG read timed out: command=...` debug message identifies the allowlisted read that expired. Runtime refresh errors include a stage and stable exception/reason category. Neither message includes the raw backend exception, desk name or address. Backend categorization accepts known public identifiers and, when an HA wrapper reports a generic identifier such as `type`, recognizes only allowlisted implementation modules; unknown implementations remain `other`. This improves diagnosis without pinning an adapter or changing HA selection.

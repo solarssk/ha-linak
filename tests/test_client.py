@@ -682,3 +682,48 @@ async def test_connection_log_uses_only_the_allowlisted_backend(
     assert messages == [f"BLE session connected: backend={expected}"]
     assert "private-adapter-name" not in " ".join(messages)
     await desk.disconnect()
+
+
+@pytest.mark.parametrize(
+    "module,expected",
+    [
+        ("bleak_esphome.backend.client", "bleak_esphome"),
+        ("bleak.backends.bluezdbus.client", "bluez_dbus"),
+        ("private.backend", "other"),
+    ],
+)
+def test_ha_generic_backend_identifier_uses_known_module_only(module, expected):
+    from custom_components.ha_linak.client import backend_category
+
+    backend_type = type("Private adapter name", (), {"__module__": module})
+    client = SimpleNamespace(backend_id="type", _backend=backend_type())
+    assert backend_category(client) == expected
+
+
+async def test_query_timeout_log_identifies_only_allowlisted_command(caplog):
+    import logging
+
+    class SilentReminder(FakeBleak):
+        async def write_gatt_char(self, uuid, data, response):
+            if data[1] == 0x88:
+                return
+            await super().write_gatt_char(uuid, data, response)
+
+    fake = SilentReminder()
+    desk = DeskClient(
+        BLEDevice("AA:BB:CC:DD:EE:FF", "Private location", {}), lambda: None
+    )
+    caplog.set_level(logging.DEBUG, logger="custom_components.ha_linak.client")
+    with (
+        patch(
+            "custom_components.ha_linak.client.establish_connection", return_value=fake
+        ),
+        patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
+        pytest.raises(TimeoutError),
+    ):
+        await desk.refresh()
+    messages = [
+        r.message for r in caplog.records if r.message.startswith("DPG read timed out:")
+    ]
+    assert messages == ["DPG read timed out: command=REMINDERS"]
+    assert not desk.connected

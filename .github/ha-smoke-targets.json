@@ -1,0 +1,10 @@
+{
+  "supported": {
+    "version": "2026.10.4",
+    "image": "ghcr.io/home-assistant/home-assistant:2026.10.4@sha256:23f4dfbb69ce76315dbc4de7915504f1c2dcecd7ca2648113a493a385972e133"
+  },
+  "preview": {
+    "version": "2026.11.0b3",
+    "image": "ghcr.io/home-assistant/home-assistant:2026.11.0b3@sha256:bae27da70db7cfcab0980c6d82f106ef1d4946cd4860d95c14525aef5d101577"
+  }
+}

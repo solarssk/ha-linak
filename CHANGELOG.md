@@ -4,6 +4,7 @@
 
 - Isolate malformed memory/reminder replies during runtime refresh, expose group validity and last-success age in diagnostics, and retain strict setup, calibration and transport-failure handling.
 - Document model/variant capabilities and setting candidates against LINAK data sheets without claiming additional panel compatibility or app-exclusive settings.
+- Add isolated official-container HA cold-boot/restart checks, with a required supported-version gate, advisory pinned preview and retained synthetic reports/logs.
 - Define the reliability and HA Core delivery plan, proposed state/library boundaries and an evidence-based hardware acceptance matrix without expanding runtime support.
 - Treat successful Stop interruption as a normal HA action outcome and give competing movement requests a clear busy response without queueing or sending extra commands.
 - Cover rapid mixed slider/favorite requests, repeated Stop cleanup and failed Stop propagation with simulated HA regression tests.

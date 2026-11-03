@@ -1,7 +1,7 @@
 """Status of the explicit desk operation, without Home Assistant or Bluetooth imports."""
 
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from enum import StrEnum
 import logging
 
@@ -45,6 +45,13 @@ class OperationStatus:
     def active(self) -> bool:
         return self.phase in ACTIVE
 
+    def advanced(self, phase: Phase, reason: Reason | None = None) -> OperationStatus:
+        """The same request in another phase; only a failure carries a reason."""
+        return OperationStatus(phase, self.requested_height_cm, reason)
+
+    def aimed_at(self, requested_height_cm: float) -> OperationStatus:
+        return OperationStatus(self.phase, requested_height_cm, self.reason)
+
 
 class OperationTracker:
     """Allowed phase changes for one explicit operation at a time.
@@ -86,16 +93,16 @@ class OperationTracker:
     def request(self, requested_height_cm: float) -> None:
         """Record a goal that is only known after preparation reads it."""
         if self.status.active:
-            self._publish(replace(self.status, requested_height_cm=requested_height_cm))
+            self._publish(self.status.aimed_at(requested_height_cm))
 
     def moving(self) -> None:
         if self.status.phase is Phase.PREPARING:
-            self._publish(replace(self.status, phase=Phase.MOVING))
+            self._publish(self.status.advanced(Phase.MOVING))
 
     def stopping(self) -> None:
         if self.status.phase in (Phase.PREPARING, Phase.MOVING):
             self._origin = self.status.phase
-            self._publish(replace(self.status, phase=Phase.STOPPING))
+            self._publish(self.status.advanced(Phase.STOPPING))
 
     def complete(self) -> None:
         self._settle(Phase.COMPLETED)
@@ -105,7 +112,7 @@ class OperationTracker:
 
     def fail(self, reason: Reason) -> None:
         if self.status.active:
-            self._publish(replace(self.status, phase=Phase.FAILED, reason=reason))
+            self._publish(self.status.advanced(Phase.FAILED, reason))
 
     def link_lost(self) -> None:
         self.fail(Reason.LINK_LOST)
@@ -117,4 +124,4 @@ class OperationTracker:
 
     def _settle(self, phase: Phase) -> None:
         if self.status.active:
-            self._publish(replace(self.status, phase=phase))
+            self._publish(self.status.advanced(phase))

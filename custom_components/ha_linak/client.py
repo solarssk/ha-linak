@@ -72,7 +72,15 @@ def backend_category(client: BleakClient) -> str:
     backend = getattr(client, "backend_id", None)
     if isinstance(backend, BleakBackend):
         backend = backend.value
-    return backend if backend in BLUETOOTH_BACKENDS else "other"
+    if backend in BLUETOOTH_BACKENDS:
+        return backend
+    # Some HA wrappers expose the backend class's metaclass name ("type").
+    # Fall back only to known implementation modules, never an adapter identity.
+    module = type(getattr(client, "_backend", None)).__module__
+    return {
+        "bleak_esphome.backend.client": "bleak_esphome",
+        "bleak.backends.bluezdbus.client": "bluez_dbus",
+    }.get(module, "other")
 
 
 class DeskLinkLost(ConnectionError):
@@ -306,6 +314,9 @@ class DeskClient:
         self._response_type = response_type
         try:
             return await self._io(self._exchange(command), QUERY_TIMEOUT)
+        except TimeoutError:
+            _LOGGER.debug("DPG read timed out: command=%s", command.name)
+            raise
         finally:
             if self._pending is not None:
                 self._pending.cancel()

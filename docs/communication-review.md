@@ -71,3 +71,9 @@ Accept a configurable dependency or narrow adapter only when it can satisfy the 
 6. Demonstrate matching behavior with synthetic HA tests and scoped hardware evidence.
 
 No dependency migration is implied by this comparison. Unresolved behavior is listed in the [investigation plan](bluetooth-research.md#next-tests-that-can-change-a-conclusion).
+
+## Startup lifecycle comparison
+
+The tested HA 2026.10.4 [Idasen setup](https://github.com/home-assistant/core/blob/2026.10.4/homeassistant/components/idasen_desk/__init__.py) connects before forwarding entities and raises `ConfigEntryNotReady` on failure; its library has a 45-second handshake deadline. It does not implement this project's full DPG settings read or the previous outer 20-second deadline. [SwitchBot polling](https://github.com/home-assistant/core/blob/2026.10.4/homeassistant/components/switchbot/coordinator.py) and [Oral-B polling](https://github.com/home-assistant/core/blob/2026.10.4/homeassistant/components/oralb/__init__.py) gate active polling on `CoreState.running`. Those are comparison points, not identical setup implementations.
+
+HA's [config-entry implementation](https://github.com/home-assistant/core/blob/2026.10.4/homeassistant/config_entries.py) schedules a pre-running `ConfigEntryNotReady` retry on `HOMEASSISTANT_STARTED` and post-start failures on its backoff timer. LINAK uses that existing ownership mechanism rather than adding its own background connection loop. The [setup-failure guidance](https://contributors.home-assistant.io/core/integrations/setup-failures/) owns the public retry contract. Simulated tests must cover both pre-start states, started-event recovery, cancellation/unload and bounded post-start radio work before this approach is considered validated on hardware.

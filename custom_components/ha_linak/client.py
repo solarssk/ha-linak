@@ -330,14 +330,17 @@ class DeskClient:
         )
         return await self._pending
 
-    async def refresh(self, *, allow_partial_settings: bool = False) -> DeskState:
+    async def refresh(
+        self, *, allow_partial_settings: bool = False, settings_interval: float = 0
+    ) -> DeskState:
         if self.control_busy:
             return self.state
         async with self._lock:
             try:
                 async with asyncio.timeout(REFRESH_TIMEOUT):
                     return await self._refresh(
-                        allow_partial_settings=allow_partial_settings
+                        allow_partial_settings=allow_partial_settings,
+                        settings_interval=settings_interval,
                     )
             except BaseException as error:
                 # Cleanup owns the transport even if HA cancels the flow again.
@@ -359,7 +362,9 @@ class DeskClient:
                     raise asyncio.CancelledError from None
                 raise
 
-    async def _refresh(self, *, allow_partial_settings: bool = False) -> DeskState:
+    async def _refresh(
+        self, *, allow_partial_settings: bool = False, settings_interval: float = 0
+    ) -> DeskState:
         if self.client is None or not self.client.is_connected or not self._ready:
             await self.disconnect()
             self._closing = False
@@ -404,23 +409,41 @@ class DeskClient:
             raise ValueError("Desk has no valid height offset")
         if state.capabilities.memory_slots > 4:
             raise ValueError("Unsupported number of memory slots")
-        memories = await self._read_memories(state.capabilities, allow_partial_settings)
-        reminder_payload = await self._query(ReadCommand.REMINDERS, 11)
-        reminders = self._decode_optional(
-            decode_reminders, reminder_payload, allow_partial_settings
+        force_settings = (
+            not allow_partial_settings
+            or state.capabilities != self.state.capabilities
+            or state.offset_raw != self.state.offset_raw
         )
-        state.memories = (
-            memories
-            if memories is not None
-            else self.state.memories[: state.capabilities.memory_slots]
+        memories_due = force_settings or self._settings_due(
+            "memories", settings_interval
         )
-        state.reminders = reminders if reminders is not None else self.state.reminders
+        reminders_due = force_settings or self._settings_due(
+            "reminders", settings_interval
+        )
+        state.memories = list(self.state.memories[: state.capabilities.memory_slots])
+        state.reminders = self.state.reminders
+        if memories_due:
+            memories = await self._read_memories(
+                state.capabilities, allow_partial_settings
+            )
+            if memories is not None:
+                state.memories = memories
+        if reminders_due:
+            reminders = self._decode_optional(
+                decode_reminders,
+                await self._query(ReadCommand.REMINDERS, 11),
+                allow_partial_settings,
+            )
+            if reminders is not None:
+                state.reminders = reminders
         self._set_stage("position_read")
         state.position = decode_position(
             bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
         )
-        self._record_settings("memories", memories is not None)
-        self._record_settings("reminders", reminders is not None)
+        if memories_due:
+            self._record_settings("memories", memories is not None)
+        if reminders_due:
+            self._record_settings("reminders", reminders is not None)
         self.state = state
         self._ready = True
         self._set_stage("ready")
@@ -462,6 +485,14 @@ class DeskClient:
             else:
                 memories.append(memory)
         return memories if valid else None
+
+    def _settings_due(self, group: str, interval: float) -> bool:
+        health = self.settings_health[group]
+        return (
+            not health.valid
+            or health.last_success is None
+            or monotonic() - health.last_success >= interval
+        )
 
     def _record_settings(self, group: str, valid: bool) -> None:
         health = self.settings_health[group]

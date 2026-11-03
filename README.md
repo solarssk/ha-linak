@@ -34,7 +34,7 @@ Check your saved sitting and standing heights in one place. The stored-height se
 - 🔔 **Active reminder profile** identifies the selected profile.
 - ⏱️ **Profile 1–3 sitting time** and **standing time** show configured durations, in minutes.
 
-Height, stored heights and reminder profiles are regular desk sensors (`sensor`). Panel settings refresh every **60 seconds**. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
+Height, stored heights and reminder profiles are regular desk sensors (`sensor`). Height updates arrive through Bluetooth; the reference and position are checked every **60 seconds**. Saved positions and reminders are read every **5 minutes**, and again after reconnecting. Controls read the required reference and selected position before moving. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
 
 ### Diagnostics
 

@@ -11,12 +11,12 @@ The external architecture review examined revision `e909e8f`. Its findings are a
 | Finding | Assessment | Decision and completion evidence |
 | --- | --- | --- |
 | Physical Stop, recovery and panel handback | Release validation gap, not proof of a particular firmware defect | Complete the hardware acceptance matrix; transport completion alone cannot pass a physical test |
-| Configuration failure makes ordinary readings unavailable | Runtime optional decoding failures are now isolated per group; transport ambiguity still discards the session | Complete separate refresh scheduling and recovery; never hide a timeout or publish stale height as current |
+| Configuration failure makes ordinary readings unavailable | Runtime optional decoding failures are now isolated per group; transport ambiguity still discards the session | Separate reference/position checks and per-group due reads are implemented; preserve generation-discard recovery and validate idle/backend behavior on hardware |
 | Monitoring requires control preparation and bounds | Confirmed in the current setup flow | Add an optional monitoring-only path with no activation or bounds; preserve the normal native-control setup path |
 | Another HA integration can own the same desk | Confirmed gap: address uniqueness is currently integration-local | Detect an enabled `idasen_desk` entry for the same normalized address, explain the conflict and leave the other entry unchanged |
 | Memory replies can cross request boundaries | Protocol ambiguity remains: type `07` has no slot identifier | Add cross-barrier delayed-duplicate replay cases; retain fail-closed behavior and document what a barrier cannot prove |
 | Successful Stop appears as an action failure | Addressed by the competing-control fix | Keep HA regressions for confirmed Stop, failed Stop, bursts and unexpected cancellation |
-| Full settings poll every 60 seconds | Implemented, but not evidence of Bluetooth overload by itself | Measure exchanges, latency and idle display behavior before selecting a different cadence |
+| Settings read cadence | Runtime reference/position checks every 60 seconds; independent five-minute memory/reminder due checks | Synthetic request-count regressions verify skipped reads; measure latency and OLED behavior on hardware before claiming load/sleep improvements |
 | Connection controls and operation status | Useful missing user-facing behavior | Expose deliberate connection ownership and separate commanded goal, measured height and operation result |
 | Separate PyPI library | Required for a Core contribution; not needed to repair each current bug | Define and test the boundary, then extract behavior without changing wire ordering in the same PR |
 | Additional settings and desk panels | Research candidates, not supported features | Validate each setter/model independently before exposing entities |
@@ -29,8 +29,8 @@ Each row is a scoped change with its own tests and review. Hardware validation r
 
 | Order | Deliverable | Acceptance condition |
 | --- | --- | --- |
-| 1 | Telemetry/configuration state contract | Define timestamps, unavailable/unknown/stale semantics and operation state before changing entity behavior; no stale height represented as live |
-| 2 | Split settings refresh from live telemetry | Per-group malformed-response isolation and age tracking implemented; independent schedules/recovery remain. Test timeouts, disconnect/reconnect and fresh control inputs without accepting old-generation replies |
+| 1 | Telemetry/configuration state contract | Implemented reference/setting freshness contract and monotonic group ages; operation state remains a separate UI deliverable; no cached height represented as live |
+| 2 | Split settings refresh from live telemetry | Implemented per-group validity/ages and independent due reads, notification-safe reference polling and full reconnect recovery. Keep timeout/generation and fresh-control regressions; physical idle/backend validation remains |
 | 3 | Cross-integration conflict handling | Same address in an enabled IKEA entry gives an actionable message; disabled entries and different addresses do not block; never disable another entry automatically |
 | 4 | Optional monitoring and explicit connection ownership | Monitoring performs no activation, calibration or motion; deliberate disconnect suppresses background reconnect until the user requests connection; unload removes callbacks and pending tasks |
 | 5 | Operation state for UI and automations | Distinguish preparing, moving, stopping, completed, interrupted and failed; report a reason without recording every feedback tick as a new goal |

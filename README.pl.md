@@ -34,7 +34,7 @@ Podejrzyj w jednym miejscu zapisane wysokości do siedzenia i stania. Czujniki p
 - 🔔 **Aktywny profil przypomnień** wskazuje wybrany profil.
 - ⏱️ **Profil 1–3: czas siedzenia** i **czas stania** pokazują ustawione czasy, w minutach.
 
-Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka (`sensor`). Ustawienia panelu odświeżają się co **60 sekund**. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
+Wysokość, zapisane pozycje i profile są zwykłymi czujnikami biurka (`sensor`). Wysokość aktualizuje się przez Bluetooth; odczyt pozycji i punktu odniesienia jest sprawdzany co **60 sekund**. Zapisane pozycje i przypomnienia odświeżają się co **5 minut** oraz po ponownym połączeniu. Przed ruchem integracja odczytuje potrzebny punkt odniesienia i wybraną pozycję. Przy utracie połączenia odczyty stają się niedostępne; HA ponawia próby, gdy integracja jest załadowana.
 
 ### Diagnostyka
 

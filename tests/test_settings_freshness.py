@@ -69,6 +69,7 @@ async def test_bad_optional_group_does_not_hide_height_or_other_group(
         entry, _ = await setup_entry(hass, OPTIONS)
     coordinator = entry.runtime_data
     desk = coordinator.desk
+    desk.settings_health[group].last_success -= 301
     last_success = desk.settings_health[group].last_success
     old_memories = list(desk.state.memories)
     old_reminders = desk.state.reminders

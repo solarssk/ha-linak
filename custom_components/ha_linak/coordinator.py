@@ -19,6 +19,7 @@ from .motion import MotionError, MotionFailure, MotionStopped
 from .setup_session import take_session
 
 _LOGGER = logging.getLogger(__name__)
+SETTINGS_REFRESH_INTERVAL = 300
 
 
 def _failure_reason(error: Exception) -> str:
@@ -74,7 +75,12 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
     def _changed(self) -> None:
         if self.desk is not None and self.desk.connected:
             self._validate_control_reference(self.desk.state)
-            self.async_set_updated_data(self.desk.state)
+            if self.last_update_success and self.data is not None:
+                # Notification ticks must not postpone the scheduled reference read.
+                self.data = self.desk.state
+                self.async_update_listeners()
+            else:
+                self.async_set_updated_data(self.desk.state)
         else:
             self.async_set_update_error(
                 UpdateFailed("Desk disconnected or invalid position")
@@ -114,7 +120,8 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             self.desk.device = device
         try:
             state = await self.desk.refresh(
-                allow_partial_settings=self.data is not None
+                allow_partial_settings=self.data is not None,
+                settings_interval=SETTINGS_REFRESH_INTERVAL,
             )
             self._validate_control_reference(state)
             return state

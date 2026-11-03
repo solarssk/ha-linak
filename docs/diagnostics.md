@@ -81,6 +81,8 @@ Calibration/preparation flows log a rejected setting's protocol status without r
 
 ## Interpret a movement failure
 
+Distinguish an admission refusal from a movement failure. `control_busy` is a translated `ServiceValidationError`: the new action is rejected without sending packets or changing the active goal/result. The frontend receives `service_validation_error`; failed movement or Stop delivery still returns `home_assistant_error`. HA 2026.10.4 logs both categories at `ERROR` in its WebSocket action handler, so a red entry alone does not prove a disconnect, overload or failed active movement. The refusal stays visible to the caller; LINAK does not filter HA logs or return false success.
+
 A warning records action, phase, reason and the backend captured before cleanup. The reason describes what the software detected, not necessarily the underlying hardware cause.
 
 | Reason | Detected condition | Investigation |

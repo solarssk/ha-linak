@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 from homeassistant.const import CONF_ADDRESS
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -1053,12 +1053,12 @@ async def test_mixed_control_burst_is_rejected_without_queued_writes(
             *(coordinator.async_move_to_memory(i % 4) for i in range(12)),
             return_exceptions=True,
         )
-        assert all(isinstance(result, HomeAssistantError) for result in results)
+        assert all(isinstance(result, ServiceValidationError) for result in results)
         assert all(result.translation_key == "control_busy" for result in results)
         assert fake.writes == before
         stops = [asyncio.create_task(coordinator.async_stop()) for _ in range(12)]
         await asyncio.wait_for(stop_entered.wait(), 1)
-        with pytest.raises(HomeAssistantError) as error:
+        with pytest.raises(ServiceValidationError) as error:
             await coordinator.async_move_to_cm(84)
         assert error.value.translation_key == "control_busy"
         assert coordinator.desk.control_busy

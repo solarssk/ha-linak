@@ -368,9 +368,16 @@ def test_ha_smoke_targets_are_pinned_and_only_supported_version_is_a_gate():
         )
         assert f":{target['version']}@" in target["image"]
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
-    assert any(
-        "--target supported" in step.get("run", "")
+    gate_steps = [
+        step
         for step in workflow["jobs"]["tests"]["steps"]
-    )
+        if "--target supported" in step.get("run", "")
+    ]
+    assert len(gate_steps) == 1
+    assert not gate_steps[0].get("continue-on-error", False)
     assert not workflow["jobs"]["tests"].get("continue-on-error", False)
     assert workflow["jobs"]["ha-preview"]["continue-on-error"] is True
+    assert any(
+        "--target preview" in step.get("run", "")
+        for step in workflow["jobs"]["ha-preview"]["steps"]
+    )

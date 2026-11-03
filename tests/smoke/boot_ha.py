@@ -68,15 +68,6 @@ def prepare(config: Path, source: Path, phase: str) -> None:
 
 
 async def run(args) -> None:
-    if HA_VERSION != args.expected_version:
-        raise RuntimeError("Image version does not match the smoke target")
-    manifest = json.loads((args.source / "manifest.json").read_text())
-    for specification in manifest["requirements"]:
-        requirement = Requirement(specification)
-        installed = metadata.version(requirement.name)
-        if not requirement.specifier.contains(installed, prereleases=True):
-            raise RuntimeError(f"Image does not satisfy {requirement.name} requirement")
-    prepare(args.config, args.source, args.phase)
     hass = None
     errors = []
 
@@ -91,6 +82,17 @@ async def run(args) -> None:
     logging.getLogger().addHandler(console_handler)
     report = {"ha_version": HA_VERSION, "phase": args.phase, "success": False}
     try:
+        if HA_VERSION != args.expected_version:
+            raise RuntimeError("Image version does not match the smoke target")
+        manifest = json.loads((args.source / "manifest.json").read_text())
+        for specification in manifest["requirements"]:
+            requirement = Requirement(specification)
+            installed = metadata.version(requirement.name)
+            if not requirement.specifier.contains(installed, prereleases=True):
+                raise RuntimeError(
+                    f"Image does not satisfy {requirement.name} requirement"
+                )
+        prepare(args.config, args.source, args.phase)
         async with asyncio.timeout(120):
             hass = await bootstrap.async_setup_hass(
                 runner.RuntimeConfig(
@@ -122,22 +124,34 @@ async def run(args) -> None:
             integration = await loader.async_get_integration(hass, "ha_linak")
             component = await integration.async_get_component()
             platforms = [str(platform) for platform in component.PLATFORMS]
+            if set(platforms) != {"sensor", "binary_sensor", "number", "button"}:
+                raise RuntimeError("Declared integration platforms changed")
             for platform in [*platforms, "config_flow", "diagnostics"]:
                 await integration.async_get_platform(platform)
             report["platforms_imported"] = platforms
             report["readings_validated"] = False
             report["success"] = True
+    except Exception as error:
+        errors.append({"logger": __name__, "message": f"Startup failed: {error!r}"})
+        raise
     finally:
-        if hass is not None:
-            async with asyncio.timeout(30):
-                await hass.async_stop()
+        try:
+            if hass is not None:
+                async with asyncio.timeout(30):
+                    await hass.async_stop()
+        except Exception as error:
+            errors.append(
+                {"logger": __name__, "message": f"Shutdown failed: {error!r}"}
+            )
         report["errors"] = errors
         report["success"] = report["success"] and not errors
-        await asyncio.to_thread(
-            args.report.write_text, json.dumps(report, indent=2) + "\n"
-        )
-        logging.getLogger().removeHandler(error_handler)
-        logging.getLogger().removeHandler(console_handler)
+        try:
+            await asyncio.to_thread(
+                args.report.write_text, json.dumps(report, indent=2) + "\n"
+            )
+        finally:
+            logging.getLogger().removeHandler(error_handler)
+            logging.getLogger().removeHandler(console_handler)
     print(json.dumps(report))
     if errors:
         raise RuntimeError("HA reported errors during boot or shutdown")

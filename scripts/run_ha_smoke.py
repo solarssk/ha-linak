@@ -6,10 +6,23 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def cleanup_resources(container: str, network: str) -> None:
+    """Attempt both removals even when the Docker daemon stalls."""
+    for command in (
+        ["docker", "rm", "--force", container],
+        ["docker", "network", "rm", network],
+    ):
+        try:
+            subprocess.run(command, capture_output=True, timeout=30)
+        except (subprocess.TimeoutExpired, OSError) as error:
+            print(f"Cleanup failed for {command[-1]}: {error}", file=sys.stderr)
 
 
 def main() -> None:
@@ -90,12 +103,7 @@ def main() -> None:
                 print(json.dumps(report))
     finally:
         # Only remove resources created by this invocation, even after a deadline.
-        subprocess.run(
-            ["docker", "rm", "--force", container], capture_output=True, timeout=30
-        )
-        subprocess.run(
-            ["docker", "network", "rm", network], capture_output=True, timeout=30
-        )
+        cleanup_resources(container, network)
 
 
 if __name__ == "__main__":

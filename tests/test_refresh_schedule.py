@@ -16,7 +16,9 @@ def queries(fake):
     return [data[1] for uuid, data in fake.writes if uuid == DPG_UUID]
 
 
-@pytest.mark.parametrize("elapsed,settings_due", [(299, False), (300, True)])
+# A whole second beyond the interval: monotonic times are floats, so an age of
+# exactly 300 can compute as 299.99999999999994 on a freshly booted runner.
+@pytest.mark.parametrize("elapsed,settings_due", [(299, False), (301, True)])
 async def test_only_due_settings_are_read_and_skipped_reads_keep_age(
     elapsed, settings_due
 ):

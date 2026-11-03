@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Defer desk connection until Home Assistant is running and allow the normal refresh budget after startup, avoiding an outer deadline equal to a single Bluetooth connection attempt.
+- Recognize known wrapped Bluetooth backends and identify timed-out DPG reads and runtime failure stages without exposing backend payloads or identifiers.
 - Isolate malformed memory/reminder replies during runtime refresh, expose group validity and last-success age in diagnostics, and retain strict setup, calibration and transport-failure handling.
 - Document model/variant capabilities and setting candidates against LINAK data sheets without claiming additional panel compatibility or app-exclusive settings.
 - Add isolated official-container HA cold-boot/restart checks, with a required supported-version gate, advisory pinned preview, retained failure reports/logs and bounded cleanup.

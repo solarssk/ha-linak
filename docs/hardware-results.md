@@ -121,6 +121,18 @@ Offset, name and stored-position settings were not written. This evidence suppor
 
 **Limits:** OLED state and physical double-tap response were not observable remotely. The release frame is therefore not proof that the reported physical-panel freeze is resolved. The official [DPG user manual](https://cdn.linak.com/-/media/files/user-manual-source/en/deskline-dpg-desk-panels-and-desk-control-app-user-manual-eng.pdf) distinguishes the height OLED from the reminder light strip and documents a four-hour reminder-light timeout; that is not an OLED sleep specification. The inspected `idasen-ha` connection manager also retains a connection. A persistent GATT link alone does not establish why this panel's display remained lit. A controlled visual comparison with and without periodic reads remains necessary before changing connection policy or firmware settings.
 
+## Startup retry and mixed-backend diagnosis
+
+**Question:** why did a configured entry spend repeated attempts at startup without reaching its first validated read?
+
+**Method:** compare the supplied full-night log with the installed client checksum and the tested HA/connector source. Inspect transport package versions without opening a new BLE connection or changing installed code. Separate initial setup retries from later idle failures.
+
+**Observation:** initial attempts repeatedly ended at 20 seconds, while bleak-retry-connector 4.7.1 itself budgets 20 seconds per connection attempt. First validated reads arrived roughly 13 minutes after the first attempt. Later evidence includes an ESPHome GATT connection error, two idle link losses and a memory-read timeout. The HA wrapper reported backend `other`; its remote path can expose a generic class/metaclass identifier rather than the implementation category.
+
+**Conclusion:** the equal outer and per-attempt budgets can cancel connection setup before service discovery/subscription/reads finish. Deferring radio work through HA's pre-running `ConfigEntryNotReady` started-event path avoids blocking bootstrap, while the ordinary post-start refresh budget permits complete attempts. An allowlisted backend-module fallback and timed-out query name improve subsequent evidence.
+
+**Limits:** equal budgets do not establish the cause of every failed connection, proxy GATT error or idle loss. The proposed startup change has simulated lifecycle/deadline coverage, not a completed cold-start hardware result. It does not pin the local adapter, remove a proxy, change polling cadence or prove the overnight disconnects are fixed.
+
 ## Hardware acceptance matrix
 
 This matrix is a test plan and evidence index, not eleven successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.

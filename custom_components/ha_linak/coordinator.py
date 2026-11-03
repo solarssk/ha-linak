@@ -119,7 +119,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             self._validate_control_reference(state)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
-            raise UpdateFailed("Unable to read LINAK desk") from err
+            raise UpdateFailed(
+                f"Unable to read LINAK desk (stage={self.desk.stage}, "
+                f"reason={_failure_reason(err)})"
+            ) from err
 
     async def async_move_to_cm(self, height_cm: float) -> None:
         await self._async_control("target", height_cm)

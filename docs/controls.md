@@ -53,6 +53,8 @@ Stop preempts an active request. Stop sends control Stop and reference-input rel
 
 A busy message means that the new command was not accepted; it does not mean that the desk disconnected or the ongoing movement failed. HA classifies it as action validation, and an automation calling the rejected action still receives an error. In HA 2026.10.4 this expected refusal can also appear at `ERROR` level in frontend logs. Check the message and connection state before treating a log entry as a device fault.
 
+The **Operation** sensor shows whether a request is still running and how the last one ended. It reads idle, preparing, moving or stopping while a request runs, then completed, interrupted or failed, and a failed result carries a `reason` attribute. Use it, rather than the busy message or the Connection sensor, to decide when to send the next request. A refused request does not change it, it stays available when the connection drops, and it reports the request, not physical arrival. [How the phases change →](movement.md#operation-status)
+
 ## Test native controls at the panel
 
 Clear the travel path, have physical stopping available and disable any other integration controlling the same desk. Use HA alone, not the standalone BLE runner at the same time. Review the actual/reference height and bounds before each attempt.
@@ -61,11 +63,11 @@ Clear the travel path, have physical stopping available and disable any other in
 | --- | --- | --- |
 | 1 | Add/update the desk and range | Existing sensors and controls appear without spontaneous movement |
 | 2 | Press Stop while idle | No motion/wake and no silent action error |
-| 3 | Choose a nearby whole-centimeter target above the actual height | Correct direction, observed stopping and measured final height; account for rounding of the current sensor |
-| 4 | During another agreed nearby move, press Stop | Observe physical stopping and delay, not only the HA action result |
+| 3 | Choose a nearby whole-centimeter target above the actual height | Correct direction, observed stopping and measured final height; account for rounding of the current sensor; Operation passes through preparing, moving, stopping and completed |
+| 4 | During another agreed nearby move, press Stop | Observe physical stopping and delay, not only the HA action result; Operation ends interrupted without an action error |
 | 5 | Repeat a nearby downward target | Correct direction and final height |
 | 6 | Review a saved height/path, then test its button | Correct destination and unchanged stored value |
-| 7 | Test scoped reload/unload during motion | Stop attempted, cleanup settles, no continued/resumed target |
+| 7 | Test scoped reload/unload during motion | Stop attempted, cleanup settles, no continued/resumed target; Operation starts idle after the reload |
 | 8 | Reconnect/restart once stationary | Fresh readings; no motion until another explicit action |
 
 The native slider has no standalone runner's 2 cm experiment cap. Choose the test target deliberately from the fresh actual height, not a rounded value copied from another desk. Do not continue after unexpected direction, failure to stop, a reference disagreement or repeated action errors.

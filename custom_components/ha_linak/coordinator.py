@@ -16,6 +16,7 @@ from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
 from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError, MotionFailure, MotionStopped
+from .operation import OperationStatus
 from .setup_session import take_session
 from .ownership import has_idasen_conflict
 
@@ -71,6 +72,13 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         ):
             return None
         return backend_category(self.desk.client)
+
+    @property
+    def operation(self) -> OperationStatus:
+        """The latest explicit operation, kept apart from the Bluetooth link."""
+        if self.desk is None:
+            return OperationStatus()
+        return self.desk.operation.status
 
     @callback
     def _changed(self) -> None:

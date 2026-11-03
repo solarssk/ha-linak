@@ -20,6 +20,7 @@ from homeassistant.const import (
 
 from .coordinator import LinakCoordinator
 from .entity import LinakEntity, whole_centimeters
+from .operation import Phase
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
@@ -30,6 +31,7 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     entities: list[SensorEntity] = [
         LinakSensor(coordinator, "height"),
         LinakSensor(coordinator, "offset"),
+        LinakOperationSensor(coordinator, "operation"),
     ]
     entities += [
         LinakSensor(coordinator, f"memory_{i + 1}")
@@ -101,6 +103,35 @@ class LinakSensor(LinakEntity, SensorEntity):
             return state.reminders.selected_profile
         _, profile, kind = self.key.split("_")
         return state.reminders.profiles_raw[int(profile) - 1][0 if kind == "sit" else 1]
+
+
+class LinakOperationSensor(LinakEntity, SensorEntity):
+    """What the integration is doing with the desk, independent of the Bluetooth link.
+
+    The status stays available when the link drops, so a failed operation keeps its
+    reason visible. It describes software state and is not proof of physical arrival.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = [phase.value for phase in Phase]
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str:
+        return self.coordinator.operation.phase.value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, float | str] | None:
+        status = self.coordinator.operation
+        attributes: dict[str, float | str] = {}
+        if status.requested_height_cm is not None:
+            attributes["requested_height_cm"] = status.requested_height_cm
+        if status.reason is not None:
+            attributes["reason"] = status.reason.value
+        return attributes or None
 
 
 class LinakDiagnosticSensor(LinakEntity, SensorEntity):

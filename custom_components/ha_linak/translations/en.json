@@ -136,6 +136,37 @@
       "reminder_3_stand": {
         "name": "Profile 3 standing time"
       },
+      "operation": {
+        "name": "Operation",
+        "state": {
+          "idle": "Idle",
+          "preparing": "Preparing",
+          "moving": "Moving",
+          "stopping": "Stopping",
+          "completed": "Completed",
+          "interrupted": "Interrupted",
+          "failed": "Failed"
+        },
+        "state_attributes": {
+          "requested_height_cm": {
+            "name": "Requested height"
+          },
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "link_lost": "Bluetooth link lost",
+              "timeout": "Timed out",
+              "no_progress": "No progress",
+              "reverse_motion": "Moved the wrong way",
+              "overshoot": "Passed the target",
+              "outside_limits": "Outside the configured range",
+              "stop_failed": "Stop not confirmed",
+              "preparation_failed": "Preparation failed",
+              "unknown": "Unknown"
+            }
+          }
+        }
+      },
       "signal_strength": {
         "name": "Bluetooth signal strength"
       },

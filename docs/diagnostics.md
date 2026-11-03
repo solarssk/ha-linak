@@ -19,6 +19,7 @@ Find the closest symptom and collect the next missing evidence. The [shared glos
 | Discovery works, connection times out | An advertisement was seen; no usable GATT session completed | `connection` stage, actual backend, competing desk clients and fresh advertisements |
 | Pairing or subscription fails | Connection progressed beyond discovery | Authentication result and the specific subscription stage |
 | Height reads work, movement does not | The read path works | Fresh bounds, client readiness, requested memory and movement failure reason |
+| A request was refused or its outcome is unclear | The `Operation` sensor holds the active phase or the last result and its reason | Read its state and `reason` first; `Connection` reports only the session, and a refused request changes neither |
 | RSSI is available, controls are unavailable | A scanner still hears the desk | Connection/backend state; RSSI is not an active-link test |
 | Entities become unavailable after an action | The session no longer supplies valid state | Determine whether radio loss caused the error or cleanup deliberately disconnected |
 | Stored heights repeat or shift slots | Reply association may be wrong | Read-response ordering, the capabilities barriers between memory reads and the [stale-frame table](protocol.md#stale-and-duplicate-frames) |
@@ -83,7 +84,12 @@ Calibration/preparation flows log a rejected setting's protocol status without r
 
 Distinguish an admission refusal from a movement failure. `control_busy` is a translated `ServiceValidationError`: the new action is rejected without sending packets or changing the active goal/result. The frontend receives `service_validation_error`; failed movement or Stop delivery still returns `home_assistant_error`. HA 2026.10.4 logs both categories at `ERROR` in its WebSocket action handler, so a red entry alone does not prove a disconnect, overload or failed active movement. The refusal stays visible to the caller; LINAK does not filter HA logs or return false success.
 
-A warning records action, phase, reason and the backend captured before cleanup. The reason describes what the software detected, not necessarily the underlying hardware cause.
+A warning records action, phase, reason and the backend captured before cleanup. The reason describes what the software detected, not necessarily the underlying hardware cause. The `Operation` sensor shows the same codes in its `reason` attribute, with these differences:
+
+- Exception classes are folded into `timeout`, `link_lost`, `preparation_failed` or `unknown`, so the log may name a class where the sensor shows a code.
+- A failure before travel shows `preparation_failed` even where the log shows `unknown`.
+- When an explicit Stop was requested and its confirmation is missing, the sensor shows `stop_failed` whatever exception the log names.
+- A link loss reported by the backend takes precedence over the Stop failure that follows it.
 
 | Reason | Detected condition | Investigation |
 | --- | --- | --- |
@@ -93,8 +99,10 @@ A warning records action, phase, reason and the backend captured before cleanup.
 | `outside_limits` | Feedback is outside configured relative bounds | Verify calibration and real bounds before another command |
 | `link_lost` | The transport was disconnected during movement | Capture the actual link-loss event and backend evidence |
 | `stop_failed` | Stop could not complete on the session | Use physical stopping and investigate transport/cleanup |
-| `unknown` | A movement/preflight error has no dedicated guard code | Use its phase, connection state and request validity; no raw exception message is exposed |
-| Exception class, such as `TimeoutError` | Transport, deadline or validation failed outside a named motion guard | Use phase and preceding events; raw backend messages are intentionally omitted |
+| `timeout` | A deadline expired during preparation or travel | Use the phase and backend latency to find which deadline; the session is discarded |
+| `preparation_failed` | Preflight failed before travel: reference, bounds, empty slot, activation or a transport error while preparing | Check calibration, range and client readiness; no target was sent |
+| `unknown` | A movement/preflight error has no dedicated guard code; the sensor shows `preparation_failed` instead when it happened before travel | Use its phase, connection state and request validity; no raw exception message is exposed |
+| Exception class, such as `TimeoutError` | In the log line only: transport, deadline or validation failed outside a named motion guard | Use phase and preceding events; raw backend messages are intentionally omitted |
 
 Movement failures and ambiguous cleanup discard the session. A successful explicit Stop during the target loop retains a ready link, even though the interrupted target reports an action error. A subsequent `Connection: Disconnected` therefore cannot prove that radio loss caused the original failure.
 
@@ -152,6 +160,7 @@ Enable optional diagnostics through **Settings → Devices & services → Entiti
 | `bluetooth.backend` | Allowlisted active connection backend category |
 | `controls.range_configured`, `controls.busy` | Whether usable bounds exist and a foreground operation owns the client |
 | `controls.last_result` | Software result: `not_requested`, `moving`, `completed`, `interrupted`, `failed`, `stop_sent` or `stop_failed` |
+| `controls.operation.phase`, `controls.operation.reason`, `controls.operation.requested_height_cm` | The Operation sensor's phase and failure reason, and the requested goal, which is never a measurement |
 | `state` | Raw decoded position, reference, capabilities, memories and reminders |
 
 `completed` and `stop_sent` are software outcomes, not independent physical verification. Normal sensor/history presentation rounds heights; raw diagnostic state retains precision.

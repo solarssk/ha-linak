@@ -136,6 +136,37 @@
       "reminder_3_stand": {
         "name": "Profil 3: czas stania"
       },
+      "operation": {
+        "name": "Operacja",
+        "state": {
+          "idle": "Brak operacji",
+          "preparing": "Przygotowanie",
+          "moving": "Ruch",
+          "stopping": "Zatrzymywanie",
+          "completed": "Zakończono",
+          "interrupted": "Przerwano",
+          "failed": "Błąd"
+        },
+        "state_attributes": {
+          "requested_height_cm": {
+            "name": "Wysokość zadana"
+          },
+          "reason": {
+            "name": "Powód",
+            "state": {
+              "link_lost": "Utracono połączenie Bluetooth",
+              "timeout": "Przekroczono czas",
+              "no_progress": "Brak postępu",
+              "reverse_motion": "Ruch w złą stronę",
+              "overshoot": "Przekroczono cel",
+              "outside_limits": "Poza skonfigurowanym zakresem",
+              "stop_failed": "Stop niepotwierdzony",
+              "preparation_failed": "Przygotowanie nie powiodło się",
+              "unknown": "Nieznany"
+            }
+          }
+        }
+      },
       "signal_strength": {
         "name": "Siła sygnału Bluetooth"
       },

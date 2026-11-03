@@ -81,12 +81,14 @@
       "invalid_name": "Enter a readable name between 1 and 80 characters.",
       "connection_unavailable": "The desk connection is unavailable. Retry after it reconnects.",
       "client_preparation_failed": "The panel could not be prepared. Check Bluetooth connectivity and continue to check again. No movement command was sent.",
-      "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status."
+      "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status.",
+      "idasen_conflict": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
       "no_devices_found": "No compatible desks found. Enable pairing and check your Bluetooth adapter or active proxy.",
-      "not_connectable": "The device was discovered, but an active Bluetooth connection is not available. Check your local adapter or active proxy."
+      "not_connectable": "The device was discovered, but an active Bluetooth connection is not available. Check your local adapter or active proxy.",
+      "idasen_conflict": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk."
     },
     "progress": {
       "connect": "Connecting to your desk, authenticating Bluetooth and reading its data. The attempt takes up to 60 seconds; releasing a failed connection may take another 10 seconds. You can cancel setup.",
@@ -251,7 +253,8 @@
       "invalid_name": "Enter a readable name between 1 and 80 characters.",
       "desk_not_stationary": "Wait until the desk stops and a current height reading is available, then try again.",
       "range_required": "Save the lowest and highest desktop heights first. Then choose the height check in Configure.",
-      "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status."
+      "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status.",
+      "idasen_conflict": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk."
     },
     "progress": {
       "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."
@@ -281,6 +284,9 @@
     },
     "startup_waiting": {
       "message": "The desk will connect after Home Assistant finishes starting."
+    },
+    "idasen_conflict": {
+      "message": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk."
     }
   }
 }

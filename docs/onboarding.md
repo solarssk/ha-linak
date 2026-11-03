@@ -2,6 +2,14 @@
 
 This reference explains the configuration flow and connection lifecycle. Use the [control guide](controls.md) for owner-facing configuration steps and the [diagnostic manual](diagnostics.md) when a step fails. Discovery, Bluetooth authentication and DPG client activation are separate stages.
 
+## One integration per desk
+
+Before connecting, preparing the client, confirming calibration or handing a completed wizard session to runtime, LINAK checks for an enabled `idasen_desk` entry with the same normalized Bluetooth address. The official HA 2026.10.4 integration stores that address in `data.address`; a missing/invalid data address falls back to the entry's unique ID. Colons, hyphens, compact hexadecimal and dotted MAC forms compare consistently. Disabled or ignored entries and other desks do not block setup. An enabled entry still counts if its own setup failed, because it can retry.
+
+If the conflict message appears, open **Settings → Devices & services → IKEA Idasen Desk**, disable the entry for this desk, then retry LINAK. Disabling keeps the IKEA configuration. LINAK never disables, deletes, renames or changes that entry. Keeping IKEA enabled instead is also possible: leave the LINAK entry disabled.
+
+Loaded LINAK entries recheck ownership on each scheduled idle refresh and before a new movement or calibration. An idle refresh detecting conflict releases LINAK's own connection and reports unavailable; normal refresh/retry can recover after IKEA is disabled. Stop remains available for an already owned connection, and an operation already in progress keeps its cleanup ownership. This is a check of configured entries, not a Bluetooth-wide lock: it cannot arbitrate an unfinished IKEA wizard, external apps or an IKEA enable that races an operation already underway. It does not interrupt an ongoing move automatically or introduce a registry watcher.
+
 ## Setup sequence
 
 The wizard validates the desk before creating an entry and keeps the same connection across foreground steps.

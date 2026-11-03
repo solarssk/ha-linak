@@ -45,12 +45,15 @@ from .entity import whole_centimeters
 from .naming import DEFAULT_NAME, cached_bluez_names, desk_name, discovery_title
 from .protocol import SERVICE_UUID
 from .setup_session import offer_session
+from .ownership import DeskOwnershipConflict, has_idasen_conflict
 
 _LOGGER = logging.getLogger(__name__)
 SETUP_IDLE_TIMEOUT = 300
 
 
 def _validation_error(error: Exception, stage: str) -> str:
+    if isinstance(error, DeskOwnershipConflict):
+        return "idasen_conflict"
     if isinstance(error, TimeoutError) and stage == "pairing":
         return "pairing_timeout"
     for exception_type, code in (
@@ -195,6 +198,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _setup_desk(self) -> DeskClient:
         """Keep the validated transport through the foreground wizard."""
+        assert self._address is not None
+        if has_idasen_conflict(self.hass, self._address):
+            raise DeskOwnershipConflict
         if self._idle_timer is not None:
             self._idle_timer.cancel()
             self._idle_timer = None
@@ -418,6 +424,8 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._calibration, activate_client=self._preparing
             )
             succeeded = True
+        except DeskOwnershipConflict:
+            error = "idasen_conflict"
         except SettingRejected as err:
             _log_setting_rejection(err, desk)
             error = "setting_rejected"
@@ -470,6 +478,10 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_save_range(self, user_input=None) -> ConfigFlowResult:
         self._abort_if_unique_id_configured()
+        assert self._address is not None
+        if has_idasen_conflict(self.hass, self._address):
+            await self._release_session()
+            return self.async_abort(reason="idasen_conflict")
         try:
             _validate_range(self._pending_range or {}, self._validated_state)
         except ValueError:
@@ -621,10 +633,14 @@ class LinakOptionsFlow(OptionsFlowWithReload):
                 or self._calibration is None
             ):
                 raise ValueError("A current connection is required")
+            if has_idasen_conflict(self.hass, coordinator.address):
+                raise DeskOwnershipConflict
             await coordinator.desk.calibrate_height(
                 self._calibration, activate_client=True
             )
             return None
+        except DeskOwnershipConflict:
+            return "idasen_conflict"
         except SettingRejected as err:
             _log_setting_rejection(err, coordinator.desk if coordinator else None)
             return "setting_rejected"

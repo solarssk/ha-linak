@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Detect an enabled IKEA Idasen Desk entry for the same Bluetooth address before new LINAK reads, calibration or movement; explain the conflict without changing the IKEA entry, while retaining Stop and owned cleanup.
 - Keep reference/position checks on a 60-second schedule during height notifications; read memories and reminders independently every five minutes, and force both groups after reconnect or reference changes. Before movement, reread the offset and, for a saved-position move, the selected slot.
 - Defer desk connection until Home Assistant is running and allow the normal refresh budget after startup, avoiding an outer deadline equal to a single Bluetooth connection attempt.
 - Recognize known wrapped Bluetooth backends and identify timed-out DPG reads and runtime failure stages without exposing backend payloads or identifiers.

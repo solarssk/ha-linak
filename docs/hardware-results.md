@@ -150,7 +150,7 @@ This matrix is a test plan and evidence index, not eleven successful hardware te
 | H9 | Proxy-only and mixed adapters | Repeat onboarding, reads, travel and Stop with actual backend/path evidence for each environment | Local BlueZ control evidence only |
 | H10 | Calibration/settings persistence | Before/after reference and exact raw memories, no unintended movement, agreed restart/power-cycle readback | Activation/calibration and one reconnect observed; power-cycle result pending |
 | H11 | Idle session and display | Count settings queries/control writes, reconnects and freshness gaps; visually compare OLED with/without periodic reads | Short idle capture had no outgoing writes; periodic-poll/OLED comparison pending |
-| H12 | Competing local client/integration | Actionable conflict, no silent takeover and no unexpected movement | Ownership policy exists; cross-integration guard and hardware acceptance pending |
+| H12 | Competing local client/integration | Actionable conflict, no silent takeover and no unexpected movement | Configured-entry conflict guard covered by synthetic HA tests; physical competing-client acceptance pending |
 
 Choose travel distances, repetitions and stopping tolerances before the test. Respect manufacturer duty-cycle and local safety constraints, keep physical stopping access and terminate on a failure. Loss of BLE can prevent remote Stop; a successful API call cannot prove the mechanism stopped. Do not induce destructive interference or clear a working bond as an incidental test setup step.
 

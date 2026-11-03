@@ -73,7 +73,7 @@ The integration runs directly on your HA host. No Mac or separate bridge is need
 
 1. In HACS, add `https://github.com/solarssk/ha-linak` as a custom repository of type **Integration**.
 2. Download **LINAK Desks**, then restart Home Assistant.
-3. Close connected desk phone apps and disable any Idasen integration using the same desk.
+3. Close connected desk phone apps and disable any Idasen integration using the same desk. LINAK detects enabled IKEA entries for the same desk and explains how to resolve the conflict; it leaves their configuration unchanged.
 4. Enable **Bluetooth pairing** on the desk panel.
 5. Go to **Settings → Devices & services → Add integration**. Search for **LINAK Desks**, then choose your desk. You can also use its discovery card.
 

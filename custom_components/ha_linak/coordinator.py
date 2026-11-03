@@ -17,6 +17,7 @@ from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError, MotionFailure, MotionStopped
 from .setup_session import take_session
+from .ownership import has_idasen_conflict
 
 _LOGGER = logging.getLogger(__name__)
 SETTINGS_REFRESH_INTERVAL = 300
@@ -107,6 +108,12 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             if not self.desk.connected:
                 raise UpdateFailed("Desk disconnected during control cleanup")
             return self.desk.state
+        if has_idasen_conflict(self.hass, self.address):
+            if self.desk is not None:
+                await self.desk.disconnect()
+            raise UpdateFailed(
+                translation_domain=DOMAIN, translation_key="idasen_conflict"
+            )
         device = bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True
         )
@@ -141,6 +148,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         await self._async_control("stop")
 
     async def _async_control(self, action: str, value: float | int = 0) -> None:
+        if action != "stop" and has_idasen_conflict(self.hass, self.address):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="idasen_conflict"
+            )
         if self.desk is None or (action != "stop" and not self.desk.connected):
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="control_unavailable"

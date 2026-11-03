@@ -173,7 +173,7 @@ Copy [`custom_components/ha_linak`](../custom_components/ha_linak) into the `cus
 
 Home Assistant lists the integration as **LINAK Desks**. Its internal domain remains `ha_linak`.
 
-1. Close the phone app. Disable any IKEA Idasen Desk integration using the same desk.
+1. Close the phone app. Disable any IKEA Idasen Desk integration using the same desk. LINAK detects enabled IKEA entries for the same desk and explains how to resolve the conflict; it leaves their configuration unchanged.
 2. Put the panel in **Bluetooth pairing mode**.
 3. Open **Settings → Devices & services → Add integration** and search for **LINAK Desks**, or use the discovered-device card.
 4. Select this custom integration, domain **`ha_linak`**, then choose your desk.

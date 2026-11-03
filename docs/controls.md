@@ -53,7 +53,7 @@ Stop preempts an active request. Stop sends control Stop and reference-input rel
 
 A busy message means that the new command was not accepted; it does not mean that the desk disconnected or the ongoing movement failed. HA classifies it as action validation, and an automation calling the rejected action still receives an error. In HA 2026.10.4 this expected refusal can also appear at `ERROR` level in frontend logs. Check the message and connection state before treating a log entry as a device fault.
 
-The **Operation** sensor shows whether a request is still running and how the last one ended. It reads idle, preparing, moving or stopping while a request runs, then completed, interrupted or failed, and a failed result carries a `reason` attribute. Use it, rather than the busy message or the Connection sensor, to decide when to send the next request. A refused request does not change it, it stays available when the connection drops, and it reports the request, not physical arrival. [How the phases change →](movement.md#operation-status)
+The **Operation** sensor shows whether a request is still running and how the last one ended. It reads idle, preparing, moving or stopping while a request runs, then completed, interrupted or failed, and a failed result carries a `reason` attribute. Use it to see whether a request is still running or how the last one ended. It does not show scheduled state reads, which can still refuse a new request with the busy message while it reads idle or completed. A refused request does not change it, it stays available when the connection drops, and it reports the request, not physical arrival. [How the phases change →](movement.md#operation-status)
 
 ## Test native controls at the panel
 

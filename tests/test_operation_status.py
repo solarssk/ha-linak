@@ -25,6 +25,7 @@ from custom_components.ha_linak.motion import (
     TARGET_UUID,
     MotionError,
     MotionFailure,
+    MotionStopped,
 )
 from custom_components.ha_linak.operation import (
     OperationStatus,
@@ -642,6 +643,103 @@ async def test_a_failed_stop_is_a_visible_failure(hass):
     assert state.attributes["requested_height_cm"] == 83.0
     assert journal.phases[-1] == "failed"
     assert not coordinator.desk.connected
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_delivered_stop_reaching_a_request_still_waiting_for_the_client(hass):
+    entry, fake = await setup(hass)
+    coordinator = entry.runtime_data
+    desk = coordinator.desk
+    holding, release = asyncio.Event(), asyncio.Event()
+    journal = Journal(hass)
+
+    async def hold_client():
+        async with desk._lock:
+            holding.set()
+            await release.wait()
+
+    first = asyncio.create_task(coordinator.async_move_to_cm(83))
+    holder = asyncio.create_task(hold_client())
+    await asyncio.wait_for(holding.wait(), 1)
+    await coordinator.async_stop()
+    await first
+    release.set()
+    await holder
+    state = hass.states.get(OPERATION_ID)
+    assert state.state == "interrupted"
+    assert "reason" not in state.attributes
+    assert journal.phases[-1] == "interrupted"
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
+    assert target_writes(fake.writes) == []
+    assert not desk.control_busy
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_failed_stop_after_the_move_ended_still_fails_the_operation(hass):
+    entry, fake = await setup(hass)
+    coordinator = entry.runtime_data
+    desk = coordinator.desk
+    holding, release = asyncio.Event(), asyncio.Event()
+
+    async def hold_client():
+        async with desk._lock:
+            holding.set()
+            await release.wait()
+
+    # The request has ended its work but still owns the client until it settles.
+    original = desk._stop_outcome
+    reached = asyncio.Event()
+
+    async def late(*args):
+        reached.set()
+        await release.wait()
+        return await original(*args)
+
+    desk._stop_outcome = late
+    first = asyncio.create_task(coordinator.async_move_to_cm(83))
+    holder = asyncio.create_task(hold_client())
+    await asyncio.wait_for(holding.wait(), 1)
+    fake.fail_stop = True
+    stop = asyncio.create_task(coordinator.async_stop())
+    await asyncio.wait_for(reached.wait(), 1)
+    release.set()
+    with pytest.raises(HomeAssistantError):
+        await stop
+    with pytest.raises(HomeAssistantError):
+        await first
+    await holder
+    state = hass.states.get(OPERATION_ID)
+    assert (state.state, state.attributes["reason"]) == ("failed", "stop_failed")
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    "error,stop_error,expected",
+    [
+        (None, None, Phase.COMPLETED),
+        (None, BleakError("x"), Phase.FAILED),
+        (MotionStopped("x"), None, Phase.INTERRUPTED),
+        (MotionStopped("x"), BleakError("x"), Phase.FAILED),
+    ],
+)
+def test_a_failed_stop_outranks_the_request_outcome(error, stop_error, expected):
+    desk = desk_at("moving")
+    desk._settle_operation(error, stop_error)
+    status = desk.operation.status
+    assert status.phase is expected
+    assert status.reason is (Reason.STOP_FAILED if stop_error else None)
+
+
+async def test_the_sensor_follows_changes_while_the_link_stays_down(hass):
+    entry, _ = await setup(hass)
+    coordinator = entry.runtime_data
+    await coordinator.desk._disconnect_link()
+    coordinator._changed()
+    assert not coordinator.last_update_success
+    coordinator.desk.operation.begin(83)
+    assert hass.states.get(OPERATION_ID).state == "preparing"
+    coordinator.desk.operation.fail(Reason.TIMEOUT)
+    assert hass.states.get(OPERATION_ID).state == "failed"
     await hass.config_entries.async_unload(entry.entry_id)
 
 

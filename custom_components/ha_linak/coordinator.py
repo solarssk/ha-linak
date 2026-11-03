@@ -91,9 +91,14 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             else:
                 self.async_set_updated_data(self.desk.state)
         else:
+            already_failed = not self.last_update_success
             self.async_set_update_error(
                 UpdateFailed("Desk disconnected or invalid position")
             )
+            if already_failed:
+                # HA notifies listeners only on the first error; the always
+                # available Operation sensor must still follow later changes.
+                self.async_update_listeners()
 
     def _validate_control_reference(self, state: DeskState) -> None:
         """A changed calibration can invalidate previously configured bounds."""

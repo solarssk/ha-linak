@@ -1,5 +1,7 @@
 """Optional group validity without hiding transport or reference failures."""
 
+import asyncio
+import struct
 from unittest.mock import patch
 
 import pytest
@@ -148,12 +150,39 @@ async def test_optional_timeout_discards_generation_and_old_notifications(comman
             await desk.refresh(allow_partial_settings=True)
     assert not desk.connected
     assert all(not health.valid for health in desk.settings_health.values())
-    replacement = GroupReplies()
+
+    class PendingReplies(GroupReplies):
+        def __init__(self):
+            super().__init__()
+            self.silent = 0x88
+            self.reminders_pending = asyncio.Event()
+
+        async def write_gatt_char(self, uuid, data, response):
+            await super().write_gatt_char(uuid, data, response)
+            if uuid == DPG_UUID and data[1] == 0x88:
+                self.reminders_pending.set()
+
+    replacement = PendingReplies()
     with patch(
         "custom_components.ha_linak.client.establish_connection",
         return_value=replacement,
     ):
-        await desk.refresh(allow_partial_settings=True)
+        refresh = asyncio.create_task(desk.refresh(allow_partial_settings=True))
+        try:
+            async with asyncio.timeout(1):
+                await replacement.reminders_pending.wait()
+            pending = desk._pending
+            assert pending is not None
+            assert not pending.done()
+            assert desk._response_type == 11
+            old_dpg(None, bytearray.fromhex(CAPTURE["88"]))
+            assert not pending.done()
+            replacement.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE["88"]))
+            await refresh
+        finally:
+            if not refresh.done():
+                refresh.cancel()
+            await asyncio.gather(refresh, return_exceptions=True)
     current = desk.state
     old_position(None, bytearray.fromhex("00000000"))
     old_dpg(None, bytearray.fromhex(CAPTURE["88"]))
@@ -207,25 +236,35 @@ async def test_settings_age_and_link_loss_validity():
         (0x81, b"\x01\x03\x00\x00\x00"),
     ],
 )
-async def test_partial_policy_cannot_hide_invalid_required_data(command, payload):
+@pytest.mark.parametrize("with_baseline", [False, True])
+async def test_partial_policy_cannot_hide_invalid_required_data(
+    command, payload, with_baseline
+):
     class BadBaseline(FakeBleak):
+        invalid = False
+
         async def write_gatt_char(self, uuid, data, response):
-            if data[1] == command:
+            if self.invalid and data[1] == command:
                 self.callbacks[DPG_UUID](None, bytearray(payload))
             else:
                 await super().write_gatt_char(uuid, data, response)
 
     fake = BadBaseline()
     desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
-    with (
-        patch(
-            "custom_components.ha_linak.client.establish_connection", return_value=fake
-        ),
-        pytest.raises(ValueError),
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", return_value=fake
     ):
-        await desk.refresh(allow_partial_settings=True)
+        if with_baseline:
+            await desk.refresh()
+            assert desk.state.offset_raw is not None
+        baseline = desk.state
+        fake.invalid = True
+        with pytest.raises(ValueError):
+            await desk.refresh(allow_partial_settings=True)
     assert not desk.connected
-    assert desk.state.offset_raw is None
+    assert desk.state is baseline
+    if not with_baseline:
+        assert desk.state.offset_raw is None
 
 
 async def test_failed_reduced_slot_snapshot_never_keeps_removed_slots():
@@ -253,3 +292,40 @@ async def test_failed_reduced_slot_snapshot_never_keeps_removed_slots():
     assert len(desk.state.memories) == 2
     assert not desk.settings_health["memories"].valid
     await desk.disconnect()
+
+
+async def test_memory_move_reads_changed_slot_after_group_became_invalid(hass):
+    class ChangedMemory(GroupReplies):
+        fresh_slot = None
+
+        async def write_gatt_char(self, uuid, data, response):
+            if uuid == DPG_UUID and data[1] == 0x89 and self.fresh_slot is not None:
+                self.writes.append((uuid, bytes(data)))
+                payload = b"\x01\x07\x01" + struct.pack("<HI", self.fresh_slot, 1)
+                self.callbacks[DPG_UUID](None, bytearray(payload))
+                return
+            await super().write_gatt_char(uuid, data, response)
+
+    fake = ChangedMemory()
+    with patch("test_native_controls.MotionBleak", return_value=fake):
+        entry, _ = await setup_entry(hass, OPTIONS)
+    desk = entry.runtime_data.desk
+    cached = desk.state.memories[0].position_raw
+    fake.corrupt = 0x89
+    await desk.refresh(allow_partial_settings=True)
+    assert not desk.settings_health["memories"].valid
+    assert desk.state.memories[0].position_raw == cached
+    fake.corrupt = None
+    fake.fresh_slot = 1600
+    assert fake.fresh_slot != cached
+    fake.writes.clear()
+    await entry.runtime_data.async_move_to_memory(0)
+    targets = [
+        data
+        for uuid, data in fake.writes
+        if uuid == TARGET_UUID and data != REFERENCE_STOP
+    ]
+    assert targets
+    assert all(data == struct.pack("<H", fake.fresh_slot) for data in targets)
+    assert desk.state.memories[0].position_raw == fake.fresh_slot
+    await hass.config_entries.async_unload(entry.entry_id)

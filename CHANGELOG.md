@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Keep reference/position checks on a 60-second schedule during height notifications; read memories and reminders independently every five minutes, with fresh reads after reconnect/reference changes and before control.
+- Keep reference/position checks on a 60-second schedule during height notifications; read memories and reminders independently every five minutes, and force both groups after reconnect or reference changes. Before movement, reread the offset and, for a saved-position move, the selected slot.
 - Defer desk connection until Home Assistant is running and allow the normal refresh budget after startup, avoiding an outer deadline equal to a single Bluetooth connection attempt.
 - Recognize known wrapped Bluetooth backends and identify timed-out DPG reads and runtime failure stages without exposing backend payloads or identifiers.
 - Isolate malformed memory/reminder replies during runtime refresh, expose group validity and last-success age in diagnostics, and retain strict setup, calibration and transport-failure handling.

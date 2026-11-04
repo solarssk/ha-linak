@@ -19,23 +19,19 @@ from homeassistant.const import (
 )
 
 from .coordinator import LinakCoordinator
-from .entity import LinakEntity, whole_centimeters
+from .entity import LinakEntity, track_memory_slots, whole_centimeters
 from .operation import Phase
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
 async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
-    _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
     entities: list[SensorEntity] = [
         LinakSensor(coordinator, "height"),
         LinakSensor(coordinator, "offset"),
         LinakOperationSensor(coordinator, "operation"),
-    ]
-    entities += [
-        LinakSensor(coordinator, f"memory_{i + 1}")
-        for i in range(len(coordinator.data.memories))
     ]
     entities += [LinakSensor(coordinator, "reminder_profile")]
     entities += [
@@ -48,6 +44,14 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
         for key in ("signal_strength", "bluetooth_backend")
     ]
     async_add_entities(entities)
+    track_memory_slots(
+        hass,
+        entry,
+        coordinator,
+        "memory_",
+        lambda index: LinakSensor(coordinator, f"memory_{index + 1}"),
+        async_add_entities,
+    )
 
 
 class LinakSensor(LinakEntity, SensorEntity):

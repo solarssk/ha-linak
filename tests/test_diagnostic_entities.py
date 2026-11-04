@@ -67,7 +67,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         entries = er.async_entries_for_config_entry(registry, entry.entry_id)
-        assert len(entries) == 23
+        assert len(entries) == 24
         by_key = {item.unique_id.removeprefix(ADDRESS + "_"): item for item in entries}
         for key in [
             "height",
@@ -90,6 +90,10 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         ]:
             assert by_key[key].disabled_by is None
             assert by_key[key].entity_category is None
+        # Keep connected is a configuration control the owner enables on purpose.
+        assert by_key["keep_connected"].entity_category == EntityCategory.CONFIG
+        assert by_key["keep_connected"].disabled_by is not None
+        assert hass.states.get("switch.desk_keep_connected") is None
         for key in ["offset", "connection", "signal_strength", "bluetooth_backend"]:
             assert by_key[key].entity_category == EntityCategory.DIAGNOSTIC
         assert hass.states.get(signal.entity_id).state == "-65"

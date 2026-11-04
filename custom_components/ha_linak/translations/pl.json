@@ -210,6 +210,11 @@
       "go_to_memory_4": {
         "name": "Przejdź do zapisanej pozycji 4"
       }
+    },
+    "switch": {
+      "keep_connected": {
+        "name": "Utrzymuj połączenie"
+      }
     }
   },
   "options": {
@@ -318,6 +323,12 @@
     },
     "idasen_conflict": {
       "message": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka."
+    },
+    "connection_released": {
+      "message": "Połączenie zostało zwolnione celowo. Włącz Utrzymuj połączenie, aby połączyć się ponownie."
+    },
+    "connection_failed": {
+      "message": "Biurko się nie połączyło. Utrzymuj połączenie pozostaje włączone, a Home Assistant ponowi próbę. Sprawdź, czy biurko jest wybudzone i w zasięgu adaptera Bluetooth lub proxy."
     }
   }
 }

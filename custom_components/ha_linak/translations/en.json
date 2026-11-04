@@ -210,6 +210,11 @@
       "go_to_memory_4": {
         "name": "Go to stored position 4"
       }
+    },
+    "switch": {
+      "keep_connected": {
+        "name": "Keep connected"
+      }
     }
   },
   "options": {
@@ -318,6 +323,12 @@
     },
     "idasen_conflict": {
       "message": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk."
+    },
+    "connection_released": {
+      "message": "The connection was released on purpose. Turn on Keep connected to reconnect."
+    },
+    "connection_failed": {
+      "message": "The desk did not connect. Keep connected stays on and Home Assistant will retry. Check that the desk is awake and within range of your Bluetooth adapter or proxy."
     }
   }
 }

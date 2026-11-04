@@ -12,7 +12,13 @@ from .const import DOMAIN
 from .coordinator import LinakCoordinator
 from .naming import DEFAULT_NAME, desk_name
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.BUTTON]
+PLATFORMS = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.NUMBER,
+    Platform.BUTTON,
+    Platform.SWITCH,
+]
 FIRST_REFRESH_TIMEOUT = REFRESH_TIMEOUT
 
 
@@ -41,8 +47,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = LinakCoordinator(hass, entry)
     entry.runtime_data = coordinator
     try:
-        await _async_first_refresh(coordinator)
-        _repair_title(hass, entry, coordinator)
+        if coordinator.connection_wanted:
+            await _async_first_refresh(coordinator)
+            _repair_title(hass, entry, coordinator)
+        else:
+            # A persisted release loads its entities without waiting for the desk.
+            await coordinator.async_start_released()
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     except BaseException:
         await coordinator.async_close()

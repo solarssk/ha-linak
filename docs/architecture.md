@@ -47,6 +47,7 @@ Centimeters are the primary height interface. A `number` entity supports that in
 | Stored-position buttons | Freshly read slot passed to the common movement controller | Controls |
 | Stop button | Interrupt an active operation or send Stop while idle | Control |
 | Operation sensor | Phase of the explicit request, its last result and reason; never a measurement | Ordinary sensor, available without a Bluetooth link |
+| Keep connected switch | The owner's intent to hold the Bluetooth link, persisted on the config entry; not the observed link | Configuration control, disabled by default, available without a Bluetooth link |
 | Offset sensor | Technical reference used in height conversion | Diagnostic |
 | Connection binary sensor | Current client readiness | Diagnostic, enabled by default |
 | Signal strength and backend sensors | Advertisement RSSI and active backend category | Diagnostic, disabled by default |
@@ -78,7 +79,7 @@ Config-entry setup defers all radio work until HA reaches running, using HA's st
 | Invalid group | A completed matching reply failed decoding | That group's entities are unavailable; another group's valid read can remain available |
 | Lost or ambiguous session | Disconnect, timeout, invalid reference or other transport failure | All ordinary readings become unavailable; cached objects are diagnostic history only |
 
-The five-minute interval is an explicit software read policy, not evidence of an overloaded controller or proof that the OLED sleeps. During an unchanged four-slot session, the synthetic request count is two extended reads per normal check instead of ten; a due full check retains the existing memory barriers. Polling yields while control owns the client, so deadlines are not hard real-time guarantees. The number entity holds its last settled height during travel while the measurement sensor stays live. All timeouts still invalidate the transport generation; recovery creates a session with fresh required data and settings, never a cached height or queued target. The operation sensor reports explicit requests apart from this telemetry, and deliberate connection ownership remains separate roadmap work.
+The five-minute interval is an explicit software read policy, not evidence of an overloaded controller or proof that the OLED sleeps. During an unchanged four-slot session, the synthetic request count is two extended reads per normal check instead of ten; a due full check retains the existing memory barriers. Polling yields while control owns the client, so deadlines are not hard real-time guarantees. The number entity holds its last settled height during travel while the measurement sensor stays live. All timeouts still invalidate the transport generation; recovery creates a session with fresh required data and settings, never a cached height or queued target. The operation sensor reports explicit requests apart from this telemetry, and deliberate connection ownership is described in [Deliberate connection ownership](#deliberate-connection-ownership).
 
 ## Operation ownership
 
@@ -100,6 +101,37 @@ A second target or calibration cannot compete with an active operation. Cancella
 The [connection lifecycle](onboarding.md) defines authentication, setup transfer and retry. HA supplies current connectable device metadata; the integration does not force `hci0`, clear unrelated bonds or choose a proxy by name.
 
 A backend disconnect cancels pending I/O. Ambiguous query failures invalidate the session because some DPG replies do not identify their request. The coordinator attempts recovery through its normal refresh schedule and reports stale readings unavailable. Reconnection performs reads only; a later explicit control request must validate its own readiness and bounds.
+
+### Deliberate connection ownership
+
+The **Keep connected** switch holds the owner's intent, kept apart from the observed link that the Connection sensor reports. Intent is stored as `keep_connected` in the config entry data, defaults to on when the key is absent and survives a restart. Options flows replace only the options, so they cannot reset it, and changing it does not reload the entry. The switch is a configuration entity that is disabled by default, so the owner enables it on purpose. The stored intent applies whether or not the entity is enabled: disabling the entity while the desk is released does not reconnect it, and the owner turns it on again after re-enabling the entity.
+
+| State | Intent | Radio activity | Readings |
+| --- | --- | --- | --- |
+| Connected | On | Normal polling and reads | Live |
+| Recovering | On | Normal retry schedule after a failed connection | Unavailable until a read succeeds |
+| Released | Off | None: no device lookup, connection or poll | Unavailable; the cached values are not shown as live |
+
+```mermaid
+stateDiagram-v2
+    accTitle: Connection ownership
+    accDescr: Turning the switch off stops any movement, drops the link and suppresses all radio activity until it is turned on and a fresh read succeeds.
+    [*] --> Connected: intent on, first read succeeds
+    [*] --> Released: intent off at startup
+    Connected --> Recovering: link lost
+    Recovering --> Connected: poll succeeds
+    Connected --> Released: switch off
+    Recovering --> Released: switch off
+    Released --> Connected: switch on, read succeeds
+    Released --> Recovering: switch on, read fails
+```
+
+- Turning it off saves the intent first, so a restart or a refresh already in flight sees the latest choice. It then stops any active movement through the normal bounded Stop, drops the link and publishes the unavailable readings, even when dropping the link itself fails. A Stop that cannot be confirmed is reported as a failed Stop while the link is still released and the intent stays off. A refresh already in flight is not cancelled: it finishes, is discarded because the intent changed, and the link is dropped again instead of publishing the result.
+- The client refuses to connect while released, so no code path other than an explicit turn-on can reconnect it. A scheduled poll still fires, but returns before any radio lookup.
+- Turning it on resumes the client and performs one normal connection and read, with the same bounded timeout. It forces a fresh read of every group because the earlier link loss invalidated them, and it never sends a target, calibrates or activates a client. When it fails, the intent stays on, the action reports `connection_failed` and the normal poll retries. Actions are serialized and the newest request wins: an earlier request that a later one superseded does nothing, so a turn-off waits behind a running turn-on refresh (at most the 60-second refresh budget) but its intent is saved immediately and that refresh is discarded.
+- A persisted release starts without waiting for the desk or for Home Assistant's bluetooth discovery. It loads the entities this entry registered earlier as unavailable, releases any link still held by the setup wizard, and adds stored-position entities that the first connection reveals.
+- The IKEA conflict check is independent: it still releases only LINAK's own link and never changes another entry.
+- A released desk is not evidence of panel sleep or OLED behavior. That needs a separate supervised observation.
 
 ## Supported environment and evidence
 

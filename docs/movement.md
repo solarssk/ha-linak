@@ -111,7 +111,7 @@ The `Operation` sensor reports the explicit request that owns the client and, af
 ```mermaid
 stateDiagram-v2
     accTitle: Operation status phases
-    accDescr: An accepted request prepares, moves and runs final Stop cleanup, then settles as completed, interrupted or failed. A request cancelled before any target settles as interrupted directly.
+    accDescr: An accepted request prepares, moves and runs final Stop cleanup, then settles as completed, interrupted or failed. After a short pause the status returns to idle and the result stays as the last result. A request cancelled before any target settles as interrupted directly.
     [*] --> idle
     idle --> preparing: request accepted
     preparing --> moving: preparation done
@@ -123,6 +123,9 @@ stateDiagram-v2
     preparing --> failed: error or link lost
     moving --> failed: error or link lost
     stopping --> failed: Stop failed, error or link lost
+    completed --> idle: after about 10 seconds
+    interrupted --> idle: after about 10 seconds
+    failed --> idle: after about 10 seconds
     completed --> preparing: next request
     interrupted --> preparing: next request
     failed --> preparing: next request
@@ -130,7 +133,7 @@ stateDiagram-v2
 
 | State | Meaning |
 | --- | --- |
-| `idle` | No operation since the integration loaded |
+| `idle` | No operation is running. It is the state before the first request and again about 10 seconds after a result, so a notification can trigger on the result and the status then rests at idle |
 | `preparing` | The request owns the client while the reference, the selected slot and client readiness are checked |
 | `moving` | The command loop sends targets and checks feedback |
 | `stopping` | Final control Stop and reference release are running, after arrival, a guard failure, an error or an explicit Stop |
@@ -147,11 +150,19 @@ stateDiagram-v2
 | Stop after the movement ended but before the request settled | The movement's own result stands, because it already finished with its confirmed final Stop, so a completed move stays `completed`; a Stop that fails there makes the result `failed` with `stop_failed` |
 | The calling action is cancelled | `interrupted` once the final Stop is delivered, or at once when no target was sent yet; `failed` with `stop_failed` when the Stop could not be confirmed |
 | The transport is lost during an operation | `failed` with `link_lost` at once; later cleanup errors do not rewrite it |
-| Reconnect | A settled result stays until the next accepted request; nothing resumes the old goal |
-| Reload or Home Assistant restart | Starts at `idle`; no result or goal is stored |
+| Reconnect | A settled result stays for its short pause and then rests as the last result; nothing resumes the old goal |
+| Reload or Home Assistant restart | Starts at `idle`; no result or goal is stored, so the last result is empty |
 | Calibration | Not an operation; setup and options flows report their own progress |
 
-The `requested_height_cm` attribute holds the requested goal, never a measurement. A target request records it when accepted; a stored-position request records it once the selected slot has been read. The sensor stays available when the connection drops, so a failed result keeps its reason visible. A refusal can also come from a read in progress, because the client serves one exchange at a time; the status then stays as it was. The reason codes are listed in the [diagnostic manual](diagnostics.md#interpret-a-movement-failure).
+The `requested_height_cm` attribute holds the requested goal, never a measurement.
+
+- A target request records it when accepted. A stored-position request records it once the selected slot has been read.
+- While the status rests at idle after a result, `last_result`, `last_requested_height_cm` and `last_reason` keep that result, so the reason of a failure is not lost.
+- Those attributes are held in memory only and disappear after a reload or restart.
+- The sensor stays available when the connection drops, so a failed result keeps its reason visible.
+- A refusal can also come from a read in progress, because the client serves one exchange at a time. The status then stays as it was.
+
+The reason codes are listed in the [diagnostic manual](diagnostics.md#interpret-a-movement-failure).
 
 ## Protocol differences still under investigation
 

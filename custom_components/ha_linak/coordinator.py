@@ -147,6 +147,11 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             return OperationStatus()
         return self.desk.operation.status
 
+    @property
+    def last_operation(self) -> OperationStatus | None:
+        """The latest settled result, which outlives the return to idle."""
+        return None if self.desk is None else self.desk.operation.last
+
     @callback
     def _changed(self) -> None:
         if self.desk is not None and self.desk.connected:
@@ -310,4 +315,5 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
     async def async_close(self) -> None:
         await self.async_shutdown()
         if self.desk is not None:
+            self.desk.close_operation_resets()
             await self.desk.disconnect()

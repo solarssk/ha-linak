@@ -7,6 +7,10 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+# Seconds a settled result stays visible before the status returns to idle. The
+# result itself is kept as the last result, so only the live phase resets.
+OPERATION_RESET_DELAY = 10
+
 
 class Phase(StrEnum):
     IDLE = "idle"
@@ -31,6 +35,7 @@ class Reason(StrEnum):
 
 
 ACTIVE = frozenset({Phase.PREPARING, Phase.MOVING, Phase.STOPPING})
+SETTLED = frozenset({Phase.COMPLETED, Phase.INTERRUPTED, Phase.FAILED})
 
 
 @dataclass(frozen=True)
@@ -44,6 +49,10 @@ class OperationStatus:
     @property
     def active(self) -> bool:
         return self.phase in ACTIVE
+
+    @property
+    def settled(self) -> bool:
+        return self.phase in SETTLED
 
     def advanced(self, phase: Phase, reason: Reason | None = None) -> OperationStatus:
         """The same request in another phase; only a failure carries a reason."""
@@ -65,6 +74,8 @@ class OperationTracker:
         self._changed = changed
         self._origin = Phase.IDLE
         self.status = OperationStatus()
+        # The latest settled result, kept after the live phase returns to idle.
+        self.last: OperationStatus | None = None
 
     @property
     def origin(self) -> Phase:
@@ -80,11 +91,18 @@ class OperationTracker:
     def _publish(self, status: OperationStatus) -> None:
         if status != self.status:
             self.status = status
+            if status.settled:
+                self.last = status
             try:
                 self._changed()
             except Exception:
                 # Reporting must never alter a movement or its Stop.
                 _LOGGER.debug("Operation status listener failed", exc_info=True)
+
+    def reset(self) -> None:
+        """Return a settled result to idle; the result stays as the last one."""
+        if self.status.settled:
+            self._publish(OperationStatus())
 
     def begin(self, requested_height_cm: float | None = None) -> None:
         if not self.status.active:

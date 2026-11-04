@@ -32,3 +32,24 @@ def cached_system_names():
         return_value={},
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def operation_reset_timers():
+    """A desk built without a config entry is never unloaded; cancel its timer."""
+    from custom_components.ha_linak import client
+
+    desks = []
+    original = client.DeskClient.__init__
+
+    def tracking(self, *args, **kwargs):
+        original(self, *args, **kwargs)
+        desks.append(self)
+
+    client.DeskClient.__init__ = tracking
+    try:
+        yield
+    finally:
+        client.DeskClient.__init__ = original
+        for desk in desks:
+            desk.cancel_operation_reset()

@@ -164,6 +164,31 @@
               "preparation_failed": "Preparation failed",
               "unknown": "Unknown"
             }
+          },
+          "last_result": {
+            "name": "Last result",
+            "state": {
+              "completed": "Completed",
+              "interrupted": "Interrupted",
+              "failed": "Failed"
+            }
+          },
+          "last_requested_height_cm": {
+            "name": "Last requested height"
+          },
+          "last_reason": {
+            "name": "Last reason",
+            "state": {
+              "link_lost": "Bluetooth link lost",
+              "timeout": "Timed out",
+              "no_progress": "No progress",
+              "reverse_motion": "Moved the wrong way",
+              "overshoot": "Passed the target",
+              "outside_limits": "Outside the configured range",
+              "stop_failed": "Stop not confirmed",
+              "preparation_failed": "Preparation failed",
+              "unknown": "Unknown"
+            }
           }
         }
       },

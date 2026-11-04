@@ -164,6 +164,31 @@
               "preparation_failed": "Przygotowanie nie powiodło się",
               "unknown": "Nieznany"
             }
+          },
+          "last_result": {
+            "name": "Ostatni wynik",
+            "state": {
+              "completed": "Zakończono",
+              "interrupted": "Przerwano",
+              "failed": "Błąd"
+            }
+          },
+          "last_requested_height_cm": {
+            "name": "Ostatnia wysokość zadana"
+          },
+          "last_reason": {
+            "name": "Ostatni powód",
+            "state": {
+              "link_lost": "Utracono połączenie Bluetooth",
+              "timeout": "Przekroczono czas",
+              "no_progress": "Brak postępu",
+              "reverse_motion": "Ruch w złą stronę",
+              "overshoot": "Przekroczono cel",
+              "outside_limits": "Poza skonfigurowanym zakresem",
+              "stop_failed": "Stop niepotwierdzony",
+              "preparation_failed": "Przygotowanie nie powiodło się",
+              "unknown": "Nieznany"
+            }
           }
         }
       },

@@ -424,6 +424,144 @@ async def test_operation_entity_contract(hass):
     await hass.config_entries.async_unload(entry.entry_id)
 
 
+RESET = "custom_components.ha_linak.client.OPERATION_RESET_DELAY"
+
+
+async def wait_for_state(hass, state, timeout=2.0):
+    async with asyncio.timeout(timeout):
+        while hass.states.get(OPERATION_ID).state != state:
+            await asyncio.sleep(0.01)
+
+
+async def test_a_settled_result_returns_to_idle_and_is_kept_as_the_last_result(hass):
+    entry, _ = await setup(hass)
+    journal = Journal(hass)
+    with patch(RESET, 0.05), patch(FAST, 0.001):
+        await entry.runtime_data.async_move_to_cm(90)
+        assert hass.states.get(OPERATION_ID).state == "completed"
+        # While the result is the live state, it is not repeated as the last one.
+        assert "last_result" not in hass.states.get(OPERATION_ID).attributes
+        await wait_for_state(hass, "idle")
+    assert journal.phases == ["preparing", "moving", "stopping", "completed", "idle"]
+    state = hass.states.get(OPERATION_ID)
+    assert state.attributes["last_result"] == "completed"
+    assert state.attributes["last_requested_height_cm"] == 90.0
+    assert "reason" not in state.attributes
+    assert "requested_height_cm" not in state.attributes
+    assert "last_reason" not in state.attributes
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_failure_keeps_its_reason_in_the_last_result_after_the_reset(hass):
+    entry, fake = await setup(hass)
+    fake.stall = True
+    with (
+        patch(RESET, 0.05),
+        patch(FAST, 0.001),
+        patch("custom_components.ha_linak.motion.STALL_TIMEOUT", 0.01),
+        pytest.raises(HomeAssistantError),
+    ):
+        await entry.runtime_data.async_move_to_cm(83)
+    assert hass.states.get(OPERATION_ID).state == "failed"
+    await wait_for_state(hass, "idle")
+    state = hass.states.get(OPERATION_ID)
+    assert state.attributes["last_result"] == "failed"
+    assert state.attributes["last_reason"] == "no_progress"
+    assert state.attributes["last_requested_height_cm"] == 83.0
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_new_request_cancels_the_pending_reset(hass):
+    entry, _ = await setup(hass)
+    coordinator = entry.runtime_data
+    journal = Journal(hass)
+    with patch(RESET, 0.3), patch(FAST, 0.001):
+        await coordinator.async_move_to_cm(90)
+        first = coordinator.desk._operation_reset
+        assert first is not None
+        await coordinator.async_move_to_cm(91)
+        second = coordinator.desk._operation_reset
+        # The first timer is cancelled and replaced, so it can never reset the
+        # second operation's result early.
+        assert first.cancelled()
+        assert second is not first
+        assert journal.phases.count("idle") == 0
+        await wait_for_state(hass, "idle")
+    assert journal.phases.count("idle") == 1
+    assert hass.states.get(OPERATION_ID).attributes["last_requested_height_cm"] == 91.0
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_the_reset_never_touches_an_active_operation(hass):
+    entry, fake = await setup(hass)
+    coordinator = entry.runtime_data
+    fake.stall = True
+    with patch(RESET, 0.05), patch(FAST, HOLD):
+        move = asyncio.create_task(coordinator.async_move_to_cm(90))
+        await asyncio.wait_for(fake.target_written.wait(), 1)
+        coordinator.desk.operation.reset()
+        assert hass.states.get(OPERATION_ID).state == "moving"
+        await coordinator.async_stop()
+        await move
+    await wait_for_state(hass, "idle")
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_unload_cancels_the_pending_reset(hass):
+    entry, _ = await setup(hass)
+    with patch(RESET, 30), patch(FAST, 0.001):
+        await entry.runtime_data.async_move_to_cm(90)
+        desk = entry.runtime_data.desk
+        assert desk._operation_reset is not None
+        await hass.config_entries.async_unload(entry.entry_id)
+        assert desk._operation_reset is None
+
+
+async def test_an_unload_during_travel_leaves_no_reset_timer_behind(hass):
+    entry, fake = await setup(hass)
+    coordinator = entry.runtime_data
+    desk = coordinator.desk
+    fake.stall = True
+    with patch(RESET, 30), patch(FAST, HOLD):
+        move = asyncio.create_task(coordinator.async_move_to_cm(83))
+        await asyncio.wait_for(fake.target_written.wait(), 1)
+        await hass.config_entries.async_unload(entry.entry_id)
+        await move
+        # The movement settled while the entry closed, and must not schedule a reset.
+        assert desk.operation.status.phase is Phase.INTERRUPTED
+        assert desk._operation_reset is None
+
+
+def test_reset_keeps_the_last_result_and_ignores_unsettled_phases():
+    status, changes = tracker()
+    status.reset()
+    assert status.status == OperationStatus()
+    assert status.last is None
+    status.begin(83)
+    status.moving()
+    status.reset()
+    assert status.status.phase is Phase.MOVING
+    status.fail(Reason.TIMEOUT)
+    settled = status.status
+    status.reset()
+    assert status.status == OperationStatus()
+    assert status.last == settled
+    published = len(changes)
+    status.reset()
+    assert len(changes) == published
+
+
+def test_the_last_result_is_replaced_by_the_next_settled_operation():
+    status, _ = tracker()
+    status.begin(83)
+    status.complete()
+    status.reset()
+    status.begin(90)
+    assert status.last == OperationStatus(Phase.COMPLETED, 83)
+    status.interrupt()
+    assert status.last == OperationStatus(Phase.INTERRUPTED, 90)
+
+
 async def test_one_move_publishes_each_phase_once_despite_many_position_ticks(hass):
     entry, fake = await setup(hass, SteppedBleak())
     coordinator = entry.runtime_data
@@ -938,6 +1076,14 @@ async def test_idle_stop_changes_the_status_only_when_it_fails(hass):
     state = hass.states.get(OPERATION_ID)
     assert (state.state, state.attributes["reason"]) == ("failed", "stop_failed")
     assert "requested_height_cm" not in state.attributes
+    with patch(RESET, 0.05):
+        coordinator.desk.operation.reset()
+    state = hass.states.get(OPERATION_ID)
+    assert state.state == "idle"
+    assert state.attributes["last_result"] == "failed"
+    assert state.attributes["last_reason"] == "stop_failed"
+    # A lone Stop carried no goal, so none is reported as the last one.
+    assert "last_requested_height_cm" not in state.attributes
     await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -1024,6 +1170,7 @@ async def test_diagnostics_report_the_operation_without_identifiers(hass):
         "phase": "failed",
         "reason": "no_progress",
         "requested_height_cm": 83.0,
+        "last_result": "failed",
     }
     assert ADDRESS not in json.dumps(result)
     await hass.config_entries.async_unload(entry.entry_id)

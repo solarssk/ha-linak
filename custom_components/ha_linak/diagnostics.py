@@ -37,6 +37,9 @@ async def async_get_config_entry_diagnostics(  # NOSONAR(S7503) HA coroutine con
                 if coordinator.operation.reason
                 else None,
                 "requested_height_cm": coordinator.operation.requested_height_cm,
+                "last_result": coordinator.last_operation.phase.value
+                if coordinator.last_operation
+                else None,
             },
         },
         "state": asdict(coordinator.data) if coordinator.data else None,

@@ -55,7 +55,27 @@ The device information contains its name and Bluetooth address. Downloaded diagn
 - 🔖 **Go to stored position 1–4** (`button`): move to a position saved on the panel
 - 🧭 **Operation** (`sensor`): what the integration is doing with the desk and how the last operation ended
 
-The slider selects a whole-centimeter target inside your measured range. Press **Stop** to stop travel. During movement, wait or press Stop before choosing another target. New targets are not queued. The **Operation** sensor shows idle, preparing, moving or stopping, then the last result: completed, interrupted or failed with a reason. It stays available when the connection drops, a refused request does not change it, and it reports the request, not physical arrival. Enable **Keep connected** in the entity settings, then turn it off to release the desk's Bluetooth link on purpose, for example for diagnostics. LINAK then stops polling and reconnecting until you turn it back on, and the choice survives a restart. It never moves the desk, and turning it off during travel stops the desk first. A malformed saved-height or reminder reply during runtime refresh makes that group unavailable while valid height readings remain usable. Connection failures still affect the session. Stored-position buttons move the desk to positions saved on the panel. Before either command, the integration checks the panel client and prepares it if necessary, preserving its identifier.
+**How the controls behave**
+
+- The slider selects a whole-centimeter target inside your measured range.
+- Press **Stop** to stop travel.
+- During movement, wait or press Stop before choosing another target. New targets are not queued.
+- Stored-position buttons move the desk to positions saved on the panel.
+- Before any command, the integration checks the panel client and prepares it if necessary, preserving its identifier.
+- A malformed saved-height or reminder reply during a refresh makes only that group unavailable. Valid height readings stay usable. Connection failures still affect the whole session.
+
+**Operation sensor**
+
+- Shows idle, preparing, moving or stopping while a request runs, then the result: completed, interrupted or failed with a reason.
+- Returns to idle after about 10 seconds and keeps the result in its `last_result` attribute, so an automation can notify on the result.
+- Stays available when the connection drops, and a refused request does not change it.
+- Reports the request, not physical arrival.
+
+**Keep connected**
+
+- Enable it in the entity settings, then turn it off to release the desk's Bluetooth link on purpose, for example for diagnostics.
+- While it is off, LINAK stops polling and reconnecting. The choice survives a restart.
+- It never moves the desk. Turning it off during travel stops the desk first.
 
 Setup guides you through a name in HA, connection preparation, measured travel bounds and a current-height check. No phone app is needed. Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
 

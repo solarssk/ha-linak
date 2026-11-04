@@ -55,7 +55,27 @@ Nazwa i adres Bluetooth są w informacjach urządzenia. Pobierana diagnostyka po
 - 🔖 **Przejdź do zapisanej pozycji 1–4** (`button`): jedź do pozycji zapisanej na panelu
 - 🧭 **Operacja** (`sensor`): co integracja robi z biurkiem i jak zakończyła się ostatnia operacja
 
-Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu. Przyciskiem **Stop** zatrzymasz jazdę. Przed wybraniem kolejnego celu poczekaj na zakończenie ruchu lub naciśnij Stop. Nowe cele nie trafiają do kolejki. Czujnik **Operacja** pokazuje: brak operacji, przygotowanie, ruch lub zatrzymywanie, a potem ostatni wynik: zakończono, przerwano albo błąd z powodem. Pozostaje dostępny po zerwaniu połączenia i nie zmienia się po odrzuconym żądaniu. Opisuje żądanie, a nie fizyczne osiągnięcie wysokości. Włącz **Utrzymuj połączenie** w ustawieniach encji, a potem wyłącz przełącznik, aby celowo zwolnić połączenie Bluetooth z biurkiem, na przykład do diagnostyki. LINAK przestaje wtedy odpytywać i łączyć się ponownie, dopóki go nie włączysz, a wybór przetrwa restart. Przełącznik nigdy nie rusza biurka, a wyłączenie w trakcie jazdy najpierw zatrzymuje biurko. Błędna odpowiedź pamięci lub przypomnień podczas odświeżania wyłącza odczyty tej grupy, zachowując poprawny pomiar wysokości. Błąd połączenia nadal dotyczy całej sesji. Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu. Przed wykonaniem polecenia integracja sprawdza klienta panelu i w razie potrzeby przygotowuje go, zachowując jego identyfikator.
+**Jak działa sterowanie**
+
+- Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu.
+- Przyciskiem **Stop** zatrzymasz jazdę.
+- Przed wybraniem kolejnego celu poczekaj na zakończenie ruchu lub naciśnij Stop. Nowe cele nie trafiają do kolejki.
+- Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
+- Przed wykonaniem polecenia integracja sprawdza klienta panelu i w razie potrzeby przygotowuje go, zachowując jego identyfikator.
+- Błędna odpowiedź pamięci lub przypomnień podczas odświeżania wyłącza odczyty tylko tej grupy. Poprawny pomiar wysokości pozostaje. Błąd połączenia nadal dotyczy całej sesji.
+
+**Czujnik Operacja**
+
+- Pokazuje: brak operacji, przygotowanie, ruch lub zatrzymywanie, a potem wynik: zakończono, przerwano albo błąd z powodem.
+- Po około 10 sekundach wraca do stanu „brak operacji" i zachowuje wynik w atrybucie `last_result`, więc automatyzacja może powiadomić o wyniku.
+- Pozostaje dostępny po zerwaniu połączenia i nie zmienia się po odrzuconym żądaniu.
+- Opisuje żądanie, a nie fizyczne osiągnięcie wysokości.
+
+**Utrzymuj połączenie**
+
+- Włącz ją w ustawieniach encji, a potem wyłącz przełącznik, aby celowo zwolnić połączenie Bluetooth z biurkiem, na przykład do diagnostyki.
+- Gdy jest wyłączony, LINAK przestaje odpytywać i łączyć się ponownie. Wybór przetrwa restart.
+- Przełącznik nigdy nie rusza biurka. Wyłączenie w trakcie jazdy najpierw zatrzymuje biurko.
 
 Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](docs/controls.md).
 

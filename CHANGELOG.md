@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Make the Target height slider follow the measured height after a stored-position move or Stop. The last position sample of a finished movement could carry residual speed, which kept the slider at its old value until a later read.
 - Skip the Documentation impact job once a pull request is closed or merged, so a rerun after a squash merge no longer reports a false failure.
 - Add an optional Monitoring only choice to setup. It connects and reads without preparing the panel client, calibrating or asking for a height range. Controls stay the default path, and the range can be added later in Configure.
 - Add a Keep connected switch that releases the desk's Bluetooth link on purpose. It is a configuration entity that is disabled by default, so the owner enables it deliberately. While it is off LINAK does no radio lookups, connections or polls, and the choice survives a restart. Turning it on reconnects with fresh reads and never replays a movement. Existing entries stay connected, and turning it off during travel stops the desk first.

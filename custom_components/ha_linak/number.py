@@ -55,16 +55,20 @@ class LinakTargetHeight(LinakEntity, NumberEntity):
         self._candidate = None
 
     @callback
-    def _handle_coordinator_update(self) -> None:
+    def _stationary(self) -> bool:
+        """The desk stands still, or this integration just finished moving it."""
         desk = self.coordinator.desk
         position = self.coordinator.data.position
-        if (
-            not self.available
-            or desk is None
-            or desk.control_busy
-            or position is None
-            or position.speed_raw != 0
-        ):
+        if desk is None or desk.control_busy or position is None:
+            return False
+        # The last sample of our own move can carry residual speed, and no later
+        # one may arrive; the move's Stop has already been sent.
+        return position.speed_raw == 0 or desk.operation.status.settled
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        position = self.coordinator.data.position
+        if not self.available or position is None or not self._stationary():
             self._cancel_pending_settle()
         else:
             candidate = (position.position_raw, self.coordinator.data.offset_raw)
@@ -79,14 +83,11 @@ class LinakTargetHeight(LinakEntity, NumberEntity):
     @callback
     def _settle(self, _now) -> None:
         self._cancel_settle = None
-        desk = self.coordinator.desk
         position = self.coordinator.data.position
         if (
             self.available
-            and desk is not None
-            and not desk.control_busy
             and position is not None
-            and position.speed_raw == 0
+            and self._stationary()
             and self._candidate
             == (position.position_raw, self.coordinator.data.offset_raw)
         ):

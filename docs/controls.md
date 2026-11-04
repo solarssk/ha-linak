@@ -47,7 +47,14 @@ Host command bounds do not override the desk's firmware limits or anti-collision
 
 ## Use the native controls
 
-The slider uses 1 cm steps inside inward-rounded measured bounds. The height sensor follows measured position live. The slider holds its previous value during travel and updates to the measured height after movement completes or a stationary position remains unchanged for 0.5 seconds, including physical-panel changes. Intermediate travel heights are not slider targets or separate slider history entries. Calibration inputs, raw diagnostics and stored-position targets retain decimal precision; new height history records use whole centimeters.
+The slider uses 1 cm steps inside inward-rounded measured bounds. The height sensor follows measured position live.
+
+- The slider holds its previous value during travel.
+- It updates to the measured height 0.5 seconds after this integration finishes a movement, whether from the slider, a stored-position button or Stop. The last position sample of such a move can still report a small speed, so the finished movement counts as stationary.
+- It also updates when a stationary position stays unchanged for 0.5 seconds, including physical-panel changes. The speed must then read zero.
+- Intermediate travel heights are not slider targets or separate slider history entries.
+
+Calibration inputs, raw diagnostics and stored-position targets retain decimal precision; new height history records use whole centimeters.
 
 Before either a target or stored-position drive, the integration checks client readiness and prepares the existing identifier only if inactive. It verifies preparation before wake/target commands. Stored-position drive re-reads that slot and the reference; it does not overwrite the saved position.
 

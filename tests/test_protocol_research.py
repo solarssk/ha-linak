@@ -762,7 +762,8 @@ async def test_disconnect_cancels_the_pending_product_future():
     )
     await fake.product_started.wait()
     pending = desk._product_pending
-    assert pending is not None and not pending.done()
+    assert pending is not None
+    assert not pending.done()
     await desk.disconnect()
     with pytest.raises(DeskLinkLost):
         await task
@@ -905,7 +906,8 @@ async def test_parser_error_is_observed_when_the_product_write_does_not_finish(f
         assert pending_audit == ["exception"], (
             "completed parser exception was not explicitly observed"
         )
-        assert pending_ref is not None and pending_ref() is None
+        assert pending_ref is not None
+        assert pending_ref() is None
         assert not events
     finally:
         loop.set_exception_handler(previous_handler)

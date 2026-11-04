@@ -1,6 +1,6 @@
 ![LINAK](docs/assets/linak-logo.svg)
 
-# LINAK Desks for Home Assistant
+# LINAK for Home Assistant
 
 Control a height-adjustable desk with a LINAK **DPG1C** panel from Home Assistant over Bluetooth. Set the height in centimeters, use saved positions and check reminder settings.
 
@@ -11,120 +11,100 @@ Control a height-adjustable desk with a LINAK **DPG1C** panel from Home Assistan
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
-## 📏 What you can see
+## 🪑 Supported devices
 
-- **A clear height reading:** centimeters using the height reference stored on the panel.
-- **Your desk's saved positions:** see the heights already stored on the panel.
-- **Reminder settings in one place:** check the selected profile and configured intervals.
+- **DPG1C desk panel:** Bluetooth height control, saved positions and reminder readings
 
-Reminder times are settings, not elapsed-time counters. Other panel models are not confirmed. [Full entity reference and hardware results →](.github/README.md)
+Other models are not confirmed. Check the panel label before installing. [Testing another model](docs/device-support.md#test-another-panel) is a separate process.
 
-## 🏠 Make it part of your dashboard
+## 🏠 Your desk on the dashboard
 
-Add **Height** to a standard Home Assistant card and see your desk's position without opening the desk app. Changes made with the physical panel arrive through Bluetooth.
+Add **Height** to a standard Home Assistant card to see the desk's current position. Use the height slider to choose a working height, or a stored-position button to switch between sitting and standing.
 
-Check your saved sitting and standing heights in one place. The stored-height sensors show what is saved on the panel; viewing them does not start a move. Reminder sensors show the panel's configured profiles, rather than sending phone notifications.
+The integration runs directly on your Home Assistant host over Bluetooth. You don't need a phone app, Mac or separate bridge.
 
 ## 📊 Home Assistant entities
 
 ### Sensors
 
-- 📏 **Height** is the main measurement sensor, in centimeters.
-- 🔖 **Stored height 1–4** shows up to four saved positions, in centimeters.
-- 🔔 **Active reminder profile** identifies the selected profile.
-- ⏱️ **Profile 1–3 sitting time** and **standing time** show configured durations, in minutes.
+View these desk readings:
 
-Height, stored heights and reminder profiles are regular desk sensors (`sensor`). Height updates arrive through Bluetooth; the reference and position are checked every **60 seconds**. Saved positions and reminders are read every **5 minutes**, and again after reconnecting. Controls read the required reference and selected position before moving. When the connection fails, readings become unavailable rather than continuing to look current; HA retries while the integration is loaded.
+- 📏 **Height:** current desktop height in centimeters
+- 🔖 **Stored height 1–4:** heights saved on the panel, with one sensor per available slot
+- 🔔 **Active reminder profile:** the selected reminder profile
+- ⏱️ **Profile 1–3 sitting time** and **standing time:** the durations configured on the panel
 
-### Diagnostics
-
-- 📐 **Height offset** (`sensor`, cm): the height reference stored on the panel.
-- 🔗 **Connection** (`binary_sensor`): whether the desk has a ready session and valid readings. It shows disconnected when the session is lost.
-- 🔌 **Keep connected** (`switch`, configuration, disabled by default): your choice to hold the desk's Bluetooth link. Enable it in the entity settings, then turn it off to release the desk on purpose; it stays off after a restart until you turn it on.
-- 📶 **Bluetooth signal strength** (`sensor`, dBm): the latest advertisement received by HA, not a measurement of the active link.
-- 🛠️ **Bluetooth backend** (`sensor`): for example local BlueZ or an ESPHome proxy, without the adapter name.
-
-RSSI and backend sensors are disabled by default. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities. This enables diagnostic readings in HA without changing desk settings.
-
-The device information contains its name and Bluetooth address. Downloaded diagnostics omit names, MACs and adapter identifiers. These entities appear after successful integration setup; they do not replace first-setup error messages.
+Reminder durations are settings, not elapsed-time counters. Viewing a stored height does not move the desk.
 
 ### Controls
 
-- 🎚️ **Target height** (`number`, cm): choose the desk height with a slider
-- ⏹️ **Stop** (`button`): stop the current movement
-- 🔖 **Go to stored position 1–4** (`button`): move to a position saved on the panel
-- 🧭 **Operation** (`sensor`): what the integration is doing with the desk and how the last operation ended
+Use these controls from the device page, dashboard or an automation:
 
-**How the controls behave**
+- 🎚️ **Target height:** choose a height with the centimeter slider
+- ⏹️ **Stop:** stop the current movement
+- 🔖 **Go to stored position 1–4:** move to a position saved on the panel
+- 🧭 **Operation:** follow preparation, movement, stopping and the result of your request
 
-- The slider selects a whole-centimeter target inside your measured range.
-- Press **Stop** to stop travel.
-- During movement, wait or press Stop before choosing another target. New targets are not queued.
-- Stored-position buttons move the desk to positions saved on the panel.
-- Before any command, the integration checks the panel client and prepares it if necessary, preserving its identifier.
-- A malformed saved-height or reminder reply during a refresh makes only that group unavailable. Valid height readings stay usable. Connection failures still affect the whole session.
+The slider uses 1 cm steps within your measured range. It updates after a move finishes; **Height** shows the changing position during travel. Wait for a move to finish or press **Stop** before choosing another target. Requests aren't queued.
 
-**Operation sensor**
+**Operation** returns to idle about 10 seconds after showing the result. Its `last_result` attribute keeps that result for automations. It describes the integration's request; it doesn't independently verify physical arrival.
 
-- Shows idle, preparing, moving or stopping while a request runs, then the result: completed, interrupted or failed with a reason.
-- Returns to idle after about 10 seconds and keeps the result in its `last_result` attribute, so an automation can notify on the result.
-- Stays available when the connection drops, and a refused request does not change it.
-- Reports the request, not physical arrival.
+### Connection and diagnostics
 
-**Keep connected**
+Use these entities when checking the connection or height calibration:
 
-- Enable it in the entity settings, then turn it off to release the desk's Bluetooth link on purpose, for example for diagnostics.
-- While it is off, LINAK stops polling and reconnecting. The choice survives a restart.
-- It never moves the desk. Turning it off during travel stops the desk first.
+- 🔗 **Connection:** whether the desk is connected and its readings are available
+- 📐 **Height offset:** the height reference saved on the panel
+- 📶 **Bluetooth signal strength:** the latest signal received by Home Assistant
+- 🛠️ **Bluetooth backend:** whether the connection uses a local adapter or proxy
+- 🔌 **Keep connected:** release the Bluetooth connection on purpose, then reconnect when needed
 
-Setup guides you through a name in HA, connection preparation, measured travel bounds and a current-height check. No phone app is needed. Enter your desk's height range during setup. Change it later under **Settings → Devices & services → LINAK Desks → Configure**. When updating an older installation, fill in the range there once. [Setup and first test](docs/controls.md).
-
-If the panel height is wrong, enter the current floor-to-desktop measurement in **Height measured with a tape** during setup or later under **Settings → Devices & services → LINAK Desks → Configure → Check or correct the height**. Review and confirm the correction before it is saved to the panel. Calibration does not move the desk. Setup prepares an inactive panel client after confirmation, preserving its existing identifier. Background reads never perform this write. The offset sensor remains read-only; saving memories and changing reminders remain in the [settings plan](docs/settings-reference.md).
-
-Height sensors and history use whole centimeters. The slider holds its value during travel and updates at the settled height. The height sensor remains live. The slider uses 1 cm targets within your measured bounds. Tape measurements, Bluetooth readings and movement calculations retain their original precision. The name entered in setup belongs to HA.
+Signal strength, backend and Keep connected are optional. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities. Turning **Keep connected** off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk before releasing the connection.
 
 ## 📋 What you need
 
-- **Home Assistant 2026.10.4 or newer**.
-- A **DPG1C** panel within Bluetooth range.
-- A local Bluetooth adapter or compatible active **ESPHome Bluetooth proxy** with pairing support.
+Prepare these before installation:
 
-The integration runs directly on your HA host. No Mac or separate bridge is needed.
+- **Home Assistant 2026.10.4 or newer**
+- A **DPG1C** panel within Bluetooth range
+- A local Bluetooth adapter or compatible active **ESPHome Bluetooth proxy** with pairing support
 
 ## 🚀 Install and connect
 
 1. In HACS, add `https://github.com/solarssk/ha-linak` as a custom repository of type **Integration**.
-2. Download **LINAK Desks**, then restart Home Assistant.
-3. Close connected desk phone apps and disable any Idasen integration using the same desk. LINAK detects enabled IKEA entries for the same desk and explains how to resolve the conflict; it leaves their configuration unchanged.
-4. Enable **Bluetooth pairing** on the desk panel.
-5. Go to **Settings → Devices & services → Add integration**. Search for **LINAK Desks**, then choose your desk. You can also use its discovery card.
+2. Download **LINAK**, then restart Home Assistant.
+3. Disable any IKEA Idasen Desk integration using this same desk. Disconnect another desk app if one is connected.
+4. Enable **Bluetooth pairing** on the panel.
+5. Open **Settings → Devices & services → Add integration**, search for **LINAK** and choose your desk. You can also use its discovery card.
+6. Follow the setup screens to name the desk, check its connection and configure the height range.
 
-Setup connects, authenticates and reads the panel. Allow up to **60 seconds**, plus **10 seconds** to release a failed connection. A failed attempt shows a reason and offers a retry.
+Choose **Monitoring only** in setup if you want readings without preparing movement controls. You can add the measured height range later through **Configure**.
 
-The discovery card shows the desk name and a short address suffix, such as **Office desk (EEFF)**. Without a cached name it shows **LINAK (EEFF)**. On Linux, a name already known to the local Bluetooth system can also identify the desk. After connecting, the integration can read its Bluetooth name and improve the device name. A device name you set in HA takes precedence.
+Allow up to **60 seconds** for connection and another **10 seconds** to release a failed attempt. If setup fails, follow the displayed message and retry. [Manual installation](.github/README.md#installation).
 
-There is no tagged release yet; HACS downloads the default branch. [Manual installation and detailed guide →](.github/README.md)
+## ⚙️ Adjust the desk settings
 
-## 🛠️ If something goes wrong
+Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, set the measured travel range or check the height calibration.
 
-Check the displayed error and the `ha_linak` log. For a report, include your HA/integration versions, panel model and whether the connection uses a local adapter or proxy. Remove Bluetooth addresses and desk names before sharing logs.
+If the panel shows the wrong height, measure from the floor to the top of the desktop. Enter that value in **Height measured with a tape**, then review and confirm the correction. Saving the correction doesn't move the desk.
 
-[Setup and troubleshooting](docs/onboarding.md) · [Report a bug](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml)
+Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. The integration can read saved positions and reminders, but doesn't yet edit them.
 
-## 🪑 Compatibility and development
+## 🛠️ Get help
 
-**DPG1C is the initial hardware target.** Seven extended read queries were checked on one physical panel through macOS CoreBluetooth. Setup, sensors, pairing errors and recovery are also tested inside Home Assistant with simulated Bluetooth.
+If readings become unavailable, check **Connection** and the error shown by Home Assistant. Open the LINAK device page to download diagnostics. For a bug report, include the panel model, HA/integration versions and whether you use a local adapter or proxy. Remove private names and Bluetooth addresses from any logs you attach.
 
-Raspberry Pi reads and reconnects were observed after manual host pairing. The new automatic first-pairing path and ESPHome proxy validation remain pending. A passing CI badge is a software check, not proof that every desk or adapter works. [Hardware test results →](docs/hardware-results.md)
+- [Configuration and first control test](docs/controls.md)
+- [Troubleshooting](docs/diagnostics.md)
+- [Report a bug](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml)
 
-### Control validation
+## 📚 Technical documentation
 
-Software tests cover entities, session ownership, interruption and unloading. Physical DPG1C movement and Stop results still need verification. The [first HA test](docs/controls.md) explains the sequence and evidence to record; the [standalone research tool](docs/movement-test.md) is for protocol experiments outside HA.
+For testing another model or contributing to the integration:
 
-## 📚 Learn more
-
-[Documentation map](docs/README.md) · [User guide](.github/README.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
-
-[Protocol research](docs/protocol.md) · [Bluetooth investigation](docs/bluetooth-research.md) · [Quality and governance](docs/governance.md)
+- [Documentation index](docs/README.md)
+- [Device families and tester guide](docs/device-support.md)
+- [Hardware test coverage and known limits](docs/hardware-results.md)
+- [Changelog](CHANGELOG.md) · [Roadmap](docs/roadmap.md) · [Contributing](CONTRIBUTING.md)
 
 Independent community project, not affiliated with LINAK or IKEA. Code is MIT licensed; LINAK artwork belongs to its owner. [Branding and sources](docs/branding.md).

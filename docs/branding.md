@@ -19,6 +19,6 @@ The root HACS READMEs use a Markdown image pointing to linak-logo.svg. It reuses
 
 ## Product name and illustrations
 
-The integration's display name is LINAK Desks, or Biurka LINAK in Polish, to identify the current desk-panel scope. This does not change the LINAK artwork, manufacturer identity, integration domain or stored device/entity identifiers. The HACS catalog icon uses its own frontend source; see [the rendering reference](hacs-presentation.md#name-and-catalog-icon).
+The integration's display name is LINAK in both English and Polish, with current DPG desk-panel support stated in the product description. This does not change the LINAK artwork, manufacturer identity, integration domain or stored device/entity identifiers. The HACS catalog icon uses its own frontend source; see [the rendering reference](hacs-presentation.md#name-and-catalog-icon).
 
 The illustrative `desk-overview-*.svg` assets are retained only for older README versions. Current product pages do not embed them because they can be mistaken for a supplied dashboard card. Use actual, anonymized HA screenshots for future interface examples.

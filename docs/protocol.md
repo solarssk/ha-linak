@@ -153,6 +153,8 @@ The [movement reference](movement.md) owns ordering, timing, guards and cleanup.
 
 ## Standard metadata and unsupported settings
 
+Device family matching and standard model/firmware reads are defined in the [device support reference](device-support.md). Identification reads do not activate a client. Known unsupported families are rejected before DPG queries.
+
 GAP name bytes must decode as printable UTF-8. Missing/denied metadata retains the cached fallback; transport timeout or link loss still invalidates the connection. Names are separate from decoded `DeskState` and downloaded diagnostics.
 
 The [settings reference](settings-reference.md) lists command candidates that are not implemented. Product documentation alone does not establish their wire encoding or authorization. The [source register](settings-reference.md#source-register) identifies pinned protocol implementations, while the [hardware evidence](hardware-results.md) states what has actually been observed.

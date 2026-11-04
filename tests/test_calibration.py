@@ -36,8 +36,10 @@ class CalibrationBleak(FakeBleak):
         self.hang_write = False
         self.write_started = asyncio.Event()
         self.services = SimpleNamespace(
-            get_characteristic=lambda uuid: SimpleNamespace(
-                properties=["read", "write"]
+            get_characteristic=lambda uuid: (
+                SimpleNamespace(properties=["read", "write"])
+                if uuid in (DPG_UUID, HEIGHT_UUID)
+                else None
             )
         )
 

@@ -20,6 +20,7 @@ from .calibration import (
     PREVIEW_TOLERANCE_RAW,
 )
 from .protocol import activation_request
+from .device_profile import DeviceIdentity, MODEL_UUID, FIRMWARE_UUID
 from .control_settings import ControlSettings
 from .motion import (
     BleakMotionTransport,
@@ -140,6 +141,8 @@ class DeskClient:
         changed: Callable[[], None],
         device_callback: Callable[[], BLEDevice] | None = None,
     ) -> None:
+        self.identity = DeviceIdentity()
+        self.protocol_validated = False
         self.device_name: str | None = None
         self.device = device
         self.device_callback = device_callback
@@ -359,6 +362,31 @@ class DeskClient:
             resolved = desk_name(self.device.address, name)
             self.device_name = resolved if resolved != DEFAULT_NAME else None
 
+    async def _read_identity(self) -> None:
+        """Read advertised DIS fields once per session, never during polling."""
+        assert self.client is not None
+        self.identity = DeviceIdentity()
+        self.protocol_validated = False
+        fields: list[bytes] = []
+        self._set_stage("device_identity")
+        for uuid in (MODEL_UUID, FIRMWARE_UUID):
+            raw = b""
+            try:
+                characteristic = self.client.services.get_characteristic(uuid)
+                if characteristic is not None and "read" in characteristic.properties:
+                    raw = bytes(
+                        await self._io(self.client.read_gatt_char(uuid), IO_TIMEOUT)
+                    )
+            except BleakError:
+                # Absent/ambiguous/denied metadata is optional. Timeout and link
+                # loss still discard this session through _io and refresh.
+                _LOGGER.debug("Optional device information could not be read")
+            fields.append(raw)
+            if uuid == MODEL_UUID:
+                self.identity = DeviceIdentity.from_metadata(raw, b"")
+                self.identity.require_driver()
+        self.identity = DeviceIdentity.from_metadata(*fields)
+
     async def _query(self, command: ReadCommand, response_type: int) -> bytes:
         assert self.client is not None
         self._pending = asyncio.get_running_loop().create_future()
@@ -422,6 +450,7 @@ class DeskClient:
             self._closing = False
             self._link_lost = False
             self._generation += 1
+            self.protocol_validated = False
             generation = self._generation
             self._set_stage("connection")
             self.client = await establish_connection(
@@ -439,6 +468,7 @@ class DeskClient:
             )
             await self._pair()
             await self._read_device_name()
+            await self._read_identity()
             self._set_stage("notify_dpg")
             await self._io(
                 self.client.start_notify(
@@ -499,6 +529,7 @@ class DeskClient:
         if reminders_due:
             self._record_settings("reminders", reminders is not None)
         self.state = state
+        self.protocol_validated = True
         self._ready = True
         self._set_stage("ready")
         return state

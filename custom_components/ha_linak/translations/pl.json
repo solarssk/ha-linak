@@ -1,5 +1,5 @@
 {
-  "title": "Biurka LINAK",
+  "title": "LINAK",
   "config": {
     "flow_title": "{name}",
     "step": {
@@ -84,7 +84,8 @@
       "connection_unavailable": "Połączenie z biurkiem jest niedostępne. Spróbuj ponownie po przywróceniu połączenia.",
       "client_preparation_failed": "Nie udało się przygotować panelu. Sprawdź połączenie Bluetooth i kontynuuj, aby ponowić sprawdzenie. Nie wysłano polecenia ruchu.",
       "setting_rejected": "Panel nie przyjął ustawienia. Sprawdź aktualną wysokość przed kolejną próbą. Kod odpowiedzi znajduje się w logu integracji.",
-      "idasen_conflict": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka."
+      "idasen_conflict": "To biurko jest również skonfigurowane we włączonym wpisie IKEA Idasen Desk. W Ustawienia > Urządzenia i usługi wyłącz ten wpis IKEA, a następnie ponów próbę LINAK. Pozostaw tylko jedną włączoną integrację dla tego biurka.",
+      "unsupported_family": "To urządzenie zgłasza rodzinę, której LINAK jeszcze nie obsługuje. Obecny profil dotyczy paneli biurkowych DPG. Nie wysłano poleceń DPG. Zgłoś model z etykiety urządzenia, aby pomóc dodać jego obsługę."
     },
     "abort": {
       "already_configured": "To biurko jest już skonfigurowane.",
@@ -337,7 +338,7 @@
       "message": "Ta pozycja pamięci jest pusta lub niedostępna."
     },
     "range_not_configured": {
-      "message": "Ustaw zakres wysokości w konfiguracji Biurka LINAK."
+      "message": "Ustaw zakres wysokości w konfiguracji LINAK."
     },
     "startup_timeout": {
       "message": "Początkowe połączenie lub odczyt biurka trwały zbyt długo. Home Assistant ponowi próbę automatycznie."

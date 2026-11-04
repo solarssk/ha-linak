@@ -46,7 +46,7 @@ Use an absolute outer destination for every linked badge in the HACS roots. The 
 
 ## Name and catalog icon
 
-`hacs.json`, the HA manifest and the English UI title use **LINAK Desks**. The Polish UI title is **Biurka LINAK**. The supported product is a height-adjustable desk with a DPG1C panel; the LINAK manufacturer logo alone does not define that scope. The repository name and integration domain remain `ha-linak` and `ha_linak`; existing device/entity identifiers and user device names are unchanged.
+`hacs.json`, the HA manifest and the English UI title use **LINAK**. The Polish UI title is **LINAK**. The supported product is a height-adjustable desk with a DPG1C panel; the LINAK manufacturer logo alone does not define that scope. The repository name and integration domain remain `ha-linak` and `ha_linak`; existing device/entity identifiers and user device names are unchanged.
 
 The catalog row's missing icon is independent of README images. This HACS frontend's [brand URL helper](https://github.com/home-assistant/frontend/blob/3ffbd435e0e5cf23872057187f3da53bb62441a2/src/util/brands-url.ts) uses the public brands CDN, while this integration ships local `brand/` assets. The public `ha_linak` fallback currently returns the placeholder. HACS's maintainer [confirmed the upstream issue and a fix in Marketplace 2026.11](https://github.com/hacs/integration/issues/5223#issuecomment-6222989180). Do not add unsupported icon settings, change the domain or claim that a README edit fixes that catalog icon.
 

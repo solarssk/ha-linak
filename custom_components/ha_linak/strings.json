@@ -1,5 +1,5 @@
 {
-  "title": "LINAK Desks",
+  "title": "LINAK",
   "config": {
     "flow_title": "{name}",
     "step": {
@@ -84,7 +84,8 @@
       "connection_unavailable": "The desk connection is unavailable. Retry after it reconnects.",
       "client_preparation_failed": "The panel could not be prepared. Check Bluetooth connectivity and continue to check again. No movement command was sent.",
       "setting_rejected": "The panel did not accept the setting. Check the current height before trying again. The integration log contains the response status.",
-      "idasen_conflict": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk."
+      "idasen_conflict": "This desk is also configured in an enabled IKEA Idasen Desk entry. In Settings > Devices & services, disable that IKEA entry, then retry LINAK. Keep only one integration enabled for this desk.",
+      "unsupported_family": "This device reports a family that LINAK does not support yet. The current profile is for DPG desk panels. No DPG commands were sent. Report the model from its product label to help add support."
     },
     "abort": {
       "already_configured": "This desk is already configured.",
@@ -337,7 +338,7 @@
       "message": "This stored position is empty or unavailable."
     },
     "range_not_configured": {
-      "message": "Set the desk height range in LINAK Desks configuration."
+      "message": "Set the desk height range in LINAK configuration."
     },
     "startup_timeout": {
       "message": "The initial desk connection or read timed out. Home Assistant will retry automatically."

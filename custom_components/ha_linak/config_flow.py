@@ -42,6 +42,7 @@ from .control_settings import (
 )
 from .const import DOMAIN
 from .entity import whole_centimeters
+from .device_profile import UnsupportedFamily
 from .naming import DEFAULT_NAME, cached_bluez_names, desk_name, discovery_title
 from .protocol import SERVICE_UUID
 from .setup_session import offer_session
@@ -58,6 +59,7 @@ def _validation_error(error: Exception, stage: str) -> str:
     if isinstance(error, TimeoutError) and stage == "pairing":
         return "pairing_timeout"
     for exception_type, code in (
+        (UnsupportedFamily, "unsupported_family"),
         (DeskPairingTimeout, "pairing_timeout"),
         (DeskPairingAgentError, "pairing_agent_unavailable"),
         (DeskAuthenticationError, "authentication_failed"),

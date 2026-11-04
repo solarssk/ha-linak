@@ -2,6 +2,10 @@
 
 This reference explains the configuration flow and connection lifecycle. Use the [control guide](controls.md) for owner-facing configuration steps and the [diagnostic manual](diagnostics.md) when a step fails. Discovery, Bluetooth authentication and DPG client activation are separate stages.
 
+## Product family check
+
+Discovery finds a candidate by service UUID, not a model by MAC address. Available standard model and firmware fields are read once on connection. An identified family without a driver is rejected before DPG queries or activation; missing metadata retains the existing DPG protocol probe. See [device support](device-support.md) for matching rules, error recovery and the tester path.
+
 ## One integration per desk
 
 Before connecting, preparing the client, confirming calibration or handing a completed wizard session to runtime, LINAK checks for an enabled `idasen_desk` entry with the same normalized Bluetooth address. The official HA 2026.10.4 integration stores that address in `data.address`; a missing/invalid data address falls back to the entry's unique ID. Colons, hyphens, compact hexadecimal and dotted MAC forms compare consistently. Disabled or ignored entries and other desks do not block setup. An enabled entry still counts if its own setup failed, because it can retry.

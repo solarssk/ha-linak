@@ -1,12 +1,28 @@
-# LINAK Desks technical documentation
+# LINAK documentation
 
 Use these guides to configure a desk, diagnose a failed operation or change the integration. The documentation describes the current implementation and separates software guarantees from observations on one DPG1C. The integration runs inside Home Assistant on its host; a Mac is only an optional research environment.
 
-## Choose a reading path
+## User guides
+
+Use these pages to install and operate the integration:
+
+| Guide | Language | Purpose |
+| --- | --- | --- |
+| [HACS product guide](../README.md) / [Polish guide](../README.pl.md) | English / Polish | Supported devices, entities, installation and settings |
+| [GitHub product guide](../.github/README.md) / [Polish guide](../.github/README.pl.md) | English / Polish | Product overview and complete entity tables |
+| [Control guide](controls.md) | English | Configuration, height calibration and a first supervised control test |
+| [Troubleshooting](diagnostics.md) | English | Follow an error and collect a report |
+
+## Technical documentation
+
+Use the references below to test another model, investigate communication or change the implementation. Product README files describe current user tasks; protocol decisions and hardware evidence belong here.
+
+### Choose a reading path
 
 | Your goal | Start with | Expected result |
 | --- | --- | --- |
 | Install through HACS | [English user guide](../.github/README.md) or [Polish user guide](../.github/README.pl.md) | Install and discover the integration |
+| Test another panel or product family | [Device support and tester guide](device-support.md) | Understand matching, compatibility limits and evidence to report |
 | Configure height and controls | [Control guide](controls.md) | Correct the height reference, set bounds and test a native control |
 | Investigate a connection or movement failure | [Diagnostic manual](diagnostics.md) | Identify the failed layer and collect the evidence needed for the next test |
 | Understand the implementation | [Architecture](architecture.md) → [connection lifecycle](onboarding.md) → [protocol](protocol.md) → [movement](movement.md) | Trace an HA action to its BLE exchange and cleanup |
@@ -40,6 +56,7 @@ Each reference owns one kind of information. Follow its links for related detail
 
 | Document | Audience and purpose | Owns |
 | --- | --- | --- |
+| [Device support](device-support.md) | Tester or contributor assessing a device | Family matching, runtime compatibility matrix and tester reports |
 | [Controls](controls.md) | Desk owner performing a task | Configuration steps and supervised HA test procedure |
 | [Diagnostics](diagnostics.md) | Desk owner or maintainer investigating a failure | Symptom triage, evidence collection, diagnostic fields and privacy |
 | [Onboarding](onboarding.md) | Developer tracing setup or reconnect | Authentication, wizard steps, session lifetime and error routing |

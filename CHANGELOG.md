@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Name the integration LINAK and add standard model/firmware identification, explicit DPG family matching, redacted profile diagnostics and a tester compatibility guide. Separate user-facing README content from protocol research and hardware validation. Reject identified unsupported families before DPG commands; keep unreported models unknown and preserve the existing DPG probe and entity identifiers.
+- Rename the integration to LINAK, identify device families before DPG commands, expose reported model/firmware and separate product guides from technical compatibility documentation.
 - Make the Target height slider follow the measured height after a stored-position move or Stop. The last position sample of a finished movement could carry residual speed, which kept the slider at its old value until a later read.
 - Skip the Documentation impact job once a pull request is closed or merged, so a rerun after a squash merge no longer reports a false failure.
 - Add an optional Monitoring only choice to setup. It connects and reads without preparing the panel client, calibrating or asking for a height range. Controls stay the default path, and the range can be added later in Configure.

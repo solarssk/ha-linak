@@ -46,7 +46,7 @@ class DeviceIdentity:
         if text is not None:
             candidate = text.upper()
             match = re.fullmatch(
-                r"(DP[GI](?:[1-9][A-Z])?)(?:-?[0-9][A-Z0-9-]*)?", candidate
+                r"(DP[GI](?:[1-9][A-Z])?)(?:-?\d[A-Z\d-]*)?", candidate, re.ASCII
             )
             if match:
                 # A numeric ordering suffix is not part of the model exposed to HA.

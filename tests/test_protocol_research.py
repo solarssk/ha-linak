@@ -1,10 +1,13 @@
 """Explicit research reads use the native lock and never write settings or move."""
 
 import asyncio
+import gc
+import weakref
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakDBusError, BleakError, BleakGATTProtocolError
 import pytest
 
 from homeassistant.auth.const import GROUP_ID_ADMIN, GROUP_ID_USER
@@ -33,17 +36,31 @@ from custom_components.ha_linak.services import SERVICE_READ_PROTOCOL_INVENTORY
 from test_client import FakeBleak
 
 DEVICE = BLEDevice("AA:BB:CC:DD:EE:FF", "Synthetic desk", {})
+EXPECTED_REFERENCE_UUIDS = [
+    "99fa0021-338a-1024-8a49-009c0215f78a",
+    "99fa0029-338a-1024-8a49-009c0215f78a",
+    "99fa002a-338a-1024-8a49-009c0215f78a",
+    "99fa0022-338a-1024-8a49-009c0215f78a",
+    "99fa0023-338a-1024-8a49-009c0215f78a",
+    "99fa0024-338a-1024-8a49-009c0215f78a",
+    "99fa0025-338a-1024-8a49-009c0215f78a",
+    "99fa0026-338a-1024-8a49-009c0215f78a",
+    "99fa0027-338a-1024-8a49-009c0215f78a",
+    "99fa0028-338a-1024-8a49-009c0215f78a",
+]
 
 
 class ResearchBleak(FakeBleak):
     def __init__(self):
         super().__init__()
         self.services = SimpleNamespace(
-            get_characteristic=lambda uuid: SimpleNamespace(
-                properties=["read", "write", "notify"] if uuid == DPG_UUID else ["read"]
-            )
+            get_characteristic=self.characteristic,
         )
+        self.missing = set()
+        self.unreadable = set()
         self.reads = []
+        self.read_errors = {}
+        self.read_responses = {}
         self.product_reply = b"\x01\x05\x10\x20\x30"
         self.product_started = asyncio.Event()
         self.product_gate = None
@@ -51,6 +68,19 @@ class ResearchBleak(FakeBleak):
         self.disconnect_gate = None
         self.disconnect_started = asyncio.Event()
         self.nonstationary = False
+        self.emit_product_ack = True
+        self.product_written = asyncio.Event()
+
+    def characteristic(self, uuid):
+        if uuid in self.missing or uuid not in {*EXPECTED_REFERENCE_UUIDS, DPG_UUID}:
+            return None
+        return SimpleNamespace(
+            properties=[]
+            if uuid in self.unreadable
+            else ["read", "write", "notify"]
+            if uuid == DPG_UUID
+            else ["read"]
+        )
 
     async def write_gatt_char(self, uuid, payload, response):
         if bytes(payload) != b"\x7f\x08\x00":
@@ -60,13 +90,20 @@ class ResearchBleak(FakeBleak):
         self.product_started.set()
         if self.product_gate is not None:
             await self.product_gate.wait()
-        self.callbacks[DPG_UUID](None, bytearray(b"\x01\x00"))
-        self.callbacks[DPG_UUID](None, bytearray(self.product_reply))
+        if self.emit_product_ack:
+            self.callbacks[DPG_UUID](None, bytearray(b"\x01\x00"))
+        if self.product_reply is not None:
+            self.callbacks[DPG_UUID](None, bytearray(self.product_reply))
+        self.product_written.set()
 
     async def read_gatt_char(self, uuid):
         self.reads.append(uuid)
         if self.read_gate is not None:
             await self.read_gate.wait()
+        if uuid in self.read_errors:
+            raise self.read_errors[uuid]
+        if uuid in self.read_responses:
+            return self.read_responses[uuid]
         if uuid == HEIGHT_UUID:
             return b"\x00\x04\x01\x00" if self.nonstationary else b"\x00\x04\x00\x00"
         return b"\x00\x00\x04\x00"
@@ -119,7 +156,7 @@ async def test_fixed_reference_reads_on_existing_proxy():
     desk, fake = await connected_desk()
     previous = desk.state
     result = await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
-    assert fake.reads == list(REFERENCE_INVENTORY_UUIDS)
+    assert fake.reads == EXPECTED_REFERENCE_UUIDS
     assert fake.writes == []
     assert result["backend"] == "bleak_esphome"
     assert result["semantics_verified"] is False
@@ -470,3 +507,521 @@ async def test_service_refuses_released_intent_and_arbitrary_fields(hass):
     assert error.value.translation_key == "research_not_ready"
     assert fake.writes == fake.reads == []
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("section", ["unknown", None, 8])
+async def test_invalid_direct_section_does_not_touch_the_ready_session(section):
+    desk, fake = await connected_desk()
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(section)
+    assert fake.writes == fake.reads == []
+    assert desk.connected
+    await desk.disconnect()
+
+
+@pytest.mark.parametrize("section", list(ResearchSection))
+@pytest.mark.parametrize("support", ["absent", "unreadable"])
+async def test_required_position_characteristic_is_not_optional(section, support):
+    desk, fake = await connected_desk()
+    if support == "absent":
+        fake.missing.add(HEIGHT_UUID)
+    else:
+        fake.unreadable.add(HEIGHT_UUID)
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(section)
+    assert fake.writes == fake.reads == []
+    assert not desk.connected
+
+
+async def test_unreadable_optional_property_does_not_trigger_a_read():
+    desk, fake = await connected_desk()
+    uuid = EXPECTED_REFERENCE_UUIDS[1]
+    fake.unreadable.add(uuid)
+    result = await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert uuid not in fake.reads
+    assert result["observations"][1] == {"uuid": uuid, "status": "not_readable"}
+    assert desk.connected
+    await desk.disconnect()
+
+
+async def test_oversized_reference_payload_discards_session():
+    desk, fake = await connected_desk()
+    fake.read_responses[EXPECTED_REFERENCE_UUIDS[1]] = bytes(513)
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert fake.reads == EXPECTED_REFERENCE_UUIDS[:2]
+    assert fake.writes == []
+    assert not desk.connected
+
+
+async def test_research_refuses_a_released_lock_with_an_awakened_waiter():
+    desk, fake = await connected_desk()
+    release_waiter = asyncio.Event()
+
+    async def queued_reader():
+        async with desk._lock:
+            await release_waiter.wait()
+
+    await desk._lock.acquire()
+    waiter = asyncio.create_task(queued_reader())
+    await asyncio.sleep(0)
+    desk._lock.release()
+    assert not desk._lock.locked()
+    # Release the existing waiter if a broken implementation queues behind it.
+    timer = asyncio.get_running_loop().call_later(1, release_waiter.set)
+    try:
+        with pytest.raises(MotionError) as error:
+            await desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+        assert error.value.reason is MotionFailure.BUSY
+        assert not release_waiter.is_set()
+        assert fake.writes == fake.reads == []
+    finally:
+        timer.cancel()
+        release_waiter.set()
+        await waiter
+        await desk.disconnect()
+
+
+@pytest.mark.parametrize(
+    "invalidated_at",
+    [HEIGHT_UUID, EXPECTED_REFERENCE_UUIDS[1], EXPECTED_REFERENCE_UUIDS[-1]],
+)
+async def test_invalid_height_notification_ends_reference_reads(invalidated_at):
+    desk, fake = await connected_desk()
+    read = fake.read_gatt_char
+
+    async def invalidate_after_read(uuid):
+        payload = await read(uuid)
+        if uuid == invalidated_at:
+            fake.callbacks[HEIGHT_UUID](None, bytearray(b"bad"))
+        return payload
+
+    fake.read_gatt_char = invalidate_after_read
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert (
+        fake.reads
+        == EXPECTED_REFERENCE_UUIDS[
+            : EXPECTED_REFERENCE_UUIDS.index(invalidated_at) + 1
+        ]
+    )
+    assert fake.writes == []
+    assert not desk.connected
+
+
+@pytest.mark.parametrize("invalidated_at", ["position", "capabilities", "product"])
+async def test_invalid_height_notification_ends_product_research(invalidated_at):
+    desk, fake = await connected_desk()
+    read = fake.read_gatt_char
+    write = fake.write_gatt_char
+
+    async def invalidate_after_position(uuid):
+        payload = await read(uuid)
+        if invalidated_at == "position":
+            fake.callbacks[HEIGHT_UUID](None, bytearray(b"bad"))
+        return payload
+
+    async def invalidate_after_exchange(uuid, payload, response):
+        await write(uuid, payload, response)
+        if (invalidated_at == "capabilities" and payload == b"\x7f\x80\x00") or (
+            invalidated_at == "product" and payload == b"\x7f\x08\x00"
+        ):
+            fake.callbacks[HEIGHT_UUID](None, bytearray(b"bad"))
+
+    fake.read_gatt_char = invalidate_after_position
+    fake.write_gatt_char = invalidate_after_exchange
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+    expected_writes = (
+        []
+        if invalidated_at == "position"
+        else [(DPG_UUID, b"\x7f\x80\x00")]
+        if invalidated_at == "capabilities"
+        else [(DPG_UUID, b"\x7f\x80\x00"), (DPG_UUID, b"\x7f\x08\x00")]
+    )
+    assert fake.writes == expected_writes
+    assert not desk.connected
+    assert desk._product_pending is None
+
+
+async def test_invalid_height_in_reply_delivery_cannot_publish_success():
+    desk, fake = await connected_desk()
+    write = fake.write_gatt_char
+
+    def reply_and_invalidate():
+        fake.callbacks[DPG_UUID](None, bytearray(fake.product_reply))
+        fake.callbacks[HEIGHT_UUID](None, bytearray(b"bad"))
+
+    async def reply_on_next_turn(uuid, payload, response):
+        if payload != b"\x7f\x08\x00":
+            await write(uuid, payload, response)
+            return
+        fake.writes.append((uuid, bytes(payload)))
+        asyncio.get_running_loop().call_soon(reply_and_invalidate)
+
+    fake.write_gatt_char = reply_on_next_turn
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+    assert not desk.connected
+    assert desk._product_pending is None
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        BleakDBusError("org.bluez.Error.NotPermitted", []),
+        BleakDBusError("org.bluez.Error.NotAuthorized", []),
+        BleakDBusError("org.bluez.Error.NotSupported", []),
+        BleakGATTProtocolError(2),
+        BleakGATTProtocolError(5),
+        BleakGATTProtocolError(6),
+        BleakGATTProtocolError(8),
+        BleakGATTProtocolError(12),
+        BleakGATTProtocolError(15),
+    ],
+)
+async def test_explicit_optional_read_denial_preserves_the_other_observations(error):
+    desk, fake = await connected_desk()
+    uuid = EXPECTED_REFERENCE_UUIDS[3]
+    fake.read_errors[uuid] = error
+    result = await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert fake.reads == EXPECTED_REFERENCE_UUIDS
+    assert result["observations"][3] == {"uuid": uuid, "status": "not_readable"}
+    assert result["observations"][4]["status"] == "returned"
+    assert fake.writes == []
+    assert desk.connected
+    await desk.disconnect()
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        BleakError("synthetic transport failure"),
+        BleakDBusError("org.bluez.Error.Failed", []),
+        BleakGATTProtocolError(1),
+        BleakGATTProtocolError(256),
+    ],
+)
+async def test_unknown_optional_read_failure_is_not_an_unreadable_feature(error):
+    desk, fake = await connected_desk()
+    fake.read_errors[EXPECTED_REFERENCE_UUIDS[1]] = error
+    with pytest.raises(BleakError):
+        await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert fake.reads == EXPECTED_REFERENCE_UUIDS[:2]
+    assert not desk.connected
+
+
+async def test_explicit_denial_of_required_position_is_fatal():
+    desk, fake = await connected_desk()
+    fake.read_errors[HEIGHT_UUID] = BleakDBusError("org.bluez.Error.NotPermitted", [])
+    with pytest.raises(BleakError):
+        await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert fake.reads == [HEIGHT_UUID]
+    assert not desk.connected
+
+
+async def test_last_optional_read_cannot_hide_link_loss_before_callback():
+    desk, fake = await connected_desk()
+    read = fake.read_gatt_char
+
+    async def lose_link_on_last_read(uuid):
+        if uuid == EXPECTED_REFERENCE_UUIDS[-1]:
+            fake.is_connected = False
+            raise BleakDBusError("org.bluez.Error.NotPermitted", [])
+        return await read(uuid)
+
+    fake.read_gatt_char = lose_link_on_last_read
+    with pytest.raises(DeskLinkLost):
+        await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert not desk.connected
+    assert fake.writes == []
+
+
+async def test_optional_denial_cannot_hide_invalidated_position():
+    desk, fake = await connected_desk()
+    read = fake.read_gatt_char
+
+    async def invalidate_and_deny(uuid):
+        if uuid == EXPECTED_REFERENCE_UUIDS[-1]:
+            fake.callbacks[HEIGHT_UUID](None, bytearray(b"bad"))
+            raise BleakDBusError("org.bluez.Error.NotAuthorized", [])
+        return await read(uuid)
+
+    fake.read_gatt_char = invalidate_and_deny
+    with pytest.raises(ValueError):
+        await desk.read_protocol_inventory(ResearchSection.REFERENCE_OUTPUTS)
+    assert not desk.connected
+    assert fake.writes == []
+
+
+async def test_disconnect_cancels_the_pending_product_future():
+    desk, fake = await connected_desk()
+    fake.product_gate = asyncio.Event()
+    task = asyncio.create_task(
+        desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+    )
+    await fake.product_started.wait()
+    pending = desk._product_pending
+    assert pending is not None and not pending.done()
+    await desk.disconnect()
+    with pytest.raises(DeskLinkLost):
+        await task
+    assert pending.cancelled()
+    assert desk._product_pending is None
+    assert not desk._lock.locked()
+    assert fake.writes == [(DPG_UUID, b"\x7f\x80\x00"), (DPG_UUID, b"\x7f\x08\x00")]
+
+
+async def test_reply_wait_has_its_own_deadline_after_the_write_returns():
+    desk, fake = await connected_desk()
+    fake.product_reply = None
+    fake.emit_product_ack = False
+    with (
+        patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
+        patch("custom_components.ha_linak.client.REFRESH_TIMEOUT", 5),
+    ):
+        task = asyncio.create_task(
+            desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+        )
+        try:
+            done, _ = await asyncio.wait({task}, timeout=0.5)
+            assert fake.product_written.is_set()
+            assert task in done, "the reply wait fell through to the outer deadline"
+            with pytest.raises(TimeoutError):
+                await task
+            assert not desk.connected
+            assert desk._product_pending is None
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_cancelled_research_bounds_a_hung_disconnect():
+    desk, fake = await connected_desk()
+    fake.product_gate = asyncio.Event()
+    fake.disconnect_gate = asyncio.Event()
+    with patch("custom_components.ha_linak.client.IO_TIMEOUT", 0.01):
+        task = asyncio.create_task(
+            desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+        )
+        await fake.product_started.wait()
+        task.cancel()
+        try:
+            done, _ = await asyncio.wait({task}, timeout=0.5)
+            assert task in done, "disconnect cleanup exceeded its own deadline"
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            assert not desk.connected
+            assert not desk._lock.locked()
+        finally:
+            fake.disconnect_gate.set()
+            await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_cancellation_as_cleanup_settles_remains_cancellation():
+    desk, fake = await connected_desk()
+    fake.product_reply = b"bad"
+    disconnect = fake.disconnect
+
+    async def cancel_after_disconnect():
+        await disconnect()
+        asyncio.current_task().add_done_callback(lambda _: task.cancel())
+
+    fake.disconnect = cancel_after_disconnect
+    task = asyncio.create_task(
+        desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+    )
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert not desk.connected
+    assert not desk._lock.locked()
+
+
+@pytest.mark.parametrize("failure", ["write_error", "write_timeout", "cancelled"])
+async def test_parser_error_is_observed_when_the_product_write_does_not_finish(failure):
+    desk, fake = await connected_desk()
+    write = fake.write_gatt_char
+    loop = asyncio.get_running_loop()
+    events = []
+    pending_ref = None
+    pending_audit = None
+    previous_handler = loop.get_exception_handler()
+    loop.set_exception_handler(lambda _loop, context: events.append(context))
+
+    class ObservedFuture(asyncio.Future):
+        def __init__(self):
+            super().__init__(loop=loop)
+            self.audit = []
+
+        def exception(self):
+            self.audit.append("exception")
+            return super().exception()
+
+    async def malformed_notification_during_write(uuid, payload, response):
+        nonlocal pending_ref, pending_audit
+        if payload != b"\x7f\x08\x00":
+            await write(uuid, payload, response)
+            return
+        fake.writes.append((uuid, bytes(payload)))
+        pending_ref = weakref.ref(desk._product_pending)
+        pending_audit = desk._product_pending.audit
+        fake.callbacks[DPG_UUID](None, bytearray(b"bad"))
+        fake.product_started.set()
+        if failure == "write_error":
+            raise BleakError("synthetic write failure")
+        await asyncio.Future()
+
+    fake.write_gatt_char = malformed_notification_during_write
+
+    async def finish_failed_read():
+        with (
+            patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
+            patch.object(loop, "create_future", side_effect=ObservedFuture),
+        ):
+            task = asyncio.create_task(
+                desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
+            )
+            await fake.product_started.wait()
+            if failure == "cancelled":
+                task.cancel()
+            expected = (
+                BleakError
+                if failure == "write_error"
+                else TimeoutError
+                if failure == "write_timeout"
+                else asyncio.CancelledError
+            )
+            with pytest.raises(expected):
+                await task
+        assert desk._product_pending is None
+        assert not desk.connected
+
+    try:
+        await finish_failed_read()
+        await asyncio.sleep(0)
+        gc.collect()
+        await asyncio.sleep(0)
+        assert pending_audit == ["exception"], (
+            "completed parser exception was not explicitly observed"
+        )
+        assert pending_ref is not None and pending_ref() is None
+        assert not events
+    finally:
+        loop.set_exception_handler(previous_handler)
+
+
+async def call_research_action(hass, entry_id):
+    return await hass.services.async_call(
+        DOMAIN,
+        SERVICE_READ_PROTOCOL_INVENTORY,
+        {"config_entry_id": entry_id, "section": "product_info"},
+        blocking=True,
+        return_response=True,
+    )
+
+
+async def test_reference_action_uses_native_session_without_publishing_raw_metadata(
+    hass,
+):
+    entry, fake = await setup_entry(hass)
+    sensors_before = {
+        state.entity_id: state.state for state in hass.states.async_all("sensor")
+    }
+    result = await hass.services.async_call(
+        DOMAIN,
+        SERVICE_READ_PROTOCOL_INVENTORY,
+        {"config_entry_id": entry.entry_id, "section": "reference_outputs"},
+        blocking=True,
+        return_response=True,
+    )
+    assert result["section"] == "reference_outputs"
+    assert result["semantics_verified"] is False
+    assert len(result["observations"]) == 10
+    assert fake.reads == EXPECTED_REFERENCE_UUIDS
+    assert fake.writes == []
+    assert entry.runtime_data.desk.connected
+    assert {
+        state.entity_id: state.state for state in hass.states.async_all("sensor")
+    } == sensors_before
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_service_rejects_an_enabled_idasen_owner_without_io(hass):
+    entry, fake = await setup_entry(hass)
+    other = MockConfigEntry(
+        domain="idasen_desk",
+        unique_id=DEVICE.address,
+        data={CONF_ADDRESS: DEVICE.address},
+    )
+    other.add_to_hass(hass)
+    with pytest.raises(ServiceValidationError) as error:
+        await call_research_action(hass, entry.entry_id)
+    assert error.value.translation_key == "idasen_conflict"
+    assert other.disabled_by is None
+    assert fake.writes == fake.reads == []
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        MotionError("synthetic private detail"),
+        BleakError("synthetic private detail"),
+        ConnectionError("synthetic private detail"),
+        TimeoutError("synthetic private detail"),
+    ],
+)
+async def test_service_reports_read_failures_without_raw_backend_details(
+    hass, caplog, failure
+):
+    entry, fake = await setup_entry(hass)
+    with (
+        patch.object(
+            entry.runtime_data.desk,
+            "read_protocol_inventory",
+            AsyncMock(side_effect=failure),
+        ),
+        pytest.raises(HomeAssistantError) as error,
+    ):
+        await call_research_action(hass, entry.entry_id)
+    assert error.value.translation_key == "research_failed"
+    messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "custom_components.ha_linak.services"
+    ]
+    assert messages == [f"Protocol research read failed: {type(failure).__name__}"]
+    assert fake.writes == fake.reads == []
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    "entry_case",
+    ["missing", "other_domain", "wrong_runtime", "no_client", "disconnected"],
+)
+async def test_service_refuses_invalid_or_unready_entries(hass, entry_case):
+    entry, fake = await setup_entry(hass)
+    coordinator = entry.runtime_data
+    identifier = entry.entry_id
+    if entry_case == "missing":
+        identifier = "missing-synthetic-entry"
+    elif entry_case == "other_domain":
+        other = MockConfigEntry(domain="other_integration", data={})
+        other.add_to_hass(hass)
+        identifier = other.entry_id
+    elif entry_case == "wrong_runtime":
+        entry.runtime_data = SimpleNamespace()
+    elif entry_case == "no_client":
+        await coordinator.desk.disconnect()
+        coordinator.desk = None
+    else:
+        await coordinator.desk.disconnect()
+    try:
+        with pytest.raises(ServiceValidationError) as error:
+            await call_research_action(hass, identifier)
+        assert error.value.translation_key == "research_not_ready"
+        assert fake.writes == fake.reads == []
+    finally:
+        entry.runtime_data = coordinator
+        await hass.config_entries.async_unload(entry.entry_id)

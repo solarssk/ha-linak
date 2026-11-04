@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add an explicit administrator-only protocol inventory action using the existing native connection and query lock on local Bluetooth or a proxy. Fixed reference-output and raw product-info reads never connect, activate the panel, move the desk or write settings; unverified payloads remain research data.
+- Refuse research reads during a query-lock handoff, abort when position feedback becomes invalid, distinguish explicit optional-read denials from transport loss and observe discarded parser errors during failed writes. Cover these paths with synthetic regressions without changing coverage thresholds.
 - Rename the integration to LINAK, identify device families before DPG commands, expose reported model/firmware and separate product guides from technical compatibility documentation.
 - Make the Target height slider follow the measured height after a stored-position move or Stop. The last position sample of a finished movement could carry residual speed, which kept the slider at its old value until a later read.
 - Skip the Documentation impact job once a pull request is closed or merged, so a rerun after a squash merge no longer reports a false failure.

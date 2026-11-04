@@ -10,7 +10,12 @@ from dataclasses import dataclass, field
 from bleak import BleakClient
 from bleak.backends import BleakBackend
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
+from bleak.exc import (
+    BleakDBusError,
+    BleakError,
+    BleakGATTProtocolError,
+    BleakGATTProtocolErrorCode,
+)
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
 from .calibration import (
@@ -71,6 +76,25 @@ BLUETOOTH_BACKENDS = tuple(
         | {"bleak_esphome", "bluez_mgmt", "other"}
     )
 )
+
+
+def _explicit_read_denial(error: BleakError) -> bool:
+    if isinstance(error, BleakDBusError):
+        return error.dbus_error in {
+            "org.bluez.Error.NotPermitted",
+            "org.bluez.Error.NotAuthorized",
+            "org.bluez.Error.NotSupported",
+        }
+    if isinstance(error, BleakGATTProtocolError):
+        return error.code in {
+            BleakGATTProtocolErrorCode.READ_NOT_PERMITTED,
+            BleakGATTProtocolErrorCode.INSUFFICIENT_AUTHENTICATION,
+            BleakGATTProtocolErrorCode.REQUEST_NOT_SUPPORTED,
+            BleakGATTProtocolErrorCode.INSUFFICIENT_AUTHORIZATION,
+            BleakGATTProtocolErrorCode.INSUFFICIENT_ENCRYPTION_KEY_SIZE,
+            BleakGATTProtocolErrorCode.INSUFFICIENT_ENCRYPTION,
+        }
+    return False
 
 
 def backend_category(client: BleakClient) -> str:
@@ -402,12 +426,16 @@ class DeskClient:
                 self.identity.require_driver()
         self.identity = DeviceIdentity.from_metadata(*fields)
 
-    async def _query(self, command: ReadCommand, response_type: int) -> bytes:
+    async def _query(
+        self, command: ReadCommand, response_type: int, *, require_ready: bool = False
+    ) -> bytes:
         assert self.client is not None
         self._pending = asyncio.get_running_loop().create_future()
         self._response_type = response_type
         try:
-            return await self._io(self._exchange(command), QUERY_TIMEOUT)
+            return await self._io(
+                self._exchange(command, require_ready=require_ready), QUERY_TIMEOUT
+            )
         except TimeoutError:
             _LOGGER.debug("DPG read timed out: command=%s", command.name)
             raise
@@ -417,12 +445,21 @@ class DeskClient:
             self._pending = None
             self._response_type = None
 
-    async def _exchange(self, command: ReadCommand) -> bytes:
+    async def _exchange(
+        self, command: ReadCommand, *, require_ready: bool = False
+    ) -> bytes:
         assert self.client is not None and self._pending is not None
+        if require_ready:
+            self._require_research_ready()
         await self.client.write_gatt_char(
             DPG_UUID, read_request(command), response=True
         )
-        return await self._pending
+        if require_ready:
+            self._require_research_ready()
+        payload = await self._pending
+        if require_ready:
+            self._require_research_ready()
+        return payload
 
     async def refresh(
         self, *, allow_partial_settings: bool = False, settings_interval: float = 0
@@ -469,78 +506,119 @@ class DeskClient:
             raise MotionError("Another desk operation is active", MotionFailure.BUSY)
         if not self.connected:
             raise ConnectionError("Protocol inventory requires a ready connection")
-        async with self._lock:
+        await self._acquire_research_lock()
+        try:
+            async with asyncio.timeout(REFRESH_TIMEOUT):
+                self._require_research_ready()
+                self._set_stage("research_read")
+                assert self.client is not None
+                if section is ResearchSection.REFERENCE_OUTPUTS:
+                    result = await self._read_reference_inventory()
+                else:
+                    result = await self._read_product_info()
+                self._require_research_ready()
+                self._set_stage("ready")
+                return {
+                    "section": section.value,
+                    "backend": backend_category(self.client),
+                    "semantics_verified": False,
+                    **result,
+                }
+        except BaseException as error:
             try:
-                async with asyncio.timeout(REFRESH_TIMEOUT):
-                    self._set_stage("research_read")
-                    assert self.client is not None
-                    if section is ResearchSection.REFERENCE_OUTPUTS:
-                        result = await self._read_reference_inventory()
-                    else:
-                        result = await self._read_product_info()
-                    self._set_stage("ready")
-                    return {
-                        "section": section.value,
-                        "backend": backend_category(self.client),
-                        "semantics_verified": False,
-                        **result,
-                    }
-            except BaseException as error:
-                try:
-                    await self._discard_after_read_error(error)
-                finally:
-                    self.changed()
-                raise
+                await self._discard_after_read_error(error)
+            finally:
+                self.changed()
+            raise
+        finally:
+            self._lock.release()
+
+    async def _acquire_research_lock(self) -> None:
+        # A released asyncio.Lock can still have an awakened waiter ahead of us.
+        # A zero deadline permits only acquisition that does not suspend.
+        try:
+            async with asyncio.timeout(0):
+                await self._lock.acquire()
+        except TimeoutError:
+            raise MotionError(
+                "Another desk operation is active", MotionFailure.BUSY
+            ) from None
+
+    def _require_research_ready(self) -> None:
+        if self._link_lost or self.client is None or not self.client.is_connected:
+            raise DeskLinkLost()
+        if not self._ready:
+            raise ValueError(
+                "Position feedback became invalid during protocol research"
+            )
 
     async def _read_reference_inventory(self) -> dict[str, ResearchValue]:
-        assert self.client is not None
         observations: list[ResearchValue] = []
         for uuid in REFERENCE_INVENTORY_UUIDS:
-            characteristic = self.client.services.get_characteristic(uuid)
-            if characteristic is None or "read" not in characteristic.properties:
-                if uuid == HEIGHT_UUID:
-                    raise ValueError("Position guard is not readable")
-                observations.append({"uuid": uuid, "status": "not_readable"})
-                continue
+            observations.append(await self._read_research_reference(uuid))
+        return {"observations": observations}
+
+    async def _read_research_reference(self, uuid: str) -> dict[str, ResearchValue]:
+        self._require_research_ready()
+        assert self.client is not None
+        characteristic = self.client.services.get_characteristic(uuid)
+        if characteristic is None or "read" not in characteristic.properties:
+            if uuid == HEIGHT_UUID:
+                raise ValueError("Position guard is not readable")
+            return {"uuid": uuid, "status": "not_readable"}
+        try:
             payload = bytes(
                 await self._io(self.client.read_gatt_char(uuid), IO_TIMEOUT)
             )
-            if len(payload) > 512:
-                raise ValueError("Unexpected reference response length")
-            if uuid == HEIGHT_UUID and decode_position(payload).speed_raw != 0:
-                raise ValueError("Keep the desk stationary for protocol research")
-            observations.append(
-                {
-                    "uuid": uuid,
-                    "status": "returned",
-                    "length": len(payload),
-                    "hex": payload.hex(),
-                }
+        except BleakError as error:
+            self._require_research_ready()
+            if uuid == HEIGHT_UUID or not _explicit_read_denial(error):
+                raise
+            _LOGGER.debug(
+                "Optional research read denied: uuid=%s, reason=%s",
+                uuid,
+                type(error).__name__,
             )
-        return {"observations": observations}
+            return {"uuid": uuid, "status": "not_readable"}
+        self._require_research_ready()
+        if len(payload) > 512:
+            raise ValueError("Unexpected reference response length")
+        if uuid == HEIGHT_UUID and decode_position(payload).speed_raw != 0:
+            raise ValueError("Keep the desk stationary for protocol research")
+        return {
+            "uuid": uuid,
+            "status": "returned",
+            "length": len(payload),
+            "hex": payload.hex(),
+        }
 
     async def _read_product_info(self) -> dict[str, ResearchValue]:
         assert self.client is not None
+        self._require_research_ready()
         characteristic = self.client.services.get_characteristic(HEIGHT_UUID)
         if characteristic is None or "read" not in characteristic.properties:
             raise ValueError("Position guard is not readable")
         position = decode_position(
             bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
         )
+        self._require_research_ready()
         if position.speed_raw != 0:
             raise ValueError("Keep the desk stationary for protocol research")
         # A known response type separates the preceding exchange from raw data.
         capabilities = decode_capabilities(
-            await self._query(ReadCommand.CAPABILITIES, 2)
+            await self._query(ReadCommand.CAPABILITIES, 2, require_ready=True)
         )
+        self._require_research_ready()
         if capabilities != self.state.capabilities:
             raise ValueError("Capabilities changed before protocol research")
-        self._product_pending = asyncio.get_running_loop().create_future()
+        product = self._product_pending = asyncio.get_running_loop().create_future()
         try:
             payload = await self._io(self._exchange_product_info(), QUERY_TIMEOUT)
         finally:
-            self._product_pending.cancel()
             self._product_pending = None
+            if product.done() and not product.cancelled():
+                product.exception()
+            product.cancel()
         return {
             "response_hex": payload.hex(),
             "response_length": len(payload),
@@ -549,9 +627,13 @@ class DeskClient:
 
     async def _exchange_product_info(self) -> bytes:
         assert self.client is not None and self._product_pending is not None
+        self._require_research_ready()
         # Pinned upstream PRODUCT_INFO read; no generic write surface is exposed.
         await self.client.write_gatt_char(DPG_UUID, b"\x7f\x08\x00", response=True)
-        return await self._product_pending
+        self._require_research_ready()
+        payload = await self._product_pending
+        self._require_research_ready()
+        return payload
 
     async def _refresh(
         self, *, allow_partial_settings: bool = False, settings_interval: float = 0

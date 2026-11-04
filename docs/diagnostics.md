@@ -19,10 +19,12 @@ The administrator-only action `ha_linak.read_protocol_inventory` uses the entry'
 
 | Section | Fixed operations | Response and limits |
 | --- | --- | --- |
-| `reference_outputs` | At most ten reads: position as a stationary guard, two masks and outputs 2–8 | Raw lengths/hex or `not_readable` for absent/unreadable optional outputs. Identical samples do not establish active extra axes or a calibrated speed. |
+| `reference_outputs` | At most ten reads: position as a stationary guard, two masks and outputs 2–8 | Raw lengths/hex or `not_readable` for absent/unreadable optional outputs and explicit Bluetooth permission/unsupported-operation denials. Unknown backend errors, lost links and failure of the required position guard remain fatal. Identical samples do not establish active extra axes or a calibrated speed. |
 | `product_info` | Fresh stationary position, one capabilities barrier and one `7f 08 00` query | One bounded raw reply, not decoded firmware, SKU or fault information. The reply has no request identity; a delayed unrelated frame can still be returned, so `semantics_verified` stays false. |
 
 Busy actions are refused without queueing or extra packets. The client owns the query lock through the complete read and failure cleanup, so polling and another research request cannot interleave their DPG exchanges. Existing Stop behavior is unchanged. Individual reads retain the ordinary ten-second I/O bound; the product exchange uses eight seconds, and the complete read has a 60-second budget plus bounded disconnect cleanup. Unknown sections, raw bytes and arbitrary opcodes are not accepted.
+
+An awakened reader waiting for the lock also counts as busy; a research action does not wait behind it outside its deadline. Malformed position notifications invalidate research already in progress, even if an individual read or product reply would otherwise complete. Optional-read denials do not hide that invalidation or a disconnected session.
 
 The [protocol reference](protocol.md#explicit-research-reads) defines the research boundary. Reading a candidate response does not establish a writable setting; memory, reminder and unit setters are not exposed by this action.
 

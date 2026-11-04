@@ -182,6 +182,10 @@ class DeskClient:
     def resume(self) -> None:
         self._released = False
 
+    def _require_unreleased(self) -> None:
+        if self._released:
+            raise ConnectionError("The connection was released by the owner")
+
     def _operation_changed(self) -> None:
         self.changed()
 
@@ -354,8 +358,7 @@ class DeskClient:
     async def refresh(
         self, *, allow_partial_settings: bool = False, settings_interval: float = 0
     ) -> DeskState:
-        if self._released:
-            raise ConnectionError("The connection was released by the owner")
+        self._require_unreleased()
         if self.control_busy:
             return self.state
         async with self._lock:

@@ -263,7 +263,8 @@ async def test_releasing_again_before_any_desk_exists_changes_nothing(hass):
         await switch(hass, "turn_off")
         await switch(hass, "turn_off")
         assert coordinator.desk is None
-        assert lookup.call_count == 0 and connect.call_count == 0
+        assert lookup.call_count == 0
+        assert connect.call_count == 0
         assert hass.states.get(SWITCH).state == "off"
         await hass.config_entries.async_unload(entry.entry_id)
 
@@ -340,7 +341,8 @@ async def test_a_released_client_refuses_to_connect_until_resumed():
         assert connect.call_count == 0
         desk.resume()
         await desk.refresh()
-        assert connect.call_count == 1 and desk.connected
+        assert connect.call_count == 1
+        assert desk.connected
         await desk.disconnect()
 
 
@@ -534,13 +536,15 @@ async def test_repeated_and_overlapping_callers_end_in_one_consistent_state(hass
             coordinator.async_set_connection_wanted(False),
             coordinator.async_set_connection_wanted(False),
         )
-        assert not coordinator.desk.connected and not wants_connection(entry)
+        assert not coordinator.desk.connected
+        assert not wants_connection(entry)
         connects = connect.call_count
         await asyncio.gather(
             coordinator.async_set_connection_wanted(True),
             coordinator.async_set_connection_wanted(True),
         )
-        assert coordinator.desk.connected and wants_connection(entry)
+        assert coordinator.desk.connected
+        assert wants_connection(entry)
         assert connect.call_count == connects + 1
         connects = connect.call_count
         gate = asyncio.Event()
@@ -565,7 +569,8 @@ async def test_repeated_and_overlapping_callers_end_in_one_consistent_state(hass
         await asyncio.gather(first, *later)
         # The turn-on was superseded by the later turn-off, so it never connected.
         assert connect.call_count == connects
-        assert not coordinator.desk.connected and not wants_connection(entry)
+        assert not coordinator.desk.connected
+        assert not wants_connection(entry)
         assert hass.states.get(SWITCH).state == "off"
         assert hass.states.get(CONNECTION).state == "off"
         await hass.config_entries.async_unload(entry.entry_id)
@@ -629,8 +634,10 @@ async def test_diagnostics_report_the_intent_apart_from_the_link(hass):
     with radio(fake):
         await start(hass, entry)
         result = await async_get_config_entry_diagnostics(hass, entry)
-        assert result["connection_wanted"] is True and result["connected"] is True
+        assert result["connection_wanted"] is True
+        assert result["connected"] is True
         await switch(hass, "turn_off")
         result = await async_get_config_entry_diagnostics(hass, entry)
-        assert result["connection_wanted"] is False and result["connected"] is False
+        assert result["connection_wanted"] is False
+        assert result["connected"] is False
         await hass.config_entries.async_unload(entry.entry_id)

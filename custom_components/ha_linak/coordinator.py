@@ -183,11 +183,24 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             raise ConnectionError("Desk is not reachable through Bluetooth")
         return device
 
-    async def _async_update_data(self) -> DeskState:
+    def _require_connection_wanted(self) -> None:
         if not self.connection_wanted:
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key="connection_released"
             )
+
+    async def _discard_if_released(self, desk: DeskClient) -> None:
+        """A release that raced a refresh must not be revived by its result."""
+        if self.connection_wanted:
+            return
+        try:
+            await desk.release()
+        except Exception:
+            _LOGGER.debug("Release after a raced refresh failed", exc_info=True)
+        self._require_connection_wanted()
+
+    async def _async_update_data(self) -> DeskState:
+        self._require_connection_wanted()
         if self.desk is not None and self.desk.control_busy:
             if not self.desk.connected:
                 raise UpdateFailed("Desk disconnected during control cleanup")
@@ -215,15 +228,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 and self.data.capabilities is not None,
                 settings_interval=SETTINGS_REFRESH_INTERVAL,
             )
-            if not self.connection_wanted:
-                # A release that raced this refresh must not be revived by it.
-                try:
-                    await self.desk.release()
-                except Exception:  # noqa: BLE001 - the release outcome is reported below
-                    _LOGGER.debug("Release after a raced refresh failed", exc_info=True)
-                raise UpdateFailed(
-                    translation_domain=DOMAIN, translation_key="connection_released"
-                )
+            await self._discard_if_released(self.desk)
             self._validate_control_reference(state)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:

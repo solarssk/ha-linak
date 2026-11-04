@@ -105,6 +105,8 @@ If the panel shows the wrong height, measure from the floor to the top of the de
 
 Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. The integration can read saved positions and reminders, but doesn't yet edit them.
 
+Unused memory slots do not need to be filled before setup. If saved positions or reminders cannot be read, height can remain available while the affected settings are unavailable. A timed-out group is retried after five minutes; stored-position buttons require a complete valid memory read.
+
 ## 🛠️ Get help
 
 If readings become unavailable, check **Connection** and the error shown by Home Assistant. Open the LINAK device page to download diagnostics. For a bug report, include the panel model, HA/integration versions and whether you use a local adapter or proxy. Remove private names and Bluetooth addresses from any logs you attach.

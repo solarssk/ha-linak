@@ -236,7 +236,7 @@ async def test_failure_at_any_position_discards_the_session_and_promotes_nothing
         original = desk.state
         failing.script(failures={position: mode})
         with short_timeouts:
-            await expect_failure(desk.refresh(allow_partial_settings=ready_link), error)
+            await expect_failure(desk.refresh(), error)
         assert failing.failure_fired
         assert desk.client is None
         assert not desk.connected

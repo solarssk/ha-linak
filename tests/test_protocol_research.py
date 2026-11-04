@@ -180,8 +180,9 @@ async def test_control_cannot_start_during_research_and_polling_is_serialized():
         desk.read_protocol_inventory(ResearchSection.PRODUCT_INFO)
     )
     await fake.product_started.wait()
+    settings = ControlSettings(70, 125)
     with pytest.raises(MotionError):
-        await desk.move_to_cm(83, ControlSettings(70, 125))
+        await desk.move_to_cm(83, settings)
     refresh = asyncio.create_task(desk.refresh())
     await asyncio.sleep(0)
     assert fake.writes == [(DPG_UUID, b"\x7f\x80\x00"), (DPG_UUID, b"\x7f\x08\x00")]
@@ -363,6 +364,7 @@ async def test_nonadministrator_service_call_is_rejected_without_io(hass):
         "Synthetic user", group_ids=[GROUP_ID_USER]
     )
     assert not user.is_admin
+    context = Context(user_id=user.id)
     with pytest.raises(Unauthorized):
         await hass.services.async_call(
             DOMAIN,
@@ -370,7 +372,7 @@ async def test_nonadministrator_service_call_is_rejected_without_io(hass):
             {"config_entry_id": entry.entry_id, "section": "product_info"},
             blocking=True,
             return_response=True,
-            context=Context(user_id=user.id),
+            context=context,
         )
     assert fake.writes == []
     await hass.config_entries.async_unload(entry.entry_id)

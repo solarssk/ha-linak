@@ -25,9 +25,9 @@ FIRST_REFRESH_TIMEOUT = REFRESH_TIMEOUT
 
 
 # HA requires the async setup hook even when registration itself does not await.
-async def async_setup(
+async def async_setup(  # NOSONAR(S7503) HA coroutine contract
     hass: HomeAssistant, _config: ConfigType
-) -> bool:  # NOSONAR(S7503)
+) -> bool:
     """Register explicit diagnostic reads without starting Bluetooth work."""
     register_services(hass)
     return True

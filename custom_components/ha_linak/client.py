@@ -266,9 +266,9 @@ class DeskClient:
                 payload = research_product_reply(bytes(data))
             except ValueError as error:
                 product.set_exception(error)
-            else:
-                if payload is not None:
-                    product.set_result(payload)
+                return
+            if payload is not None:
+                product.set_result(payload)
             return
         pending = self._pending
         if pending is not None and not pending.done() and len(data) >= 2:

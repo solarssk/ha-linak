@@ -39,37 +39,42 @@ Integracja działa przez Bluetooth bezpośrednio na urządzeniu z Home Assistant
 
 Sprawdzaj odczyty biurka:
 
-- 📏 **Wysokość:** aktualna wysokość blatu w centymetrach
-- 🔖 **Zapisana wysokość 1–4:** wysokości zapisane na panelu, z osobnym czujnikiem dla każdej dostępnej pozycji
-- 🔔 **Aktywny profil przypomnień:** wybrany profil
-- ⏱️ **Profil 1–3: czas siedzenia** i **czas stania:** czasy ustawione na panelu
+- 📏 **Wysokość** (`sensor`): aktualna wysokość blatu w centymetrach
+- 🔖 **Zapisana wysokość 1–4** (`sensor`): wysokości zapisane na panelu, z osobnym czujnikiem dla każdej dostępnej pozycji
+- 🔔 **Aktywny profil przypomnień** (`sensor`): wybrany profil
+- ⏱️ **Profil 1–3: czas siedzenia** i **czas stania** (`sensor`): czasy ustawione na panelu
+- 🧭 **Operacja** (`sensor`): sprawdzaj przygotowanie, ruch, zatrzymywanie i wynik polecenia
 
 Czasy przypomnień są ustawieniami, a nie licznikami spędzonego czasu. Przeglądanie zapisanej wysokości nie porusza biurkiem.
+
+**Operacja** wraca do stanu „brak operacji” około 10 sekund po pokazaniu wyniku. Atrybut `last_result` zachowuje wynik dla automatyzacji. Czujnik opisuje wykonanie polecenia przez integrację; nie jest niezależnym potwierdzeniem fizycznego osiągnięcia wysokości.
 
 ### Sterowanie
 
 Korzystaj ze sterowania na stronie urządzenia, pulpicie lub w automatyzacji:
 
-- 🎚️ **Wysokość zadana:** wybierz wysokość suwakiem w centymetrach
-- ⏹️ **Stop:** zatrzymaj bieżący ruch
-- 🔖 **Przejdź do zapisanej pozycji 1–4:** przesuń biurko do pozycji zapisanej na panelu
-- 🧭 **Operacja:** sprawdzaj przygotowanie, ruch, zatrzymywanie i wynik polecenia
+- 🎚️ **Wysokość zadana** (`number`): wybierz wysokość suwakiem w centymetrach
+- ⏹️ **Stop** (`button`): zatrzymaj bieżący ruch
+- 🔖 **Przejdź do zapisanej pozycji 1–4** (`button`): przesuń biurko do pozycji zapisanej na panelu
 
 Suwak działa co 1 cm w zmierzonym zakresie. Aktualizuje się po zakończeniu jazdy, a **Wysokość** pokazuje ruch na bieżąco. Przed wybraniem kolejnego celu poczekaj na zakończenie ruchu albo naciśnij **Stop**. Polecenia nie trafiają do kolejki.
 
-**Operacja** wraca do stanu „brak operacji” około 10 sekund po pokazaniu wyniku. Atrybut `last_result` zachowuje wynik dla automatyzacji. Czujnik opisuje wykonanie polecenia przez integrację; nie jest niezależnym potwierdzeniem fizycznego osiągnięcia wysokości.
+### Konfiguracja
 
-### Połączenie i diagnostyka
+- 🔌 **Utrzymuj połączenie** (`switch`): celowo zwolnij połączenie Bluetooth i połącz się ponownie, gdy będzie potrzebne
+
+Encja jest domyślnie wyłączona. Włącz ją w ustawieniach encji, aby pokazać przełącznik. Wyłączenie przełącznika wstrzymuje odczyty i ponowne łączenie, również po restarcie, do czasu jego włączenia. Podczas jazdy najpierw zatrzymuje biurko.
+
+### Diagnostyka
 
 Te encje pomagają sprawdzić połączenie lub kalibrację wysokości:
 
-- 🔗 **Połączenie:** czy biurko jest połączone, a odczyty dostępne
-- 📐 **Korekta wysokości:** punkt odniesienia zapisany na panelu
-- 📶 **Siła sygnału Bluetooth:** ostatni sygnał odebrany przez Home Assistanta
-- 🛠️ **Backend Bluetooth:** czy połączenie korzysta z lokalnego adaptera, czy z proxy
-- 🔌 **Utrzymuj połączenie:** celowo zwolnij połączenie Bluetooth i połącz się ponownie, gdy będzie potrzebne
+- 🔗 **Połączenie** (`binary_sensor`): czy biurko jest połączone, a odczyty dostępne
+- 📐 **Korekta wysokości** (`sensor`): punkt odniesienia zapisany na panelu
+- 📶 **Siła sygnału Bluetooth** (`sensor`): ostatni sygnał odebrany przez Home Assistanta
+- 🛠️ **Backend Bluetooth** (`sensor`): czy połączenie korzysta z lokalnego adaptera, czy z proxy
 
-Siła sygnału, backend i Utrzymuj połączenie są opcjonalne. Włączysz je w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Wyłączenie przełącznika **Utrzymuj połączenie** wstrzymuje odczyty i ponowne łączenie, również po restarcie, do czasu jego włączenia. Podczas jazdy najpierw zatrzymuje biurko.
+Siła sygnału i backend są opcjonalne. Włączysz je w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK.
 
 ## 📋 Czego potrzebujesz
 

@@ -68,6 +68,8 @@ Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](../
 
 Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Nazwy odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
 
+Typ encji to domena Home Assistanta, np. `sensor` albo `button`. Nagłówki niżej grupują encje według ich przeznaczenia; jednostki mają osobną kolumnę.
+
 ### Czujniki
 
 <table>
@@ -76,7 +78,7 @@ Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Naz
   </thead>
   <tbody>
     <tr>
-      <td rowspan="5">Czujnik<br><code>sensor</code></td>
+      <td rowspan="6"><code>sensor</code></td>
       <td>📏 <strong>Wysokość</strong></td>
       <td>cm</td>
       <td>Aktualną wysokość biurka, z korektą panelu</td>
@@ -101,6 +103,7 @@ Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Naz
       <td>min</td>
       <td>Czas stania ustawiony w każdym z trzech profili</td>
     </tr>
+    <tr><td>🧭 <strong>Operacja</strong></td><td>-</td><td>Przebieg i wynik polecenia ruchu</td></tr>
   </tbody>
 </table>
 
@@ -109,37 +112,46 @@ Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Naz
 - Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
 - Czujniki nie sterują ruchem ani nie zmieniają ustawień.
 
+**Operacja** pokazuje przebieg i wynik polecenia, a po około 10 sekundach wraca do stanu „brak operacji”. Atrybut `last_result` zachowuje wynik dla automatyzacji. Czujnik opisuje wykonanie polecenia; nie jest niezależnym potwierdzeniem fizycznego osiągnięcia wysokości.
+
+### Sterowanie
+
+<table>
+  <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Jednostka</th><th scope="col">Działanie</th></tr></thead>
+  <tbody>
+    <tr><td><code>number</code></td><td>🎯 <strong>Wysokość zadana</strong></td><td>cm</td><td>Wybierz suwakiem wysokość</td></tr>
+    <tr><td rowspan="2"><code>button</code></td><td>⏹️ <strong>Stop</strong></td><td>-</td><td>Przerwij bieżący ruch</td></tr>
+    <tr><td>🔖 <strong>Przejdź do zapisanej pozycji 1–4</strong></td><td>-</td><td>Przesuń biurko do pozycji zapisanej na panelu; puste pozycje są niedostępne</td></tr>
+  </tbody>
+</table>
+
+Suwak wybiera wysokość co 1 cm, wewnątrz zmierzonego zakresu. Aktualizuje się po zakończeniu jazdy, a czujnik **Wysokość** pokazuje ruch na bieżąco. Przed wyborem kolejnego celu poczekaj na zakończenie ruchu albo naciśnij **Stop**. Polecenia nie trafiają do kolejki.
+
+### Konfiguracja
+
+| Typ encji | Nazwa w HA | Domyślnie | Działanie |
+| --- | --- | --- | --- |
+| `switch` | 🔌 **Utrzymuj połączenie** | Encja wyłączona | Wyłącz przełącznik, aby zwolnić połączenie Bluetooth, lub włącz, aby połączyć się ponownie |
+
+Włącz encję w jej ustawieniach, aby pokazać przełącznik. Gdy przełącznik jest wyłączony, integracja wstrzymuje odczyty i ponowne łączenie, również po restarcie. Wyłączenie podczas jazdy najpierw zatrzymuje biurko.
+
+Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Zmienisz tam nazwę w HA, zakres ruchu i kalibrację wysokości. W **Wysokość z miarki** wpisz aktualny pomiar od podłogi do góry blatu, a następnie sprawdź i potwierdź korektę. Zapis nie porusza biurkiem. [Instrukcja konfiguracji](../docs/controls.md).
+
+Integracja odczytuje pozycje pamięci i przypomnienia, ale jeszcze ich nie edytuje.
+
 ### Diagnostyka
 
 <table>
   <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Domyślnie</th><th scope="col">Znaczenie</th></tr></thead>
   <tbody>
-    <tr><td rowspan="3">Czujnik<br><code>sensor</code></td><td>📐 <strong>Korekta wysokości</strong></td><td>Włączony</td><td>Punkt odniesienia zapisany na panelu, w cm</td></tr>
+    <tr><td rowspan="3"><code>sensor</code></td><td>📐 <strong>Korekta wysokości</strong></td><td>Włączony</td><td>Punkt odniesienia zapisany na panelu, w cm</td></tr>
     <tr><td>📶 <strong>Siła sygnału Bluetooth</strong></td><td>Wyłączony</td><td>Ostatnia reklama odbierana przez HA, w dBm; nie RSSI aktywnego łącza</td></tr>
     <tr><td>🛠️ <strong>Backend Bluetooth</strong></td><td>Wyłączony</td><td>Kategoria aktywnego połączenia, np. BlueZ lub ESPHome</td></tr>
-    <tr><td>Czujnik binarny<br><code>binary_sensor</code></td><td>🔗 <strong>Połączenie</strong></td><td>Włączony</td><td>Gotowa sesja biurka; stan rozłączony po zerwaniu</td></tr>
+    <tr><td><code>binary_sensor</code></td><td>🔗 <strong>Połączenie</strong></td><td>Włączony</td><td>Gotowa sesja biurka; stan rozłączony po zerwaniu</td></tr>
   </tbody>
 </table>
 
 Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
-
-### Sterowanie
-
-| Typ encji | Nazwa w HA | Działanie |
-| --- | --- | --- |
-| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
-| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
-| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
-| `sensor` | 🧭 **Operacja** | Pokazuje, co integracja robi z biurkiem i jak zakończyła się ostatnia operacja |
-| `switch` | 🔌 **Utrzymuj połączenie** | Domyślnie wyłączona; włącz ją w ustawieniach encji, a potem wyłącz przełącznik, aby celowo zwolnić połączenie Bluetooth z biurkiem, i włącz, aby połączyć się ponownie. Wybór przetrwa restart |
-
-Suwak wybiera wysokość co 1 cm, wewnątrz zmierzonego zakresu. Aktualizuje się po zakończeniu jazdy, a czujnik **Wysokość** pokazuje ruch na bieżąco. Przed wyborem kolejnego celu poczekaj na zakończenie ruchu albo naciśnij **Stop**. Polecenia nie trafiają do kolejki.
-
-**Operacja** pokazuje przebieg i wynik polecenia, a po około 10 sekundach wraca do stanu „brak operacji”. Atrybut `last_result` zachowuje wynik dla automatyzacji. Czujnik opisuje wykonanie polecenia; nie jest niezależnym potwierdzeniem fizycznego osiągnięcia wysokości.
-
-Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Zmienisz tam nazwę w HA, zakres ruchu i kalibrację wysokości. W **Wysokość z miarki** wpisz aktualny pomiar od podłogi do góry blatu, a następnie sprawdź i potwierdź korektę. Zapis nie porusza biurkiem. [Instrukcja konfiguracji](../docs/controls.md).
-
-Integracja odczytuje pozycje pamięci i przypomnienia, ale jeszcze ich nie edytuje.
 
 <a id="requirements"></a>
 
@@ -149,8 +161,6 @@ Integracja odczytuje pozycje pamięci i przypomnienia, ale jeszcze ich nie edytu
 - **HACS** do instalacji lub ręczne skopiowanie integracji.
 - Adapter Bluetooth w zasięgu biurka lub zgodne **aktywne proxy Bluetooth ESPHome**.
 - Wolne połączenie Bluetooth na panelu.
-
-
 
 <a id="installation"></a>
 

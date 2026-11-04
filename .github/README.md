@@ -68,6 +68,8 @@ Check the model on the panel label. [Testing another model](../docs/device-suppo
 
 The device page groups desk readings, diagnostics and movement controls. These labels match the English names in HA; your device name may appear before them.
 
+Entity type is the Home Assistant domain, such as `sensor` or `button`. The sections below group entities by their purpose; units have a separate column.
+
 ### Sensors
 
 <table>
@@ -76,7 +78,7 @@ The device page groups desk readings, diagnostics and movement controls. These l
   </thead>
   <tbody>
     <tr>
-      <td rowspan="5">Sensor<br><code>sensor</code></td>
+      <td rowspan="6"><code>sensor</code></td>
       <td>📏 <strong>Height</strong></td>
       <td>cm</td>
       <td>Current desk height, including the panel offset</td>
@@ -101,6 +103,7 @@ The device page groups desk readings, diagnostics and movement controls. These l
       <td>min</td>
       <td>Standing time configured for each of three profiles</td>
     </tr>
+    <tr><td>🧭 <strong>Operation</strong></td><td>-</td><td>Progress and result of a movement request</td></tr>
   </tbody>
 </table>
 
@@ -109,37 +112,46 @@ The device page groups desk readings, diagnostics and movement controls. These l
 - Reminder durations are configured values, not elapsed-time counters.
 - Sensors do not move the desk or change its settings.
 
+**Operation** shows the progress and result of your request, then returns to idle after about 10 seconds. Its `last_result` attribute keeps the result for automations. It describes the integration's request, not an independent measurement of physical arrival.
+
+### Controls
+
+<table>
+  <thead><tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Unit</th><th scope="col">Action</th></tr></thead>
+  <tbody>
+    <tr><td><code>number</code></td><td>🎯 <strong>Target height</strong></td><td>cm</td><td>Choose a height with the slider</td></tr>
+    <tr><td rowspan="2"><code>button</code></td><td>⏹️ <strong>Stop</strong></td><td>-</td><td>Interrupt the current movement</td></tr>
+    <tr><td>🔖 <strong>Go to stored position 1–4</strong></td><td>-</td><td>Move to a position saved on the panel; empty slots are unavailable</td></tr>
+  </tbody>
+</table>
+
+The slider selects heights in 1 cm steps within your measured range. It updates after travel finishes, while **Height** shows the changing position. Wait for a move to finish or press **Stop** before choosing another target. Requests aren't queued.
+
+### Configuration
+
+| Entity type | Name in HA | Default | Action |
+| --- | --- | --- | --- |
+| `switch` | 🔌 **Keep connected** | Entity disabled | Turn off to release the Bluetooth connection, or on to reconnect |
+
+Enable the entity in its settings to show the switch. While the switch is off, polling and reconnecting stop, including after a restart. Turning it off during travel stops the desk first.
+
+Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
+
+The integration reads saved positions and reminders, but doesn't yet edit them.
+
 ### Diagnostics
 
 <table>
   <thead><tr><th scope="col">Entity type</th><th scope="col">Name in HA</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
   <tbody>
-    <tr><td rowspan="3">Sensor<br><code>sensor</code></td><td>📐 <strong>Height offset</strong></td><td>Enabled</td><td>The height reference stored on the panel, in cm</td></tr>
+    <tr><td rowspan="3"><code>sensor</code></td><td>📐 <strong>Height offset</strong></td><td>Enabled</td><td>The height reference stored on the panel, in cm</td></tr>
     <tr><td>📶 <strong>Bluetooth signal strength</strong></td><td>Disabled</td><td>Latest advertisement received by HA, in dBm; not the active link's RSSI</td></tr>
     <tr><td>🛠️ <strong>Bluetooth backend</strong></td><td>Disabled</td><td>Active connection category, such as BlueZ or ESPHome</td></tr>
-    <tr><td>Binary sensor<br><code>binary_sensor</code></td><td>🔗 <strong>Connection</strong></td><td>Enabled</td><td>A ready desk session; disconnected after link loss</td></tr>
+    <tr><td><code>binary_sensor</code></td><td>🔗 <strong>Connection</strong></td><td>Enabled</td><td>A ready desk session; disconnected after link loss</td></tr>
   </tbody>
 </table>
 
 Enable optional entities under **Settings → Devices & services → Entities**, showing disabled LINAK entities. They are not desk-setting switches. Name and MAC are device information, without separate sensors; downloaded diagnostics omit these identifiers. [Interpreting diagnostics →](../docs/diagnostics.md)
-
-### Controls
-
-| Entity type | Name in HA | Action |
-| --- | --- | --- |
-| `number`, cm | 🎯 **Target height** | Move the slider to choose a height in centimeters |
-| `button` | ⏹️ **Stop** | Interrupts the current movement request |
-| `button` | 🔖 **Go to stored position 1–4** | Re-reads the selected memory and drives to it; empty slots are unavailable |
-| `sensor` | 🧭 **Operation** | Shows what the integration is doing with the desk and how the last operation ended |
-| `switch` | 🔌 **Keep connected** | Disabled by default; enable it in the entity settings, then turn it off to release the desk's Bluetooth link on purpose and on to reconnect. The choice survives a restart |
-
-The slider selects heights in 1 cm steps within your measured range. It updates after travel finishes, while **Height** shows the changing position. Wait for a move to finish or press **Stop** before choosing another target. Requests aren't queued.
-
-**Operation** shows the progress and result of your request, then returns to idle after about 10 seconds. Its `last_result` attribute keeps the result for automations. It describes the integration's request, not an independent measurement of physical arrival.
-
-Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
-
-The integration reads saved positions and reminders, but doesn't yet edit them.
 
 <a id="requirements"></a>
 
@@ -149,8 +161,6 @@ The integration reads saved positions and reminders, but doesn't yet edit them.
 - **HACS** for installation, or a manual copy of the integration.
 - A Bluetooth adapter within reach, or a compatible **active ESPHome Bluetooth proxy**.
 - A free Bluetooth connection on the panel.
-
-
 
 <a id="installation"></a>
 

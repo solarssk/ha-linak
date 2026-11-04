@@ -39,37 +39,42 @@ The integration runs directly on your Home Assistant host over Bluetooth. You do
 
 View these desk readings:
 
-- 📏 **Height:** current desktop height in centimeters
-- 🔖 **Stored height 1–4:** heights saved on the panel, with one sensor per available slot
-- 🔔 **Active reminder profile:** the selected reminder profile
-- ⏱️ **Profile 1–3 sitting time** and **standing time:** the durations configured on the panel
+- 📏 **Height** (`sensor`): current desktop height in centimeters
+- 🔖 **Stored height 1–4** (`sensor`): heights saved on the panel, with one sensor per available slot
+- 🔔 **Active reminder profile** (`sensor`): the selected reminder profile
+- ⏱️ **Profile 1–3 sitting time** and **standing time** (`sensor`): the durations configured on the panel
+- 🧭 **Operation** (`sensor`): follow preparation, movement, stopping and the result of your request
 
 Reminder durations are settings, not elapsed-time counters. Viewing a stored height does not move the desk.
+
+**Operation** returns to idle about 10 seconds after showing the result. Its `last_result` attribute keeps that result for automations. It describes the integration's request; it doesn't independently verify physical arrival.
 
 ### Controls
 
 Use these controls from the device page, dashboard or an automation:
 
-- 🎚️ **Target height:** choose a height with the centimeter slider
-- ⏹️ **Stop:** stop the current movement
-- 🔖 **Go to stored position 1–4:** move to a position saved on the panel
-- 🧭 **Operation:** follow preparation, movement, stopping and the result of your request
+- 🎚️ **Target height** (`number`): choose a height with the centimeter slider
+- ⏹️ **Stop** (`button`): stop the current movement
+- 🔖 **Go to stored position 1–4** (`button`): move to a position saved on the panel
 
 The slider uses 1 cm steps within your measured range. It updates after a move finishes; **Height** shows the changing position during travel. Wait for a move to finish or press **Stop** before choosing another target. Requests aren't queued.
 
-**Operation** returns to idle about 10 seconds after showing the result. Its `last_result` attribute keeps that result for automations. It describes the integration's request; it doesn't independently verify physical arrival.
+### Configuration
 
-### Connection and diagnostics
+- 🔌 **Keep connected** (`switch`): release the Bluetooth connection on purpose, then reconnect when needed
+
+The entity is disabled by default. Enable it in the entity settings to show the switch. Turning the switch off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk first.
+
+### Diagnostics
 
 Use these entities when checking the connection or height calibration:
 
-- 🔗 **Connection:** whether the desk is connected and its readings are available
-- 📐 **Height offset:** the height reference saved on the panel
-- 📶 **Bluetooth signal strength:** the latest signal received by Home Assistant
-- 🛠️ **Bluetooth backend:** whether the connection uses a local adapter or proxy
-- 🔌 **Keep connected:** release the Bluetooth connection on purpose, then reconnect when needed
+- 🔗 **Connection** (`binary_sensor`): whether the desk is connected and its readings are available
+- 📐 **Height offset** (`sensor`): the height reference saved on the panel
+- 📶 **Bluetooth signal strength** (`sensor`): the latest signal received by Home Assistant
+- 🛠️ **Bluetooth backend** (`sensor`): whether the connection uses a local adapter or proxy
 
-Signal strength, backend and Keep connected are optional. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities. Turning **Keep connected** off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk before releasing the connection.
+Signal strength and backend are optional. Enable them under **Settings → Devices & services → Entities**, showing disabled LINAK entities.
 
 ## 📋 What you need
 

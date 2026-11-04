@@ -2,6 +2,8 @@
 
 This reference explains the configuration flow and connection lifecycle. Use the [control guide](controls.md) for owner-facing configuration steps and the [diagnostic manual](diagnostics.md) when a step fails. Discovery, Bluetooth authentication and DPG client activation are separate stages.
 
+LINAK is configured through Home Assistant config entries in **Settings → Devices & services**, not an `ha_linak:` YAML block. An unsupported YAML block is reported through Repairs and does not create a desk entry. Component setup only registers the explicit research action; Bluetooth work belongs to the entry lifecycle below.
+
 ## Product family check
 
 Discovery finds a candidate by service UUID, not a model by MAC address. Available standard model and firmware fields are read once on connection. An identified family without a driver is rejected before DPG queries or activation; missing metadata retains the existing DPG protocol probe. See [device support](device-support.md) for matching rules, error recovery and the tester path.

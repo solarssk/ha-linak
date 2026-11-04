@@ -5,12 +5,15 @@ import asyncio
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform, CONF_NAME
 from homeassistant.core import CoreState, HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .client import REFRESH_TIMEOUT
 from .const import DOMAIN
 from .coordinator import LinakCoordinator
 from .naming import DEFAULT_NAME, desk_name
+from .services import register_services
 
 PLATFORMS = [
     Platform.SENSOR,
@@ -20,6 +23,16 @@ PLATFORMS = [
     Platform.SWITCH,
 ]
 FIRST_REFRESH_TIMEOUT = REFRESH_TIMEOUT
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+# HA requires the async setup hook even when registration itself does not await.
+async def async_setup(  # NOSONAR(S7503) HA coroutine contract
+    hass: HomeAssistant, _config: ConfigType
+) -> bool:
+    """Register explicit diagnostic reads without starting Bluetooth work."""
+    register_services(hass)
+    return True
 
 
 async def _async_first_refresh(coordinator: LinakCoordinator) -> None:

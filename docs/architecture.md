@@ -33,6 +33,7 @@ flowchart TD
 | `calibration.py` | Measurement proposal and offset encoding | No transport or unrestricted setting-write API |
 | `motion.py` | Target loop, feedback guards and Stop cleanup | Uses an already connected, exclusively owned session |
 | Entity platforms | HA values, units, categories and actions | Publish measured feedback, not an assumed target result |
+| `services.py` | Explicit administrator-only response action for fixed protocol research reads | Uses the existing client/query lock; no arbitrary commands, reconnect, activation, setting write or movement |
 
 ## Entity contract
 
@@ -92,6 +93,7 @@ One desk must have one active owner of its BLE connection. The [cross-integratio
 | Confirmed height calibration | Calibration reservation and query lock | Verified activation and one offset correction |
 | Explicit target or stored-position drive | Movement reservation and query lock | Verified client activation if needed, then wake/target/Stop |
 | Stop | Separate shared Stop task; preempts motion | Control Stop and reference release when idle; no activation or height target |
+| Explicit protocol inventory | Existing client/query lock; already ready session only | Fixed GATT reads or a single product-info query behind a capabilities barrier, never setting or motion writes |
 | Unload/shutdown | Waits for owned cleanup | Attempts final Stop and releases the link |
 
 A second target or calibration cannot compete with an active operation. Cancellation and unload wait for bounded cleanup. A session failure never queues a target for later reconnect. See the [movement reference](movement.md) for the controller and the [settings reference](settings-reference.md#height-calibration-contract) for calibration.

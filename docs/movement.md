@@ -154,7 +154,15 @@ stateDiagram-v2
 | Reload or Home Assistant restart | Starts at `idle`; no result or goal is stored, so the last result is empty |
 | Calibration | Not an operation; setup and options flows report their own progress |
 
-The `requested_height_cm` attribute holds the requested goal, never a measurement. While the status rests at idle after a result, the `last_result`, `last_requested_height_cm` and `last_reason` attributes keep that result, so the reason of a failure is not lost when the state returns to idle. They are held in memory only and disappear after a reload or restart. A target request records it when accepted; a stored-position request records it once the selected slot has been read. The sensor stays available when the connection drops, so a failed result keeps its reason visible. A refusal can also come from a read in progress, because the client serves one exchange at a time; the status then stays as it was. The reason codes are listed in the [diagnostic manual](diagnostics.md#interpret-a-movement-failure).
+The `requested_height_cm` attribute holds the requested goal, never a measurement.
+
+- A target request records it when accepted. A stored-position request records it once the selected slot has been read.
+- While the status rests at idle after a result, `last_result`, `last_requested_height_cm` and `last_reason` keep that result, so the reason of a failure is not lost.
+- Those attributes are held in memory only and disappear after a reload or restart.
+- The sensor stays available when the connection drops, so a failed result keeps its reason visible.
+- A refusal can also come from a read in progress, because the client serves one exchange at a time. The status then stays as it was.
+
+The reason codes are listed in the [diagnostic manual](diagnostics.md#interpret-a-movement-failure).
 
 ## Protocol differences still under investigation
 

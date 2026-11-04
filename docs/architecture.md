@@ -104,7 +104,12 @@ A backend disconnect cancels pending I/O. Ambiguous query failures invalidate th
 
 ### Deliberate connection ownership
 
-The **Keep connected** switch holds the owner's intent, kept apart from the observed link that the Connection sensor reports. Intent is stored as `keep_connected` in the config entry data, defaults to on when the key is absent and survives a restart. Options flows replace only the options, so they cannot reset it, and changing it does not reload the entry. The switch is a configuration entity that is disabled by default, so the owner enables it on purpose. The stored intent applies whether or not the entity is enabled: disabling the entity while the desk is released does not reconnect it, and the owner turns it on again after re-enabling the entity.
+The **Keep connected** switch holds the owner's intent. It is kept apart from the observed link that the Connection sensor reports.
+
+- The intent is stored as `keep_connected` in the config entry data. It defaults to on when the key is absent and survives a restart.
+- Options flows replace only the options, so they cannot reset it. Changing it does not reload the entry.
+- The switch is a configuration entity that is disabled by default, so the owner enables it on purpose.
+- The stored intent applies whether or not the entity is enabled. Disabling the entity while the desk is released does not reconnect it. The owner turns it on again after re-enabling the entity.
 
 | State | Intent | Radio activity | Readings |
 | --- | --- | --- | --- |
@@ -126,10 +131,34 @@ stateDiagram-v2
     Released --> Recovering: switch on, read fails
 ```
 
-- Turning it off saves the intent first, so a restart or a refresh already in flight sees the latest choice. It then stops any active movement through the normal bounded Stop, drops the link and publishes the unavailable readings, even when dropping the link itself fails. A Stop that cannot be confirmed is reported as a failed Stop while the link is still released and the intent stays off. A refresh already in flight is not cancelled: it finishes, is discarded because the intent changed, and the link is dropped again instead of publishing the result.
-- The client refuses to connect while released, so no code path other than an explicit turn-on can reconnect it. A scheduled poll still fires, but returns before any radio lookup.
-- Turning it on resumes the client and performs one normal connection and read, with the same bounded timeout. It forces a fresh read of every group because the earlier link loss invalidated them, and it never sends a target, calibrates or activates a client. When it fails, the intent stays on, the action reports `connection_failed` and the normal poll retries. Actions are serialized and the newest request wins: an earlier request that a later one superseded does nothing, so a turn-off waits behind a running turn-on refresh (at most the 60-second refresh budget) but its intent is saved immediately and that refresh is discarded.
-- A persisted release starts without waiting for the desk or for Home Assistant's bluetooth discovery. It loads the entities this entry registered earlier as unavailable, releases any link still held by the setup wizard, and adds stored-position entities that the first connection reveals.
+**Turning it off**
+
+- The intent is saved first, so a restart or a refresh already in flight sees the latest choice.
+- Any active movement is stopped through the normal bounded Stop. Then the link is dropped and the readings become unavailable, even when dropping the link itself fails.
+- A Stop that cannot be confirmed is reported as a failed Stop. The link stays released and the intent stays off.
+- A refresh already in flight is not cancelled. It finishes, is discarded because the intent changed, and the link is dropped again instead of publishing the result.
+
+**While released**
+
+- The client refuses to connect, so only an explicit turn-on can reconnect it.
+- A scheduled poll still fires but returns before any radio lookup.
+
+**Turning it on**
+
+- The client resumes and performs one normal connection and read, with the same bounded timeout.
+- Every group is read afresh, because the earlier link loss invalidated them.
+- It never sends a target, calibrates or activates a client.
+- On failure the intent stays on, the action reports `connection_failed` and the normal poll retries.
+
+**Overlapping requests**
+
+- Actions are serialized and the newest request wins. An earlier request that a later one superseded does nothing.
+- A turn-off waits behind a running turn-on refresh, at most the 60-second refresh budget. Its intent is saved immediately and that refresh is discarded.
+
+**Startup and scope**
+
+- A persisted release starts without waiting for the desk or for Home Assistant's Bluetooth discovery.
+- It loads the entities this entry registered earlier as unavailable, releases any link still held by the setup wizard, and adds stored-position entities that the first connection reveals.
 - The IKEA conflict check is independent: it still releases only LINAK's own link and never changes another entry.
 - A released desk is not evidence of panel sleep or OLED behavior. That needs a separate supervised observation.
 

@@ -53,9 +53,41 @@ Stop preempts an active request. Stop sends control Stop and reference-input rel
 
 A busy message means that the new command was not accepted; it does not mean that the desk disconnected or the ongoing movement failed. HA classifies it as action validation, and an automation calling the rejected action still receives an error. In HA 2026.10.4 this expected refusal can also appear at `ERROR` level in frontend logs. Check the message and connection state before treating a log entry as a device fault.
 
-The **Operation** sensor shows whether a request is still running and how the last one ended. It reads idle, preparing, moving or stopping while a request runs, then completed, interrupted or failed, and a failed result carries a `reason` attribute. Use it to see whether a request is still running or how the last one ended. It does not show scheduled state reads, which can still refuse a new request with the busy message while it reads idle or completed. A refused request does not change it, it stays available when the connection drops, and it reports the request, not physical arrival. About 10 seconds after a result the state returns to idle, so an automation can notify on the result (`to: completed`, `interrupted` or `failed`) and the state then rests at idle. The finished result stays in the `last_result` attribute, with `last_reason` for a failure. [How the phases change →](movement.md#operation-status)
+### Operation sensor
 
-The **Keep connected** switch is your choice to hold the desk's Bluetooth link. It is a configuration entity and is disabled by default, so you enable it on purpose: open the desk's entities in **Settings → Devices & services**, select Keep connected and enable it. Once it exists, the intent is on for existing entries. Turn it off to release the link on purpose, for example to rule out this integration during diagnostics. While it is off, LINAK does no radio lookups, connections or polls, readings show unavailable and the Connection sensor stays off. The choice survives a Home Assistant restart. Turn it on to reconnect: LINAK performs one normal connection and reads every value afresh. It never sends a target, calibrates or activates the panel client to restore telemetry. If the desk cannot be reached, the action reports a failure, the switch stays on and Home Assistant retries on its normal schedule. Turning it off during a move stops the desk first. If that Stop cannot be confirmed, the action reports a failed Stop, check the desk immediately and use the physical panel. Releasing the link is not evidence that the panel sleeps or that its display turns off. [How ownership works →](architecture.md#deliberate-connection-ownership)
+It shows what the integration is doing with the desk and how the last request ended.
+
+| State | Meaning |
+| --- | --- |
+| `idle` | Nothing is running. It is also the resting state about 10 seconds after a result |
+| `preparing`, `moving`, `stopping` | A request is running |
+| `completed`, `interrupted`, `failed` | The result of the request. A failure adds a `reason` attribute |
+
+- Use it to see whether a request is still running or how the last one ended.
+- About 10 seconds after a result it returns to idle, so an automation can notify on the result (`to: completed`, `interrupted` or `failed`).
+- The finished result stays in the `last_result` attribute, with `last_reason` for a failure.
+- A refused request does not change it, and it stays available when the connection drops.
+- It does not show scheduled state reads. They can still refuse a new request with the busy message while it reads idle or completed.
+- It reports the request, not physical arrival.
+
+[How the phases change →](movement.md#operation-status)
+
+### Keep connected switch
+
+It is your choice to hold the desk's Bluetooth link. Use it to release the link on purpose, for example to rule out this integration during diagnostics.
+
+**Enable it first.** It is a configuration entity and is disabled by default. Open the desk's entities in **Settings → Devices & services**, select Keep connected and enable it. For existing entries the intent starts on.
+
+| Action | What happens |
+| --- | --- |
+| Turn off | LINAK does no radio lookups, connections or polls. Readings show unavailable and the Connection sensor stays off. The choice survives a Home Assistant restart |
+| Turn off during a move | The desk stops first. If that Stop cannot be confirmed, the action reports a failed Stop: check the desk immediately and use the physical panel |
+| Turn on | One normal connection and fresh reads of every value. It never sends a target, calibrates or activates the panel client |
+| Turn on, desk unreachable | The action reports a failure, the switch stays on and Home Assistant retries on its normal schedule |
+
+Releasing the link is not evidence that the panel sleeps or that its display turns off.
+
+[How ownership works →](architecture.md#deliberate-connection-ownership)
 
 ## Test native controls at the panel
 

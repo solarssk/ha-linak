@@ -107,8 +107,8 @@ reported_height_cm = (position_raw + offset_raw) / 100
 | Confirmation | Present old/proposed heights and conversion effects before writing | A reference change also changes displayed saved heights |
 | Client readiness | Check status, preserve identifier, acknowledge and verify activation if needed | Valid reads alone do not establish setting readiness |
 | Offset write | Send the one allowlisted reference request once | No generic setting-write API or automatic replay |
-| Readback | Full refresh with a different-type barrier before reference readback; exact position verification | Do not accept a setting echo as independent confirmation |
-| Publication | Refresh height, stored-height conversions and bound validity together | Keep every height in the same reference |
+| Readback | Required capabilities/reference/position reads with a different-type barrier before reference readback; exact position verification | Do not accept a setting echo as independent confirmation |
+| Publication | Refresh height and bound validity together; invalidate optional groups after a reference change until reread | Keep every height in the same reference |
 
 The complete calibration budget is 60 seconds plus bounded cleanup. It does not issue wake, target, saved-position writes or firmware-limit changes. The [protocol reference](protocol.md#protected-setting-exchanges) defines acknowledgement and payload validation.
 

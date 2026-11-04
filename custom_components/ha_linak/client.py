@@ -59,6 +59,7 @@ _LOGGER = logging.getLogger(__name__)
 REFRESH_TIMEOUT = 60
 IO_TIMEOUT = 10
 QUERY_TIMEOUT = 8
+SETTINGS_RETRY_INTERVAL = 300
 PAIR_TIMEOUT = 30
 DEVICE_NAME_UUID = "00002a00-0000-1000-8000-00805f9b34fb"
 BLUETOOTH_BACKENDS = tuple(
@@ -108,6 +109,14 @@ class DeskPairingTimeout(TimeoutError):
     """Bluetooth authentication exceeded its deadline."""
 
 
+class OptionalReadTimeout(TimeoutError):
+    """An optional query expired; its session must be discarded."""
+
+    def __init__(self, group: str) -> None:
+        super().__init__(f"Optional {group} read timed out")
+        self.group = group
+
+
 @dataclass
 class DeskState:
     position: PositionSample | None = None
@@ -130,6 +139,7 @@ class SettingsHealth:
     valid: bool = False
     last_success: float | None = None
     error: str | None = None
+    retry_after: float = 0
 
 
 class DeskClient:
@@ -418,9 +428,8 @@ class DeskClient:
         async with self._lock:
             try:
                 async with asyncio.timeout(REFRESH_TIMEOUT):
-                    return await self._refresh(
-                        allow_partial_settings=allow_partial_settings,
-                        settings_interval=settings_interval,
+                    return await self._refresh_with_recovery(
+                        allow_partial_settings, settings_interval
                     )
             except BaseException as error:
                 # Cleanup owns the transport even if HA cancels the flow again.
@@ -442,47 +451,81 @@ class DeskClient:
                     raise asyncio.CancelledError from None
                 raise
 
+    async def _refresh_with_recovery(
+        self, allow_partial_settings: bool, settings_interval: float
+    ) -> DeskState:
+        excluded: set[str] = set()
+        while True:
+            try:
+                return await self._refresh(
+                    allow_partial_settings=allow_partial_settings,
+                    settings_interval=settings_interval,
+                    excluded=excluded,
+                )
+            except OptionalReadTimeout as error:
+                if not allow_partial_settings or error.group in excluded:
+                    raise
+                excluded.add(error.group)
+                await self._disconnect_link()
+                health = self.settings_health[error.group]
+                health.error = "timeout"
+                health.retry_after = monotonic() + SETTINGS_RETRY_INTERVAL
+                _LOGGER.warning(
+                    "LINAK %s read timed out; reconnecting with group unavailable",
+                    error.group,
+                )
+
+    async def _connect(self) -> None:
+        """Establish and subscribe a fresh session before any DPG reads."""
+        await self.disconnect()
+        self._closing = False
+        self._link_lost = False
+        self._generation += 1
+        self.protocol_validated = False
+        generation = self._generation
+        self._set_stage("connection")
+        self.client = await establish_connection(
+            BleakClientWithServiceCache,
+            self.device,
+            "LINAK desk",
+            disconnected_callback=self._disconnected,
+            # HA reevaluates the adapter on each connector retry. A local
+            # two-attempt cap can end setup before a healthy path is chosen.
+            # Keep the connector policy inside refresh's overall deadline.
+            ble_device_callback=self.device_callback,
+        )
+        _LOGGER.debug(
+            "BLE session connected: backend=%s", backend_category(self.client)
+        )
+        await self._pair()
+        await self._read_device_name()
+        await self._read_identity()
+        self._set_stage("notify_dpg")
+        await self._io(
+            self.client.start_notify(
+                DPG_UUID, lambda _, data: self._notification(generation, data)
+            ),
+            IO_TIMEOUT,
+        )
+        self._set_stage("notify_height")
+        await self._io(
+            self.client.start_notify(
+                HEIGHT_UUID, lambda _, data: self._position(generation, data)
+            ),
+            IO_TIMEOUT,
+        )
+
     async def _refresh(
-        self, *, allow_partial_settings: bool = False, settings_interval: float = 0
+        self,
+        *,
+        allow_partial_settings: bool = False,
+        settings_interval: float = 0,
+        required_only: bool = False,
+        excluded: set[str] | None = None,
     ) -> DeskState:
         if self.client is None or not self.client.is_connected or not self._ready:
-            await self.disconnect()
-            self._closing = False
-            self._link_lost = False
-            self._generation += 1
-            self.protocol_validated = False
-            generation = self._generation
-            self._set_stage("connection")
-            self.client = await establish_connection(
-                BleakClientWithServiceCache,
-                self.device,
-                "LINAK desk",
-                disconnected_callback=self._disconnected,
-                # HA reevaluates the adapter on each connector retry. A local
-                # two-attempt cap can end setup before a healthy path is chosen.
-                # Keep the connector policy inside refresh's overall deadline.
-                ble_device_callback=self.device_callback,
-            )
-            _LOGGER.debug(
-                "BLE session connected: backend=%s", backend_category(self.client)
-            )
-            await self._pair()
-            await self._read_device_name()
-            await self._read_identity()
-            self._set_stage("notify_dpg")
-            await self._io(
-                self.client.start_notify(
-                    DPG_UUID, lambda _, data: self._notification(generation, data)
-                ),
-                IO_TIMEOUT,
-            )
-            self._set_stage("notify_height")
-            await self._io(
-                self.client.start_notify(
-                    HEIGHT_UUID, lambda _, data: self._position(generation, data)
-                ),
-                IO_TIMEOUT,
-            )
+            await self._connect()
+        assert self.client is not None
         self._set_stage("extended_reads")
         state = DeskState()
         state.capabilities = decode_capabilities(
@@ -493,17 +536,58 @@ class DeskClient:
             raise ValueError("Desk has no valid height offset")
         if state.capabilities.memory_slots > 4:
             raise ValueError("Unsupported number of memory slots")
-        force_settings = (
-            not allow_partial_settings
-            or state.capabilities != self.state.capabilities
+        reference_changed = (
+            state.capabilities != self.state.capabilities
             or state.offset_raw != self.state.offset_raw
         )
-        memories_due = force_settings or self._settings_due(
-            "memories", settings_interval
+        force_settings = not allow_partial_settings or reference_changed
+        excluded = excluded or set()
+        memories_due = self._optional_due(
+            "memories",
+            settings_interval,
+            force_settings,
+            allow_partial_settings,
+            required_only,
+            excluded,
         )
-        reminders_due = force_settings or self._settings_due(
-            "reminders", settings_interval
+        reminders_due = self._optional_due(
+            "reminders",
+            settings_interval,
+            force_settings,
+            allow_partial_settings,
+            required_only,
+            excluded,
         )
+        if required_only and reference_changed:
+            self._invalidate_settings()
+        memories_valid, reminders_valid = await self._refresh_optional(
+            state, memories_due, reminders_due, allow_partial_settings
+        )
+        self._set_stage("position_read")
+        state.position = decode_position(
+            bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
+        )
+        if memories_due:
+            self._record_settings("memories", memories_valid)
+        if reminders_due:
+            self._record_settings("reminders", reminders_valid)
+        self.state = state
+        self.protocol_validated = True
+        self._ready = True
+        self._set_stage("ready")
+        return state
+
+    async def _refresh_optional(
+        self,
+        state: DeskState,
+        memories_due: bool,
+        reminders_due: bool,
+        allow_partial_settings: bool,
+    ) -> tuple[bool, bool]:
+        """Build optional values without publishing group health prematurely."""
+        assert state.capabilities is not None
+        memories = None
+        reminders = None
         state.memories = list(self.state.memories[: state.capabilities.memory_slots])
         state.reminders = self.state.reminders
         if memories_due:
@@ -515,24 +599,12 @@ class DeskClient:
         if reminders_due:
             reminders = self._decode_optional(
                 decode_reminders,
-                await self._query(ReadCommand.REMINDERS, 11),
+                await self._optional_query(ReadCommand.REMINDERS, 11, "reminders"),
                 allow_partial_settings,
             )
             if reminders is not None:
                 state.reminders = reminders
-        self._set_stage("position_read")
-        state.position = decode_position(
-            bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
-        )
-        if memories_due:
-            self._record_settings("memories", memories is not None)
-        if reminders_due:
-            self._record_settings("reminders", reminders is not None)
-        self.state = state
-        self.protocol_validated = True
-        self._ready = True
-        self._set_stage("ready")
-        return state
+        return memories is not None, reminders is not None
 
     @staticmethod
     def _decode_optional[T](
@@ -561,7 +633,9 @@ class DeskClient:
                 )
                 if barrier != capabilities:
                     raise ValueError("Desk capabilities changed during memory reads")
-            payload = await self._query(ReadCommand(0x89 + index), 7)
+            payload = await self._optional_query(
+                ReadCommand(0x89 + index), 7, "memories"
+            )
             memory = self._decode_optional(
                 decode_stored_position, payload, allow_partial
             )
@@ -570,6 +644,29 @@ class DeskClient:
             else:
                 memories.append(memory)
         return memories if valid else None
+
+    async def _optional_query(
+        self, command: ReadCommand, response_type: int, group: str
+    ) -> bytes:
+        try:
+            return await self._query(command, response_type)
+        except TimeoutError as error:
+            raise OptionalReadTimeout(group) from error
+
+    def _optional_due(
+        self,
+        group: str,
+        interval: float,
+        force: bool,
+        allow_partial: bool,
+        required_only: bool,
+        excluded: set[str],
+    ) -> bool:
+        if required_only or group in excluded:
+            return False
+        if allow_partial and monotonic() < self.settings_health[group].retry_after:
+            return False
+        return force or self._settings_due(group, interval)
 
     def _settings_due(self, group: str, interval: float) -> bool:
         health = self.settings_health[group]
@@ -583,6 +680,7 @@ class DeskClient:
         health = self.settings_health[group]
         if valid:
             health.last_success = monotonic()
+            health.retry_after = 0
         elif health.error is None:
             _LOGGER.warning("LINAK %s response invalid; group unavailable", group)
         health.valid = valid
@@ -722,9 +820,9 @@ class DeskClient:
                 if proposal.changed:
                     self._set_stage("calibration_write")
                     await self._write_setting(proposal.write_request())
-                # Full refresh starts with a different response type before offset
-                # readback, so a setting echo cannot stand in for verification.
-                state = await self._refresh()
+                # Required readback cannot be blocked by unavailable settings.
+                # A capabilities reply separates the setter from offset verification.
+                state = await self._refresh(required_only=True)
                 if (
                     state.offset_raw != proposal.new_offset_raw
                     or state.position != first
@@ -746,7 +844,11 @@ class DeskClient:
         await self._start_move(height_cm, settings)
 
     async def move_to_memory(self, index: int, settings: ControlSettings) -> None:
-        if type(index) is not int or not 0 <= index < len(self.state.memories):
+        if (
+            not self.settings_health["memories"].valid
+            or type(index) is not int
+            or not 0 <= index < len(self.state.memories)
+        ):
             raise MotionError("Stored position is unavailable")
         await self._start_move(None, settings, index)
 
@@ -1005,14 +1107,17 @@ class DeskClient:
         finally:
             await self._disconnect_link()
 
+    def _invalidate_settings(self) -> None:
+        for health in self.settings_health.values():
+            health.valid = False
+
     async def _disconnect_link(self) -> None:
         self._closing = True
         self._link_lost = True
         if self._operation is not None:
             self._operation.cancel()
         self._ready = False
-        for health in self.settings_health.values():
-            health.valid = False
+        self._invalidate_settings()
         self._generation += 1
         client, self.client = self.client, None
         if self._pending is not None and not self._pending.done():

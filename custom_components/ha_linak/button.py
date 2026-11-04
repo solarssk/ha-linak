@@ -55,6 +55,8 @@ class LinakMemory(LinakEntity, ButtonEntity):
         return (
             self.coordinator.controls is not None
             and super().available
+            and self.coordinator.desk is not None
+            and self.coordinator.desk.settings_health["memories"].valid
             and self.index < len(memories)
             and memories[self.index].position_raw is not None
         )

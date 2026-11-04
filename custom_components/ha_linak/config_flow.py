@@ -264,7 +264,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         succeeded = False
         try:
             desk = await self._setup_desk()
-            self._validated_state = await desk.refresh()
+            self._validated_state = await desk.refresh(allow_partial_settings=True)
             succeeded = True
             if not self._user_named:
                 self._name = desk_name(
@@ -422,7 +422,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         succeeded = False
         try:
             desk = await self._setup_desk()
-            await desk.refresh()
+            await desk.refresh(allow_partial_settings=True)
             if self._preparing:
                 assert desk.state.height_cm is not None
                 self._calibration = _prepare_calibration(

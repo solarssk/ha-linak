@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Allow onboarding and startup with unavailable saved positions or reminders. Optional-query timeouts discard their session, then recover fresh height on a new connection without the failed group for five minutes. Keep memory controls unavailable until a complete group read succeeds, create slots from reported capabilities and verify calibration independently of optional settings. Hardware confirmation for empty-slot timeouts remains pending (#54).
 - Rename the integration to LINAK, identify device families before DPG commands, expose reported model/firmware and separate product guides from technical compatibility documentation.
 - Make the Target height slider follow the measured height after a stored-position move or Stop. The last position sample of a finished movement could carry residual speed, which kept the slider at its old value until a later read.
 - Skip the Documentation impact job once a pull request is closed or merged, so a rerun after a squash merge no longer reports a false failure.

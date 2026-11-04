@@ -163,7 +163,8 @@ async def test_old_dpg_cannot_complete_recovery_query():
             await asyncio.wait_for(recovery.stalled.wait(), 1)
             pending = desk._pending
             fake.callbacks[DPG_UUID](None, bytearray(recovery.replies[0x80]))
-            assert pending is not None and not pending.done()
+            assert pending is not None
+            assert not pending.done()
             recovery.release()
             await task
         finally:

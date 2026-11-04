@@ -38,12 +38,14 @@
       },
       "name": {
         "title": "1. Nazwij i połącz biurko",
-        "description": "Wybierz nazwę widoczną w Home Assistant. Kontynuując, przygotujesz panel do sterowania przez HA. Może to zapisać ustawienie połączenia w pamięci panelu. Biurko się nie poruszy. Aplikacja telefonu nie jest potrzebna.",
+        "description": "Wybierz nazwę widoczną w Home Assistant. Kontynuując, przygotujesz panel do sterowania przez HA. Może to zapisać ustawienie połączenia w pamięci panelu. Biurko się nie poruszy. Aplikacja telefonu nie jest potrzebna. Aby tylko obserwować biurko, włącz tryb samego monitorowania: nic nie jest zapisywane w panelu i nie pytamy o zakres wysokości.",
         "data": {
-          "name": "Nazwa w Home Assistant"
+          "name": "Nazwa w Home Assistant",
+          "monitoring_only": "Tylko monitorowanie"
         },
         "data_description": {
-          "name": "Na przykład: Biurko w gabinecie."
+          "name": "Na przykład: Biurko w gabinecie.",
+          "monitoring_only": "Odczytuj wysokość i stan bez przygotowania panelu i bez zakresu wysokości. Sterowanie dodasz później w Konfiguracji."
         }
       },
       "height": {

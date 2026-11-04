@@ -40,6 +40,15 @@ flowchart TD
 
 An unchanged height correction sends no offset write. Calibration inputs are transient and are not replayed after restart. Failed preparation returns to its form instead of silently creating an unprepared entry.
 
+## Monitoring only
+
+On the name step of setup, **Monitoring only** is an optional choice. It is off by default, so the normal path with controls stays the default.
+
+- Setup only connects and reads. It writes nothing to the panel, so it prepares no client, calibrates nothing and asks for no height range.
+- The entry is created with no saved range. Native entities are still registered, but a target or stored position request is refused until a range exists. Stop and the Keep connected switch behave as for any entry without a range.
+- The first explicit movement request prepares the panel client at that moment, as it does for every entry.
+- To add controls later, open **Configure** and enter the measured range. Preparation and height correction are available there too. No separate upgrade step exists, because a monitoring entry is an ordinary entry without a range.
+
 ## Discovery names and identity
 
 The discovery card uses a desk name and short address suffix, such as `Office desk (EEFF)`. Resolution checks current HA metadata, the original discovery record and BLE device names. Generic `LINAK` and address-only values do not hide a usable name.

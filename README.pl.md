@@ -13,9 +13,19 @@ Steruj biurkiem z regulacją wysokości i panelem LINAK **DPG1C** z Home Assista
 
 ## 🪑 Obsługiwane urządzenia
 
-- **Panel biurkowy DPG1C:** sterowanie wysokością przez Bluetooth, zapisane pozycje i odczyt przypomnień
+| Seria | Model | Obsługa | Test sprzętowy |
+| --- | --- | :---: | :---: |
+| DPG | DPG1C | ✓ | ✓* |
+| DPG | DPG1M | ? | – |
+| DPG | DPG1B | ? | – |
+| DPG | DPG1I | ? | – |
+| DPI | DPI1C | ✗ | – |
 
-Inne modele nie mają potwierdzonej zgodności. Przed instalacją sprawdź etykietę panelu. [Testowanie innego modelu](docs/device-support.md#test-another-panel) ma osobną instrukcję po angielsku.
+**✓** dostępne lub sprawdzone · **?** zgodność niepotwierdzona · **✗** nieobsługiwane · **–** brak testu.
+
+\* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
+
+Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](docs/device-support.md#test-another-panel) jest po angielsku.
 
 ## 🏠 Biurko na pulpicie
 

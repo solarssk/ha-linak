@@ -13,9 +13,19 @@ Control a height-adjustable desk with a LINAK **DPG1C** panel from Home Assistan
 
 ## 🪑 Supported devices
 
-- **DPG1C desk panel:** Bluetooth height control, saved positions and reminder readings
+| Series | Model | Support | Hardware tested |
+| --- | --- | :---: | :---: |
+| DPG | DPG1C | ✓ | ✓* |
+| DPG | DPG1M | ? | – |
+| DPG | DPG1B | ? | – |
+| DPG | DPG1I | ? | – |
+| DPI | DPI1C | ✗ | – |
 
-Other models are not confirmed. Check the panel label before installing. [Testing another model](docs/device-support.md#test-another-panel) is a separate process.
+**✓** available or tested · **?** compatibility unconfirmed · **✗** unsupported · **–** not tested.
+
+\* DPG1C was checked on one panel within the [documented test scope](docs/hardware-results.md). This does not mean every function and device version has been fully validated.
+
+Check the model on the panel label. [Testing another model](docs/device-support.md#test-another-panel) has its own guide.
 
 ## 🏠 Your desk on the dashboard
 

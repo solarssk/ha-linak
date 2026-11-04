@@ -48,13 +48,19 @@
 
 ## 🪑 Supported devices
 
-The supported desk panel is **DPG1C**. Other models are not yet confirmed compatible.
+| Series | Model | Support | Hardware tested |
+| --- | --- | :---: | :---: |
+| DPG | DPG1C | ✓ | ✓* |
+| DPG | DPG1M | ? | – |
+| DPG | DPG1B | ? | – |
+| DPG | DPG1I | ? | – |
+| DPI | DPI1C | ✗ | – |
 
-| Device | Connection | Functions |
-| --- | --- | --- |
-| **DPG1C desk panel** | Bluetooth | Height in cm, saved positions, reminder readings, height slider, Stop and height calibration |
+**✓** available or tested · **?** compatibility unconfirmed · **✗** unsupported · **–** not tested.
 
-Check the model on the panel label. Testing another device has a separate [model testing guide](../docs/device-support.md#test-another-panel).
+\* DPG1C was checked on one panel within the [documented test scope](../docs/hardware-results.md). This does not mean every function and device version has been fully validated.
+
+Check the model on the panel label. [Testing another model](../docs/device-support.md#test-another-panel) has its own guide.
 
 <a id="entities"></a>
 

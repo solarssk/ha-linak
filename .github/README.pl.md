@@ -48,13 +48,19 @@
 
 ## 🪑 Obsługiwane urządzenia
 
-Obsługiwanym panelem biurkowym jest **DPG1C**. Inne modele nie mają jeszcze potwierdzonej zgodności.
+| Seria | Model | Obsługa | Test sprzętowy |
+| --- | --- | :---: | :---: |
+| DPG | DPG1C | ✓ | ✓* |
+| DPG | DPG1M | ? | – |
+| DPG | DPG1B | ? | – |
+| DPG | DPG1I | ? | – |
+| DPI | DPI1C | ✗ | – |
 
-| Urządzenie | Połączenie | Funkcje |
-| --- | --- | --- |
-| **Panel biurkowy DPG1C** | Bluetooth | Wysokość w cm, zapisane pozycje, odczyt przypomnień, suwak wysokości, Stop i korekta wysokości |
+**✓** dostępne lub sprawdzone · **?** zgodność niepotwierdzona · **✗** nieobsługiwane · **–** brak testu.
 
-Sprawdź model na etykiecie panelu. Dla osób sprawdzających kolejne urządzenia jest osobna [instrukcja testowania modeli](../docs/device-support.md#test-another-panel), po angielsku.
+\* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](../docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
+
+Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](../docs/device-support.md#test-another-panel) jest po angielsku.
 
 <a id="entities"></a>
 

@@ -105,6 +105,8 @@ Jeśli panel pokazuje błędną wysokość, zmierz odległość od podłogi do g
 
 Wysokość wyświetla się w pełnych centymetrach. Pomiary wpisuj z dokładnością miarki; kalibracja zachowuje tę dokładność. Integracja odczytuje zapisane pozycje i przypomnienia, ale jeszcze ich nie edytuje.
 
+Nie musisz zapełniać pustych pozycji pamięci przed konfiguracją. Jeśli nie uda się odczytać zapisanych pozycji lub przypomnień, wysokość może pozostać dostępna, a niedostępna będzie tylko dana grupa ustawień. Po przekroczeniu czasu odczytu integracja ponowi próbę po pięciu minutach. Przyciski zapisanych pozycji wymagają poprawnego odczytu całej grupy pamięci.
+
 ## 🛠️ Pomoc
 
 Jeśli odczyty staną się niedostępne, sprawdź **Połączenie** i komunikat Home Assistanta. Na stronie urządzenia LINAK pobierzesz diagnostykę. W zgłoszeniu błędu podaj model panelu, wersje HA i integracji oraz informację, czy używasz lokalnego adaptera, czy proxy. Z dołączanych logów usuń prywatne nazwy i adresy Bluetooth.

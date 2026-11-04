@@ -48,7 +48,7 @@ Reminder durations are configuration values in minutes under the current interpr
 
 ## Correlate replies and reject ambiguity
 
-Reply type and length must match the pending command. A successful GATT write alone does not establish that the query completed. A timeout or lost link invalidates the session instead of advancing to the next request. A malformed reply of the pending type does the same for required reads and foreground setup; during a runtime refresh it invalidates only its optional group, as listed [below](#failure-handling-by-event).
+Reply type and length must match the pending command. A successful GATT write alone does not establish that the query completed. A timeout or lost link invalidates the session instead of advancing to the next request. A malformed reply of the pending type does the same for required reads; setup and runtime refresh invalidate only its optional group, as listed [below](#failure-handling-by-event).
 
 All memory slots use response type `07` without a slot number. Duplicate signals can therefore be misassigned if consecutive slot requests have no intervening response type.
 
@@ -105,15 +105,17 @@ sequenceDiagram
 
 ### Failure handling by event
 
-The client discards the connection instead of guessing whenever request and reply assignment becomes uncertain. It degrades only an optional group when a completed reply of the right type fails decoding.
+The client discards the connection instead of guessing whenever request and reply assignment becomes uncertain. Setup and runtime may degrade optional groups, but never continue querying a timed-out session. A valid empty-slot frame remains different from a timeout: silence does not establish an empty slot. No unobserved reply formats are accepted. The strict low-level refresh remains available for protocol validation.
 
 | Event | Connection | Optional groups | Caller sees |
 | --- | --- | --- | --- |
-| Timeout of any query or of the final height read | Discarded; its callbacks are dropped | All invalid until a complete reread | `TimeoutError` |
+| Timeout of a required query, a capabilities barrier or the final height read | Discarded; its callbacks are dropped | All invalid until reread | `TimeoutError` |
+| Timeout of a memory or reminder query during setup/runtime | Discarded; fresh connection and required reads before any publication | Failed group unavailable for five minutes, including across reconnects; other groups are reread | Fresh height if recovery succeeds, otherwise the recovery error |
 | Link lost while a request is pending, or in the same loop turn as its reply | Discarded, even if the reply arrived first | All invalid | `DeskLinkLost` |
 | Malformed capabilities, offset or barrier reply | Discarded, also in a runtime refresh | All invalid | `ValueError` |
-| Malformed memory or reminders reply during setup, calibration or the first read | Discarded | All invalid | `ValueError` |
-| Malformed memory or reminders reply during a runtime refresh | Kept | Only that group is invalid, with its cached value retained but unavailable; the other group stays valid and the remaining queries still run | No error; the next due check rereads only the invalid group |
+| Malformed memory or reminders reply during setup or runtime refresh | Kept | Only that group is invalid, with its cached value retained but unavailable; the other group stays valid and the remaining queries still run | No error; the next due check rereads only the invalid group |
+
+Each optional group can trigger at most one recovery per refresh, within the original overall deadline. A failed memory group publishes no partial slot list; all memory sensors/buttons are unavailable, including direct memory actions. Entities are created from the reported slot count. A successful later complete group read restores availability. Calibration readback skips optional settings and marks them invalid after a reference/capability change for a later refresh.
 
 A refresh that fails never replaces the previously published snapshot. A refresh in flight replaces no capabilities, offset or settings until it completes; on a ready link, live height notifications still update the position.
 
@@ -128,7 +130,7 @@ Only client activation and height-reference correction have implemented protecte
 | Operation | Allowlisted request | Preconditions | Required verification |
 | --- | --- | --- | --- |
 | Existing client activation | `7f 86 80 01 <same 16 identifier bytes>` | Valid `01 11` frame, recognized status, usable identifier; skip status `1` | Application acknowledgement, then status `1` and unchanged identifier |
-| Height-reference correction | `7f 81 80 01 <offset-low> <offset-high>` | Confirmed stationary calibration proposal and valid unsigned reference | Application acknowledgement, then a full refresh with matching reference and position |
+| Height-reference correction | `7f 81 80 01 <offset-low> <offset-high>` | Confirmed stationary calibration proposal and valid unsigned reference | Application acknowledgement, then capabilities, reference and position reads with matching reference and position |
 
 The observed exchanges treat status `0` as inactive and `1` as active. Their complete relationship to app Owner/Guest behavior and persistence is not established.
 

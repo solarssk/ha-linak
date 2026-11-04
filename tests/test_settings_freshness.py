@@ -1,6 +1,5 @@
 """Optional group validity without hiding transport or reference failures."""
 
-import asyncio
 import struct
 from unittest.mock import patch
 
@@ -9,7 +8,7 @@ from bleak.backends.device import BLEDevice
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.ha_linak.client import DeskClient
-from custom_components.ha_linak.protocol import DPG_UUID, HEIGHT_UUID
+from custom_components.ha_linak.protocol import DPG_UUID
 from custom_components.ha_linak.motion import TARGET_UUID, REFERENCE_STOP
 from test_client import FakeBleak, CAPTURE
 from test_native_controls import MotionBleak, OPTIONS, setup_entry
@@ -132,66 +131,6 @@ async def test_memory_travel_never_uses_invalid_cached_slot(hass):
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-@pytest.mark.parametrize("command", [0x88, 0x89])
-async def test_optional_timeout_discards_generation_and_old_notifications(command):
-    fake = GroupReplies()
-    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
-    with patch(
-        "custom_components.ha_linak.client.establish_connection", return_value=fake
-    ):
-        await desk.refresh()
-        old_position = fake.callbacks[HEIGHT_UUID]
-        old_dpg = fake.callbacks[DPG_UUID]
-        fake.silent = command
-        with (
-            patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
-            pytest.raises(TimeoutError),
-        ):
-            await desk.refresh(allow_partial_settings=True)
-    assert not desk.connected
-    assert all(not health.valid for health in desk.settings_health.values())
-
-    class PendingReplies(GroupReplies):
-        def __init__(self):
-            super().__init__()
-            self.silent = 0x88
-            self.reminders_pending = asyncio.Event()
-
-        async def write_gatt_char(self, uuid, data, response):
-            await super().write_gatt_char(uuid, data, response)
-            if uuid == DPG_UUID and data[1] == 0x88:
-                self.reminders_pending.set()
-
-    replacement = PendingReplies()
-    with patch(
-        "custom_components.ha_linak.client.establish_connection",
-        return_value=replacement,
-    ):
-        refresh = asyncio.create_task(desk.refresh(allow_partial_settings=True))
-        try:
-            async with asyncio.timeout(1):
-                await replacement.reminders_pending.wait()
-            pending = desk._pending
-            assert pending is not None
-            assert not pending.done()
-            assert desk._response_type == 11
-            old_dpg(None, bytearray.fromhex(CAPTURE["88"]))
-            assert not pending.done()
-            replacement.callbacks[DPG_UUID](None, bytearray.fromhex(CAPTURE["88"]))
-            await refresh
-        finally:
-            if not refresh.done():
-                refresh.cancel()
-            await asyncio.gather(refresh, return_exceptions=True)
-    current = desk.state
-    old_position(None, bytearray.fromhex("00000000"))
-    old_dpg(None, bytearray.fromhex(CAPTURE["88"]))
-    assert desk.state is current
-    assert desk.state.position.position_raw == 1438
-    assert all(health.valid for health in desk.settings_health.values())
-    await desk.disconnect()
-
-
 async def test_strict_refresh_rejects_malformed_optional_group():
     fake = GroupReplies()
     fake.corrupt = 0x88
@@ -294,7 +233,7 @@ async def test_failed_reduced_slot_snapshot_never_keeps_removed_slots():
     await desk.disconnect()
 
 
-async def test_memory_move_reads_changed_slot_after_group_became_invalid(hass):
+async def test_memory_move_requires_group_recovery_then_reads_changed_slot(hass):
     class ChangedMemory(GroupReplies):
         fresh_slot = None
 
@@ -319,6 +258,10 @@ async def test_memory_move_reads_changed_slot_after_group_became_invalid(hass):
     fake.fresh_slot = 1600
     assert fake.fresh_slot != cached
     fake.writes.clear()
+    with pytest.raises(HomeAssistantError):
+        await entry.runtime_data.async_move_to_memory(0)
+    assert not fake.writes
+    await desk.refresh(allow_partial_settings=True)
     await entry.runtime_data.async_move_to_memory(0)
     targets = [
         data

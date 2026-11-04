@@ -456,8 +456,8 @@ async def test_the_first_connection_after_a_released_start_reads_everything(hass
         await start(hass, entry)
         await switch(hass, "turn_on")
         await entry.runtime_data.async_refresh()
-        # Strict first read, then partial reads once capabilities are known.
-        assert seen == [False, True]
+        # Optional settings must not block even the first connection.
+        assert seen == [True, True]
         await hass.config_entries.async_unload(entry.entry_id)
 
 

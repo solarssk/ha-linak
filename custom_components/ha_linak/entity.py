@@ -59,7 +59,7 @@ def track_memory_slots(
     reveals is added afterwards.
     """
     if coordinator.data.capabilities is not None:
-        created = set(range(len(coordinator.data.memories)))
+        created = set(range(coordinator.data.capabilities.memory_slots))
     else:
         created = _registered_slots(
             hass, entry, f"{coordinator.address}_{unique_prefix}"
@@ -67,7 +67,12 @@ def track_memory_slots(
     async_add_entities([factory(index) for index in sorted(created)])
 
     def add_revealed_slots() -> None:
-        revealed = set(range(len(coordinator.data.memories))) - created
+        capabilities = coordinator.data.capabilities
+        revealed = (
+            set(range(capabilities.memory_slots)) - created
+            if capabilities is not None
+            else set()
+        )
         if revealed:
             async_add_entities([factory(index) for index in sorted(revealed)])
             created.update(revealed)

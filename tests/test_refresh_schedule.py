@@ -82,18 +82,27 @@ async def test_strict_foreground_read_does_not_skip_settings():
     await desk.disconnect()
 
 
-async def test_due_settings_timeout_drops_session_and_preserves_last_success():
+async def test_due_settings_timeout_recovers_height_and_preserves_last_success():
     fake = GroupReplies()
     desk, _ = await connected_desk(fake)
     last = desk.settings_health["reminders"].last_success
     desk.settings_health["reminders"].valid = False
     fake.silent = 0x88
-    with patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01):
-        with pytest.raises(TimeoutError):
-            await desk.refresh(allow_partial_settings=True, settings_interval=300)
-    assert not desk.connected
+    replacement = GroupReplies()
+    with (
+        patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
+        patch(
+            "custom_components.ha_linak.client.establish_connection",
+            return_value=replacement,
+        ),
+    ):
+        await desk.refresh(allow_partial_settings=True, settings_interval=300)
+    assert desk.connected
+    assert fake.disconnected.is_set()
     assert desk.settings_health["reminders"].last_success == last
-    assert not any(health.valid for health in desk.settings_health.values())
+    assert not desk.settings_health["reminders"].valid
+    assert desk.settings_health["memories"].valid
+    await desk.disconnect()
 
 
 async def test_notifications_do_not_postpone_scheduled_reference_read(hass):

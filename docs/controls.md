@@ -40,7 +40,8 @@ Enter the actual lowest and highest desktop heights from measurements or verifie
 | Save bounds | Validate them against the current reference and position; do not move |
 | Missing bounds | Target and memory travel remain unavailable; Stop can work with a ready connection |
 | Corrected reference invalidates old bounds | Request revised bounds instead of silently expanding them |
-| Empty memory slot | Its travel button is unavailable |
+| Empty memory slot | Its travel button is unavailable; other valid slots keep their original numbers |
+| Unavailable memory group | All stored-height sensors and memory buttons are unavailable until a complete read succeeds; height and target controls can remain available |
 | Target outside bounds | Reject it without movement |
 
 Host command bounds do not override the desk's firmware limits or anti-collision behavior. No verified remote minimum/maximum query exists yet.

@@ -16,7 +16,7 @@ Loaded LINAK entries recheck ownership on each scheduled idle refresh and before
 
 ## Setup sequence
 
-The wizard validates the desk before creating an entry and keeps the same connection across foreground steps.
+The wizard validates the desk before creating an entry and retains a healthy connection across foreground steps. Unused memories need not be filled. Memory/reminder query timeouts discard the session and may recover fresh height on a new connection, leaving the failed group unavailable for five minutes. Setup can finish with unavailable optional groups; capabilities, offset and position remain required. See [failure handling](protocol.md#failure-handling-by-event).
 
 ```mermaid
 flowchart TD

@@ -947,6 +947,22 @@ async def test_reference_action_uses_native_session_without_publishing_raw_metad
     await hass.config_entries.async_unload(entry.entry_id)
 
 
+async def test_research_action_does_not_require_optional_settings_groups(hass):
+    entry, fake = await setup_entry(hass)
+    desk = entry.runtime_data.desk
+    for health in desk.settings_health.values():
+        health.valid = False
+        health.error = "timeout"
+    result = await call_research_action(hass, entry.entry_id)
+    assert result["section"] == "product_info"
+    assert result["semantics_verified"] is False
+    assert fake.writes == [(DPG_UUID, b"\x7f\x80\x00"), (DPG_UUID, b"\x7f\x08\x00")]
+    assert all(not health.valid for health in desk.settings_health.values())
+    assert desk.connected
+    assert entry.runtime_data.last_update_success
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_service_rejects_an_enabled_idasen_owner_without_io(hass):
     entry, fake = await setup_entry(hass)
     other = MockConfigEntry(

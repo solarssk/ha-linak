@@ -233,8 +233,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             self.desk.device = device
         try:
             state = await self.desk.refresh(
-                allow_partial_settings=self.data is not None
-                and self.data.capabilities is not None,
+                allow_partial_settings=True,
                 settings_interval=SETTINGS_REFRESH_INTERVAL,
             )
             await self._discard_if_released(self.desk)

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Skip the Documentation impact job once a pull request is closed or merged, so a rerun after a squash merge no longer reports a false failure.
 - Add an optional Monitoring only choice to setup. It connects and reads without preparing the panel client, calibrating or asking for a height range. Controls stay the default path, and the range can be added later in Configure.
 - Add a Keep connected switch that releases the desk's Bluetooth link on purpose. It is a configuration entity that is disabled by default, so the owner enables it deliberately. While it is off LINAK does no radio lookups, connections or polls, and the choice survives a restart. Turning it on reconnects with fresh reads and never replays a movement. Existing entries stay connected, and turning it off during travel stops the desk first.
 - Add an Operation sensor that shows preparing, moving and stopping, then the result (completed, interrupted or failed with a reason) for explicit movement requests. About 10 seconds after a result it returns to idle and keeps the result in `last_result`, so a notification can trigger on the result. It stays available when the connection drops, ignores refused requests and reports the request, not physical arrival.

@@ -357,6 +357,13 @@ def test_metadata_gate_reruns_when_handoff_fields_change():
     )
 
 
+def test_documentation_gate_skips_pull_requests_that_are_no_longer_open():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/docs-impact.yml").read_text())
+    job = workflow["jobs"]["docs"]
+    assert job["name"] == "Documentation impact"
+    assert job["if"] == "github.event.pull_request.state == 'open'"
+
+
 def test_ha_smoke_targets_are_pinned_and_only_supported_version_is_a_gate():
     targets = json.loads((ROOT / ".github/ha-smoke-targets.json").read_text())
     hacs = json.loads((ROOT / "hacs.json").read_text())

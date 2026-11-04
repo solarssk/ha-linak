@@ -6,6 +6,8 @@ from unittest.mock import patch
 from bleak.backends.device import BLEDevice
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_ADDRESS
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_linak.client import (
@@ -30,6 +32,37 @@ def available_bluetooth_device():
         return_value=DEVICE,
     ):
         yield
+
+
+@pytest.mark.parametrize("yaml_setup", [False, True])
+async def test_component_setup_is_config_entry_only_without_bluetooth_io(
+    hass, caplog, yaml_setup
+):
+    config = {DOMAIN: {}} if yaml_setup else {}
+    with (
+        patch("custom_components.ha_linak.client.establish_connection") as connect,
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address"
+        ) as lookup,
+    ):
+        assert await async_setup_component(hass, DOMAIN, config)
+        await hass.async_block_till_done()
+    connect.assert_not_called()
+    lookup.assert_not_called()
+    assert hass.config_entries.async_entries(DOMAIN) == []
+    assert hass.services.has_service(DOMAIN, "read_protocol_inventory")
+    issue = ir.async_get(hass).async_get_issue(
+        "homeassistant", "config_entry_only_ha_linak"
+    )
+    if yaml_setup:
+        assert issue is not None
+        assert issue.translation_key == "config_entry_only"
+        assert issue.issue_domain == DOMAIN
+        assert issue.severity is ir.IssueSeverity.ERROR
+        assert "does not support YAML setup" in caplog.text
+    else:
+        assert issue is None
+        assert "does not support YAML setup" not in caplog.text
 
 
 async def prepare_setup(hass, result):

@@ -5,6 +5,7 @@ import asyncio
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform, CONF_NAME
 from homeassistant.core import CoreState, HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.exceptions import ConfigEntryNotReady
 
@@ -22,6 +23,7 @@ PLATFORMS = [
     Platform.SWITCH,
 ]
 FIRST_REFRESH_TIMEOUT = REFRESH_TIMEOUT
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 # HA requires the async setup hook even when registration itself does not await.

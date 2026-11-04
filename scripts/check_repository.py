@@ -54,7 +54,7 @@ def main():
         text = github_readme.read_text()
         assert "<picture>" in text, github_readme
         assert 'align="center"' in text, github_readme
-        assert 'rowspan="5"' in text
+        assert 'rowspan="6"' in text
         assert 'rowspan="3"' in text, github_readme
         targets = re.findall(r'\]\(([^)]+)\)|(?:href|src|srcset)="([^"]+)"', text)
         for target in targets:

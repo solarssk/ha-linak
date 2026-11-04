@@ -1,6 +1,6 @@
 # How the integration manages desk state and control
 
-LINAK Desks is a native Home Assistant integration distributed through HACS. Home Assistant owns discovery and adapter selection; one coordinator and one BLE client own each configured desk. The initial hardware target is DPG1C, not every LINAK actuator or product family.
+LINAK is a native Home Assistant integration distributed through HACS. Home Assistant owns discovery and adapter selection; one coordinator and one BLE client own each configured desk. The initial hardware target is DPG1C, not every LINAK actuator or product family.
 
 ## Component boundaries
 
@@ -206,3 +206,7 @@ flowchart TD
 Start with the existing protocol/calibration models and narrow transport interfaces. Library modules must not import HA, and entities must not parse wire packets. Use typed immutable snapshots/events at the boundary rather than exporting the client's mutable state or backend exceptions as a public API. Select public method and package names in the extraction design; this table is not a promise that a `python-linak` package already exists.
 
 Before changing the import path, run the same synthetic frame, duplicate-response, cancellation, Stop, bounds and redaction cases against the candidate library and HA adapter. The duplicate-response baseline is `tests/test_protocol_replay.py`. Keep packet-order or polling-policy changes in separate reviewed patches. Validate dependency license compatibility, source distribution, tagged version and public build/publish provenance before publishing or adding a package dependency. The [HA library requirements](https://contributors.home-assistant.io/core/integrations/api-library/) own those external acceptance rules.
+
+## Device family boundary
+
+The integration is named LINAK, with DPG desks as the first implemented protocol profile. The [device support reference](device-support.md) defines identity, matching, compatibility evidence and the tester path. `device_profile.py` owns pure family classification without HA or radio operations. The BLE client reads advertised standard identity fields once per session, rejects identified unsupported families before DPG commands and keeps capability responses separate from physical validation. HA entities consume recognized identity instead of declaring an exact model from the address or desk name. New families require separate command semantics and profiles; the current discovery signature is unchanged.

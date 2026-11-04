@@ -4,7 +4,7 @@ The device page provides a centimeter height slider, Stop and buttons for positi
 
 ## Configure the desk after installation
 
-Open **Settings → Devices & services → LINAK Desks → Configure**. Choose the task you need:
+Open **Settings → Devices & services → LINAK → Configure**. Choose the task you need:
 
 | Option | What to enter or confirm | What changes |
 | --- | --- | --- |

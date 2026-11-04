@@ -34,7 +34,7 @@ When content is outdated, compare the installed revision with the intended sourc
 
 Keep the HACS description complete: explain the supported desk panel, controls/readings, requirements, setup, troubleshooting and validation status. Preserve the Sensors, Diagnostics and Controls grouping. Do not replace it with a short installation stub.
 
-Use Markdown headings, paragraphs, lists and external images. Tables are parsed, but their spacing/borders can differ from GitHub; the HACS entity groups use lists to stay readable on narrow screens and older styles. Keep merged HTML tables, `picture`/`source` theme switching and centered layouts in the GitHub files. Avoid inline SVG and unverified custom HTML in the HACS roots.
+Use Markdown headings, paragraphs, lists and external images. Tables are parsed, but their spacing/borders can differ from GitHub; the HACS entity groups use lists to stay readable on narrow screens and older styles. The supported-device matrix uses a compact native Markdown table with series, model, support and hardware-test columns; check it at a narrow viewport after adding rows. Keep merged HTML tables, `picture`/`source` theme switching and centered layouts in the GitHub files. Avoid inline SVG and unverified custom HTML in the HACS roots.
 
 The official neutral-background logo identifies the manufacturer. The generated dashboard illustration is no longer embedded: it could suggest an included card or a screenshot of the integration. Its legacy asset files remain for older README versions and must not be presented as the current interface. A future product screenshot must show the actual HA entities and remove private identifiers.
 
@@ -46,7 +46,7 @@ Use an absolute outer destination for every linked badge in the HACS roots. The 
 
 ## Name and catalog icon
 
-`hacs.json`, the HA manifest and the English UI title use **LINAK Desks**. The Polish UI title is **Biurka LINAK**. The supported product is a height-adjustable desk with a DPG1C panel; the LINAK manufacturer logo alone does not define that scope. The repository name and integration domain remain `ha-linak` and `ha_linak`; existing device/entity identifiers and user device names are unchanged.
+`hacs.json`, the HA manifest and the English UI title use **LINAK**. The Polish UI title is **LINAK**. The supported product is a height-adjustable desk with a DPG1C panel; the LINAK manufacturer logo alone does not define that scope. The repository name and integration domain remain `ha-linak` and `ha_linak`; existing device/entity identifiers and user device names are unchanged.
 
 The catalog row's missing icon is independent of README images. This HACS frontend's [brand URL helper](https://github.com/home-assistant/frontend/blob/3ffbd435e0e5cf23872057187f3da53bb62441a2/src/util/brands-url.ts) uses the public brands CDN, while this integration ships local `brand/` assets. The public `ha_linak` fallback currently returns the placeholder. HACS's maintainer [confirmed the upstream issue and a fix in Marketplace 2026.11](https://github.com/hacs/integration/issues/5223#issuecomment-6222989180). Do not add unsupported icon settings, change the domain or claim that a README edit fixes that catalog icon.
 

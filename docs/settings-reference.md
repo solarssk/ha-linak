@@ -43,7 +43,7 @@ Unsupported candidates do not create dummy controls. A verified capability model
 
 ## Model and variant matrix
 
-Product features are not a BLE command compatibility promise. Use the model-specific data sheets, then the reported capabilities, implementation support and hardware evidence as separate checks. A lower model is not automatically the same DPG1C with fewer enabled bits.
+The [device support reference](device-support.md) defines runtime family matching and tester eligibility. Product features are not a BLE command compatibility promise. Use the model-specific data sheets, then the reported capabilities, implementation support and hardware evidence as separate checks. A lower model is not automatically the same DPG1C with fewer enabled bits.
 
 | Desk panel | Built-in Bluetooth | Height display | Documented favorites | Reminder hardware | Automatic drive / app control | Integration evidence |
 | --- | --- | --- | --- | --- | --- | --- |

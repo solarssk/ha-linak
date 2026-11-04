@@ -23,12 +23,19 @@ class LinakEntity(CoordinatorEntity[LinakCoordinator]):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.address}_{key}"
         self._attr_translation_key = key
-        self._attr_device_info = DeviceInfo(
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Use reported identity; never invent an exact model from a MAC/name."""
+        coordinator = self.coordinator
+        identity = coordinator.desk.identity if coordinator.desk else None
+        return DeviceInfo(
             identifiers={(DOMAIN, coordinator.address)},
             connections={(CONNECTION_BLUETOOTH, format_mac(coordinator.address))},
             name=coordinator.name,
             manufacturer="LINAK",
-            model="DPG",
+            model=identity.model if identity else None,
+            sw_version=identity.firmware if identity else None,
         )
 
 

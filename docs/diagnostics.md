@@ -72,6 +72,7 @@ The first failed operation determines the next investigation. Later cleanup erro
 | `pairing` / `pairing_agent_unavailable` | Local agent setup failed | Inspect BlueZ agent lifecycle; preserve existing bonds |
 | `authentication_failed` | Backend rejected authentication | Distinguish host bond failure from DPG client status |
 | `pairing_timeout` / `pairing_unsupported` | Authentication exceeded its budget or backend lacks the operation | Check the selected backend; do not silently bypass authentication |
+| `device_identity` / `unsupported_family` | Standard identity reports a family without an implemented driver | Record the product label and revision; no DPG commands are sent. Use the [tester guide](device-support.md) |
 | `notify_dpg` / `notify_height` | A specific subscription failed | Characteristic properties, authentication and actual disconnect event |
 | `extended_reads` | A serialized DPG query failed validation or timed out | Command/response type and length, duplicates and barriers; never advance an ambiguous request |
 | `position_read` | Fresh position could not be validated | Height characteristic and four-byte feedback frame |
@@ -175,3 +176,7 @@ Downloaded integration diagnostics omit desk names, Bluetooth addresses, adapter
 After a failed test, establish physical stopping first, end the diagnostic client and restore the intended integration/adapter configuration. Verify fresh reads before another action. Do not reset the panel, remove bonds, replace client identifiers or replay uncertain writes as routine troubleshooting. Use the [investigation method](bluetooth-research.md) when the evidence does not yet support a repair.
 
 A `DPG read timed out: command=...` debug message identifies the allowlisted read that expired. Runtime refresh errors include a stage and stable exception/reason category. Neither message includes the raw backend exception, desk name or address. Backend categorization accepts known public identifiers and, when an HA wrapper reports a generic identifier such as `type`, recognizes only allowlisted implementation modules; unknown implementations remain `other`. This improves diagnosis without pinning an adapter or changing HA selection.
+
+## Device profile diagnostics
+
+The `device_profile` section contains the recognized family/model, version-shaped firmware, identity source and successful DPG protocol-probe status. It never uses the MAC address or desk name to identify a model. `hardware_validation: not_inferred` keeps model recognition separate from physical test evidence. See the [compatibility matrix and tester procedure](device-support.md) for exact field meanings, unsupported-family recovery and reporting limits. Existing `state.capabilities` and `settings` describe reported flags and valid read groups separately.

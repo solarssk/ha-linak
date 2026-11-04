@@ -13,6 +13,11 @@ async def async_get_config_entry_diagnostics(  # NOSONAR(S7503) HA coroutine con
     coordinator = entry.runtime_data
     # Omit entry data, title and BLE objects entirely: these contain identifiers.
     return {
+        "device_profile": coordinator.desk.identity.diagnostics(
+            coordinator.desk.protocol_validated
+        )
+        if coordinator.desk
+        else None,
         "connected": coordinator.desk.connected if coordinator.desk else False,
         "connection_wanted": coordinator.connection_wanted,
         "stage": coordinator.desk.stage if coordinator.desk else "not_started",

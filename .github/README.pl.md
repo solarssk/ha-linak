@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-<h1 align="center">Biurka LINAK w Home Assistant</h1>
+<h1 align="center">LINAK w Home Assistant</h1>
 
 <p align="center">
   <strong>Twoje biurko LINAK w Home Assistant.<br>Aktualna wysokość w centymetrach, zapisane wysokości i przypomnienia.</strong><br>
@@ -33,13 +33,12 @@
 <details>
 <summary><strong>Spis treści</strong></summary>
 
-- [🪑 Obsługiwane panele](#supported-panels)
+- [🪑 Obsługiwane urządzenia](#supported-panels)
 - [📊 Encje w Home Assistant](#entities)
 - [📋 Wymagania](#requirements)
 - [📦 Instalacja](#installation)
 - [🔌 Konfiguracja](#configuration)
 - [🏠 Na co dzień](#daily-use)
-- [🧪 Stan testów](#validation)
 - [📚 Pomoc i dokumentacja](#help)
 - [📄 Licencja](#license)
 
@@ -47,21 +46,29 @@
 
 <a id="supported-panels"></a>
 
-## 🪑 Obsługiwane panele
+## 🪑 Obsługiwane urządzenia
 
-Pierwszym obsługiwanym modelem jest **DPG1C**. Integracja pozwala sprawdzać odczyty biurka i sterować jego wysokością.
+| Seria | Model | Obsługa | Test sprzętowy |
+| --- | --- | :---: | :---: |
+| DPG | DPG1C | ✓ | ✓* |
+| DPG | DPG1M | ? | – |
+| DPG | DPG1B | ? | – |
+| DPG | DPG1I | ? | – |
+| DPI | DPI1C | ✗ | – |
 
-| Panel LINAK | Dostępne funkcje | Potwierdzenie na sprzęcie |
-| --- | --- | --- |
-| **DPG1C** | Wysokość, pamięci, offset, przypomnienia, suwak wysokości, Stop i jazda do pamięci | Zapytania odczytu sprawdzone na jednym panelu |
+**✓** dostępne lub sprawdzone · **?** zgodność niepotwierdzona · **✗** nieobsługiwane · **–** brak testu.
 
-Inne modele paneli nie mają jeszcze potwierdzonej zgodności. [Wyniki odczytów →](../docs/hardware-results.md)
+\* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](../docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
+
+Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](../docs/device-support.md#test-another-panel) jest po angielsku.
 
 <a id="entities"></a>
 
 ## 📊 Encje w Home Assistant
 
 Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Nazwy odpowiadają polskim etykietom w HA; nazwa urządzenia może je poprzedzać.
+
+Typ encji to domena Home Assistanta, np. `sensor` albo `button`. Nagłówki niżej grupują encje według ich przeznaczenia; jednostki mają osobną kolumnę.
 
 ### Czujniki
 
@@ -71,7 +78,7 @@ Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Naz
   </thead>
   <tbody>
     <tr>
-      <td rowspan="5">Czujnik<br><code>sensor</code></td>
+      <td rowspan="6"><code>sensor</code></td>
       <td>📏 <strong>Wysokość</strong></td>
       <td>cm</td>
       <td>Aktualną wysokość biurka, z korektą panelu</td>
@@ -96,6 +103,7 @@ Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Naz
       <td>min</td>
       <td>Czas stania ustawiony w każdym z trzech profili</td>
     </tr>
+    <tr><td>🧭 <strong>Operacja</strong></td><td>-</td><td>Przebieg i wynik polecenia ruchu</td></tr>
   </tbody>
 </table>
 
@@ -104,57 +112,46 @@ Na stronie urządzenia znajdziesz odczyty biurka, diagnostykę i sterowanie. Naz
 - Czasy przypomnień to ustawione wartości, nie licznik spędzonego czasu.
 - Czujniki nie sterują ruchem ani nie zmieniają ustawień.
 
+**Operacja** pokazuje przebieg i wynik polecenia, a po około 10 sekundach wraca do stanu „brak operacji”. Atrybut `last_result` zachowuje wynik dla automatyzacji. Czujnik opisuje wykonanie polecenia; nie jest niezależnym potwierdzeniem fizycznego osiągnięcia wysokości.
+
+### Sterowanie
+
+<table>
+  <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Jednostka</th><th scope="col">Działanie</th></tr></thead>
+  <tbody>
+    <tr><td><code>number</code></td><td>🎯 <strong>Wysokość zadana</strong></td><td>cm</td><td>Wybierz suwakiem wysokość</td></tr>
+    <tr><td rowspan="2"><code>button</code></td><td>⏹️ <strong>Stop</strong></td><td>-</td><td>Przerwij bieżący ruch</td></tr>
+    <tr><td>🔖 <strong>Przejdź do zapisanej pozycji 1–4</strong></td><td>-</td><td>Przesuń biurko do pozycji zapisanej na panelu; puste pozycje są niedostępne</td></tr>
+  </tbody>
+</table>
+
+Suwak wybiera wysokość co 1 cm, wewnątrz zmierzonego zakresu. Aktualizuje się po zakończeniu jazdy, a czujnik **Wysokość** pokazuje ruch na bieżąco. Przed wyborem kolejnego celu poczekaj na zakończenie ruchu albo naciśnij **Stop**. Polecenia nie trafiają do kolejki.
+
+### Konfiguracja
+
+| Typ encji | Nazwa w HA | Domyślnie | Działanie |
+| --- | --- | --- | --- |
+| `switch` | 🔌 **Utrzymuj połączenie** | Encja wyłączona | Wyłącz przełącznik, aby zwolnić połączenie Bluetooth, lub włącz, aby połączyć się ponownie |
+
+Włącz encję w jej ustawieniach, aby pokazać przełącznik. Gdy przełącznik jest wyłączony, integracja wstrzymuje odczyty i ponowne łączenie, również po restarcie. Wyłączenie podczas jazdy najpierw zatrzymuje biurko.
+
+Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Zmienisz tam nazwę w HA, zakres ruchu i kalibrację wysokości. W **Wysokość z miarki** wpisz aktualny pomiar od podłogi do góry blatu, a następnie sprawdź i potwierdź korektę. Zapis nie porusza biurkiem. [Instrukcja konfiguracji](../docs/controls.md).
+
+Integracja odczytuje pozycje pamięci i przypomnienia, ale jeszcze ich nie edytuje.
+
 ### Diagnostyka
 
 <table>
   <thead><tr><th scope="col">Typ encji</th><th scope="col">Nazwa w HA</th><th scope="col">Domyślnie</th><th scope="col">Znaczenie</th></tr></thead>
   <tbody>
-    <tr><td rowspan="3">Czujnik<br><code>sensor</code></td><td>📐 <strong>Korekta wysokości</strong></td><td>Włączony</td><td>Punkt odniesienia zapisany na panelu, w cm</td></tr>
+    <tr><td rowspan="3"><code>sensor</code></td><td>📐 <strong>Korekta wysokości</strong></td><td>Włączony</td><td>Punkt odniesienia zapisany na panelu, w cm</td></tr>
     <tr><td>📶 <strong>Siła sygnału Bluetooth</strong></td><td>Wyłączony</td><td>Ostatnia reklama odbierana przez HA, w dBm; nie RSSI aktywnego łącza</td></tr>
     <tr><td>🛠️ <strong>Backend Bluetooth</strong></td><td>Wyłączony</td><td>Kategoria aktywnego połączenia, np. BlueZ lub ESPHome</td></tr>
-    <tr><td>Czujnik binarny<br><code>binary_sensor</code></td><td>🔗 <strong>Połączenie</strong></td><td>Włączony</td><td>Gotowa sesja biurka; stan rozłączony po zerwaniu</td></tr>
+    <tr><td><code>binary_sensor</code></td><td>🔗 <strong>Połączenie</strong></td><td>Włączony</td><td>Gotowa sesja biurka; stan rozłączony po zerwaniu</td></tr>
   </tbody>
 </table>
 
 Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**, po pokazaniu wyłączonych encji LINAK. Nie są przełącznikami ustawień biurka. Nazwa i MAC są informacjami urządzenia, bez osobnych sensorów. Pobierany plik diagnostyczny pomija te identyfikatory. [Jak interpretować diagnostykę →](../docs/diagnostics.md)
-
-### Sterowanie
-
-| Typ encji | Nazwa w HA | Działanie |
-| --- | --- | --- |
-| `number`, cm | 🎯 **Wysokość zadana** | Wybierz suwakiem wysokość w centymetrach |
-| `button` | ⏹️ **Stop** | Przerywa bieżące polecenie ruchu |
-| `button` | 🔖 **Przejdź do zapisanej pozycji 1–4** | Odczytuje wybraną pamięć i jedzie do niej; puste pozycje są niedostępne |
-| `sensor` | 🧭 **Operacja** | Pokazuje, co integracja robi z biurkiem i jak zakończyła się ostatnia operacja |
-| `switch` | 🔌 **Utrzymuj połączenie** | Domyślnie wyłączona; włącz ją w ustawieniach encji, a potem wyłącz przełącznik, aby celowo zwolnić połączenie Bluetooth z biurkiem, i włącz, aby połączyć się ponownie. Wybór przetrwa restart |
-
-**Jak działa sterowanie**
-
-- Suwak wybiera wysokość zadaną w pełnych centymetrach, wewnątrz zmierzonego zakresu.
-- Przyciskiem **Stop** zatrzymasz jazdę.
-- Przed wybraniem kolejnego celu poczekaj na zakończenie ruchu lub naciśnij Stop. Nowe cele nie trafiają do kolejki.
-- Przyciski pamięci przenoszą biurko do pozycji zapisanych na panelu.
-- Przed wykonaniem polecenia integracja sprawdza klienta panelu i w razie potrzeby przygotowuje go, zachowując jego identyfikator.
-- Błędna odpowiedź pamięci lub przypomnień podczas odświeżania wyłącza odczyty tylko tej grupy. Poprawny pomiar wysokości pozostaje. Błąd połączenia nadal dotyczy całej sesji.
-
-**Czujnik Operacja**
-
-- Pokazuje: brak operacji, przygotowanie, ruch lub zatrzymywanie, a potem wynik: zakończono, przerwano albo błąd z powodem.
-- Po około 10 sekundach wraca do stanu „brak operacji" i zachowuje wynik w atrybucie `last_result`, więc automatyzacja może powiadomić o wyniku.
-- Pozostaje dostępny po zerwaniu połączenia i nie zmienia się po odrzuconym żądaniu.
-- Opisuje żądanie, a nie fizyczne osiągnięcie wysokości.
-
-**Utrzymuj połączenie**
-
-- Włącz ją w ustawieniach encji, a potem wyłącz przełącznik, aby celowo zwolnić połączenie Bluetooth z biurkiem, na przykład do diagnostyki.
-- Gdy jest wyłączony, LINAK przestaje odpytywać i łączyć się ponownie. Wybór przetrwa restart.
-- Przełącznik nigdy nie rusza biurka. Wyłączenie w trakcie jazdy najpierw zatrzymuje biurko.
-
-Podczas dodawania integracji podaj zakres wysokości swojego biurka. Zmienisz go później w **Ustawienia → Urządzenia i usługi → Biurka LINAK → Konfiguruj**. Jeśli aktualizujesz starszą instalację, uzupełnij zakres w tym samym miejscu. [Instrukcja i pierwszy test po angielsku](../docs/controls.md).
-
-Jeśli panel pokazuje błędną wysokość, podczas dodawania lub w Konfiguruj wpisz aktualny pomiar od podłogi do góry blatu w **Wysokość z miarki**. Osobny ekran pozwala sprawdzić i potwierdzić korektę przed zapisem w panelu. Kalibracja nie porusza biurkiem. Podczas dodawania potwierdzisz przygotowanie klienta panelu, z zachowaniem jego identyfikatora. Odczyty w tle nie wykonują tego zapisu. Czujnik offsetu pozostaje tylko do odczytu; zapisywanie pamięci i zmiana przypomnień pozostają w [planie ustawień](../docs/settings-reference.md).
-
-Kreator prowadzi przez nazwę w HA, przygotowanie połączenia, zakres ruchu i sprawdzenie aktualnej wysokości. Aplikacja telefonu nie jest potrzebna. Sensory wysokości i historia zapisują pełne centymetry, a suwak wybiera cele co 1 cm wewnątrz zmierzonego zakresu. W czasie ruchu suwak zachowuje poprzednią wartość i aktualizuje ją po zatrzymaniu. Sensor wysokości pokazuje ruch na bieżąco. Pomiary z miarki oraz obliczenia kalibracji i ruchu zachowują dokładność. Nazwa wybrana w kreatorze dotyczy HA.
 
 <a id="requirements"></a>
 
@@ -165,8 +162,6 @@ Kreator prowadzi przez nazwę w HA, przygotowanie połączenia, zakres ruchu i s
 - Adapter Bluetooth w zasięgu biurka lub zgodne **aktywne proxy Bluetooth ESPHome**.
 - Wolne połączenie Bluetooth na panelu.
 
-Stan testów na Malinie i przez proxy opisujemy [osobno](#validation).
-
 <a id="installation"></a>
 
 ## 📦 Instalacja
@@ -174,13 +169,8 @@ Stan testów na Malinie i przez proxy opisujemy [osobno](#validation).
 ### Przez HACS
 
 1. Otwórz HACS → **Własne repozytoria / Custom repositories**.
-2. Dodaj ten adres i wybierz **Integracja / Integration**:
-
-   ```text
-   https://github.com/solarssk/ha-linak
-   ```
-
-3. Pobierz **LINAK Desks** i uruchom ponownie Home Assistant.
+2. Dodaj `https://github.com/solarssk/ha-linak` i wybierz **Integracja / Integration**.
+3. Pobierz **LINAK** i uruchom ponownie Home Assistant.
 
 <details>
 <summary>Wolisz instalację ręczną?</summary>
@@ -193,30 +183,16 @@ Skopiuj [`custom_components/ha_linak`](../custom_components/ha_linak) do folderu
 
 ## 🔌 Konfiguracja
 
-W Home Assistant integracja nazywa się **Biurka LINAK**. Jej wewnętrzna domena pozostaje `ha_linak`.
+W Home Assistant integracja nazywa się **LINAK**. Jej wewnętrzna domena pozostaje `ha_linak`.
 
 1. Zamknij aplikację telefonu. Wyłącz integrację IKEA Idasen Desk, jeśli używa tego samego biurka. LINAK wykrywa włączony wpis IKEA dla tego samego biurka i wyjaśnia, jak rozwiązać konflikt, zachowując jego konfigurację.
 2. Włącz **tryb parowania Bluetooth** na panelu.
-3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **Biurka LINAK** lub skorzystaj z karty wykrytego urządzenia.
+3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację** i wyszukaj **LINAK** lub skorzystaj z karty wykrytego urządzenia.
 4. Wybierz tę integrację o domenie **`ha_linak`**, a następnie swoje biurko.
 
-Karta wykrywania używa nazwy biurka i krótkiej końcówki adresu, np. **Office desk (EEFF)**, zamiast powtórzonego LINAK. Gdy nazwa nie jest jeszcze dostępna, pokazuje **LINAK (EEFF)**. Na Linuksie integracja korzysta też z nazwy znanej lokalnemu systemowi Bluetooth. Po połączeniu może uzupełnić nazwę urządzenia z odczytu Bluetooth; nazwa urządzenia nadana przez Ciebie w HA ma pierwszeństwo.
+Kreator prowadzi przez nazwę w HA, połączenie, zmierzony zakres ruchu i sprawdzenie wysokości. Wybierz **Tylko monitorowanie**, jeśli potrzebujesz samych odczytów. Sterowanie dodasz później przez **Konfiguruj**.
 
-Wersja **0.1.0a4** dodaje tymczasowego agenta parowania lokalnego BlueZ. Konfiguracja rozróżnia niedostępność lokalnego parowania, odrzucone uwierzytelnienie, brak obsługi parowania w proxy i zerwanie połączenia. Automatyczne pierwsze parowanie wymaga jeszcze testu na sprzęcie.
-
-Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a zwolnienie połączenia może potrwać kolejne **10 sekund**. Błąd pokazuje przyczynę i pozwala ponowić próbę. [Pierwsza konfiguracja i diagnostyka →](../docs/onboarding.md)
-
-> [!TIP]
-> Panel przyjmuje jedno połączenie Bluetooth naraz. Jeśli konfiguracja się nie udaje, sprawdź, czy nie jest połączona inna aplikacja. Lokalne parowanie odbywa się podczas konfiguracji; problem z usługą Bluetooth lub uprawnieniami D-Bus ma osobny komunikat.
-
-<details>
-<summary>O wersji alfa i wbudowanym wpisie LINAK</summary>
-
-- To własne repozytorium HACS, poza domyślnym katalogiem.
-- Nie ma jeszcze wersjonowanego wydania; HACS pobiera główną gałąź. Sprawdź [stan CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml).
-- Wbudowany wpis LINAK prowadzi do innej integracji, IKEA Idasen Desk. Dla tego projektu wybierz `ha_linak`.
-
-</details>
+Po zatwierdzeniu zobaczysz ekran postępu. Poczekaj do **60 sekund** na połączenie, a po błędzie do kolejnych **10 sekund** na jego zwolnienie. Wykonaj wskazówki z komunikatu i spróbuj ponownie. Jeśli z biurkiem jest połączona inna aplikacja, rozłącz ją.
 
 <a id="daily-use"></a>
 
@@ -231,52 +207,33 @@ Po zatwierdzeniu zobaczysz ekran postępu HA. Próba ma limit **60 sekund**, a z
 <details>
 <summary>Usuwanie integracji</summary>
 
-Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uruchom ponownie HA. Ta wersja nie zmienia ustawień zapisanych na panelu.
+Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uruchom ponownie HA. Usunięcie integracji nie cofa kalibracji zapisanej w panelu.
 
 </details>
 
 <a id="validation"></a>
-
-## 🧪 Stan testów
-
-- **Fizyczny DPG1C:** siedem zapytań odczytu sprawdzonych przez macOS CoreBluetooth.
-- **Home Assistant 2026.10.4 z symulowanym Bluetooth:** testy konfiguracji, czujników, utraty i odzyskania połączenia oraz wyładowania integracji.
-- **Malina:** zaobserwowano odczyty i ponowne połączenie po ręcznym parowaniu; automatyczne pierwsze parowanie wymaga jeszcze testu.
-- **Proxy ESPHome:** test sprzętowy do wykonania.
-
-To stan weryfikacji środowisk, nie lista modeli paneli. [Pełne wyniki →](../docs/hardware-results.md)
-
-### Testy sterowania
-
-Testy oprogramowania obejmują encje, obsługę połączenia, przerwanie ruchu i zamykanie integracji. Wyniki fizycznego ruchu i Stop na DPG1C nadal wymagają potwierdzenia. [Pierwszy test w HA po angielsku](../docs/controls.md) opisuje próby i raportowanie; [osobne narzędzie badawcze](../docs/movement-test.md) służy do eksperymentów protokołu poza HA.
-
-<details>
-<summary>Ograniczenia pomiarów i sterowania</summary>
-
-- Nieznane pola prędkości i liczniki nie są udostępniane jako potwierdzone pomiary.
-- Wysokość biurka nie oznacza wykrywania obecności.
-
-</details>
-
 <a id="help"></a>
 
 ## 📚 Pomoc i dokumentacja
 
-- **Coś nie działa?** [Zgłoś błąd](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
-- **Śledź rozwój:** [Lista zmian](../CHANGELOG.md) · [Plan rozwoju](../docs/roadmap.md).
-- **Chcesz pomóc?** [Contributing](../CONTRIBUTING.md) · [Instrukcje dla agentów](../AGENTS.md).
-- **Mapa dokumentacji:** [Wybierz instrukcję lub dokument techniczny](../docs/README.md).
-- **Szczegóły techniczne:** [Protokół](../docs/protocol.md) · [Architektura](../docs/architecture.md) · [Plan sterowania](../docs/movement.md).
-- **Bezpieczeństwo:** [Prywatne zgłaszanie podatności](../SECURITY.md) · [Utrzymanie według Tier 2](../docs/governance.md). Diagnostyka pomija identyfikatory urządzenia.
+Instrukcje szczegółowe są po angielsku:
 
-Dokumentacja techniczna jest prowadzona po angielsku.
+- **Konfiguracja:** [Ustawienia i pierwszy test sterowania](../docs/controls.md).
+- **Problemy z połączeniem lub sterowaniem:** [Rozwiązywanie problemów](../docs/diagnostics.md).
+- **Zgłoszenie błędu:** [Formularz zgłoszenia](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). Podaj model panelu, wersję HA i sposób połączenia. Pobierz diagnostykę ze strony urządzenia; z dodatkowych logów usuń nazwy i adresy Bluetooth.
+
+### Dla testerów i programistów
+
+- [Spis dokumentacji technicznej](../docs/README.md)
+- [Rodziny urządzeń i testowanie kolejnego modelu](../docs/device-support.md)
+- [Zakres testów sprzętowych i znane ograniczenia](../docs/hardware-results.md)
+- [Lista zmian](../CHANGELOG.md) · [Plan rozwoju](../docs/roadmap.md) · [Współpraca](../CONTRIBUTING.md)
+- [Prywatne zgłaszanie podatności](../SECURITY.md)
 
 <a id="license"></a>
 
 ## 📄 Licencja
 
-Kod: [MIT](../LICENSE). Niezależny projekt społecznościowy, niezwiązany z LINAK ani IKEA. Projekt nie ma oficjalnej oceny jakości HA ani akceptacji do domyślnego katalogu HACS.
+Kod: [MIT](../LICENSE). Niezależny projekt społecznościowy, niezwiązany z LINAK ani IKEA.
 
 Dostarczone oficjalne grafiki LINAK służą identyfikacji sprzętu. Nazwy i grafiki pozostają własnością odpowiednich właścicieli i są wyłączone z licencji kodu. Zobacz [pochodzenie grafik](../docs/branding.md) i [źródła protokołu](../docs/protocol.md).
-
-Szczegóły techniczne: [badania Bluetooth i projekt diagnostyki](../docs/bluetooth-research.md) (po angielsku).

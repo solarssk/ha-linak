@@ -12,6 +12,7 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers import device_registry as dr
 
 from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
 from .connection_intent import remember_connection, wants_connection
@@ -238,12 +239,30 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             )
             await self._discard_if_released(self.desk)
             self._validate_control_reference(state)
+            self._update_device_identity()
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
             raise UpdateFailed(
                 f"Unable to read LINAK desk (stage={self.desk.stage}, "
                 f"reason={_failure_reason(err)})"
             ) from err
+
+    @callback
+    def _update_device_identity(self) -> None:
+        """Refresh an existing registry entry after reconnect or a released boot."""
+        if self.desk is None or self.config_entry is None:
+            return
+        registry = dr.async_get(self.hass)
+        identity = self.desk.identity
+        for device in dr.async_entries_for_config_entry(
+            registry, self.config_entry.entry_id
+        ):
+            if (DOMAIN, self.address) not in device.identifiers:
+                continue
+            if device.model != identity.model or device.sw_version != identity.firmware:
+                registry.async_update_device(
+                    device.id, model=identity.model, sw_version=identity.firmware
+                )
 
     async def async_move_to_cm(self, height_cm: float) -> None:
         await self._async_control("target", height_cm)

@@ -8,20 +8,22 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity import LinakEntity
+from .entity import LinakEntity, track_memory_slots
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
 async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
-    _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(
-        [LinakStop(coordinator)]
-        + [
-            LinakMemory(coordinator, index)
-            for index in range(len(coordinator.data.memories))
-        ]
+    async_add_entities([LinakStop(coordinator)])
+    track_memory_slots(
+        hass,
+        entry,
+        coordinator,
+        "go_to_memory_",
+        lambda index: LinakMemory(coordinator, index),
+        async_add_entities,
     )
 
 

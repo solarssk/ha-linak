@@ -1,5 +1,6 @@
 """Shared BLE state and recovery through Home Assistant."""
 
+import asyncio
 from datetime import timedelta
 import logging
 
@@ -13,6 +14,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .client import BLUETOOTH_BACKENDS, DeskClient, DeskState, backend_category
+from .connection_intent import remember_connection, wants_connection
 from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError, MotionFailure, MotionStopped
@@ -43,10 +45,75 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         )
         self.controls = ControlSettings.from_options(dict(entry.options))
         self.address = entry.data[CONF_ADDRESS]
+        self._ownership = asyncio.Lock()
         self.desk = take_session(hass, self.address)
         if self.desk is not None:
             self.desk.changed = self._changed
             self.desk.device_callback = self._device
+
+    @property
+    def connection_wanted(self) -> bool:
+        """The owner's intent, not the observed link; it survives a restart."""
+        assert self.config_entry is not None
+        return wants_connection(self.config_entry)
+
+    @callback
+    def _show_released(self) -> None:
+        """Present a deliberate release without logging it as a fault."""
+        self.last_exception = UpdateFailed(
+            translation_domain=DOMAIN, translation_key="connection_released"
+        )
+        self.last_update_success = False
+        self.async_update_listeners()
+
+    async def async_start_released(self) -> None:
+        """Load the entities of a persisted release without touching the radio."""
+        self.data = DeskState()
+        if self.desk is not None:
+            # A setup wizard may still hold a link; the owner asked for none.
+            await self.desk.release()
+        self._show_released()
+
+    async def async_set_connection_wanted(self, wanted: bool) -> None:
+        """Release the desk or take it back; the newest request wins.
+
+        The intent is saved at once, so a restart or an in-flight refresh sees the
+        latest choice. The actions themselves are serialized, and a request that a
+        later one superseded does nothing.
+        """
+        assert self.config_entry is not None
+        remember_connection(self.hass, self.config_entry, wanted)
+        async with self._ownership:
+            if self.connection_wanted != wanted:
+                return
+            try:
+                if not wanted:
+                    await self._release()
+                    return
+                if self.desk is not None:
+                    self.desk.resume()
+                if self.desk is not None and self.desk.connected:
+                    return
+                await self.async_refresh()
+                if not self.last_update_success and self.connection_wanted:
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN, translation_key="connection_failed"
+                    )
+            finally:
+                # The owner's intent changed even when reconnecting did not work.
+                self.async_update_listeners()
+
+    async def _release(self) -> None:
+        try:
+            if self.desk is not None:
+                await self.desk.release()
+        except MotionError as err:
+            # The link is down either way; the owner must still hear about a Stop
+            # that could not be confirmed.
+            raise self._control_error("stop", "released", err) from err
+        finally:
+            # Cached readings must stop looking live even if the disconnect failed.
+            self._show_released()
 
     @property
     def signal_strength(self) -> int | None:
@@ -117,6 +184,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         return device
 
     async def _async_update_data(self) -> DeskState:
+        if not self.connection_wanted:
+            raise UpdateFailed(
+                translation_domain=DOMAIN, translation_key="connection_released"
+            )
         if self.desk is not None and self.desk.control_busy:
             if not self.desk.connected:
                 raise UpdateFailed("Desk disconnected during control cleanup")
@@ -140,9 +211,19 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             self.desk.device = device
         try:
             state = await self.desk.refresh(
-                allow_partial_settings=self.data is not None,
+                allow_partial_settings=self.data is not None
+                and self.data.capabilities is not None,
                 settings_interval=SETTINGS_REFRESH_INTERVAL,
             )
+            if not self.connection_wanted:
+                # A release that raced this refresh must not be revived by it.
+                try:
+                    await self.desk.release()
+                except Exception:  # noqa: BLE001 - the release outcome is reported below
+                    _LOGGER.debug("Release after a raced refresh failed", exc_info=True)
+                raise UpdateFailed(
+                    translation_domain=DOMAIN, translation_key="connection_released"
+                )
             self._validate_control_reference(state)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:

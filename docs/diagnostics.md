@@ -22,6 +22,7 @@ Find the closest symptom and collect the next missing evidence. The [shared glos
 | A request was refused or its outcome is unclear | The `Operation` sensor holds the active phase or the last result and its reason | Read its state and `reason` first; `Connection` reports only the session, and a refused request changes neither |
 | RSSI is available, controls are unavailable | A scanner still hears the desk | Connection/backend state; RSSI is not an active-link test |
 | Entities become unavailable after an action | The session no longer supplies valid state | Determine whether radio loss caused the error or cleanup deliberately disconnected |
+| Readings stay unavailable and nothing reconnects | Keep connected is off, so the release was deliberate | Check the switch and `connection_wanted` in the download; turn it on to reconnect once |
 | Stored heights repeat or shift slots | Reply association may be wrong | Read-response ordering, the capabilities barriers between memory reads and the [stale-frame table](protocol.md#stale-and-duplicate-frames) |
 | Displayed height disagrees with a tape measure | The height reference may be wrong | Protected calibration; do not invent different measurements to satisfy bounds |
 
@@ -156,6 +157,7 @@ Enable optional diagnostics through **Settings → Devices & services → Entiti
 | Download field | Meaning |
 | --- | --- |
 | `connected`, `stage`, `last_update_success` | Client readiness, last phase and shared-read availability |
+| `connection_wanted` | The Keep connected intent; `false` means a deliberate release, which is not a fault |
 | `bluetooth.signal_strength`, `bluetooth.signal_strength_source` | Cached RSSI with explicit `advertisement` source; not active-link RSSI |
 | `bluetooth.backend` | Allowlisted active connection backend category |
 | `controls.range_configured`, `controls.busy` | Whether usable bounds exist and a foreground operation owns the client |

@@ -55,6 +55,8 @@ A busy message means that the new command was not accepted; it does not mean tha
 
 The **Operation** sensor shows whether a request is still running and how the last one ended. It reads idle, preparing, moving or stopping while a request runs, then completed, interrupted or failed, and a failed result carries a `reason` attribute. Use it to see whether a request is still running or how the last one ended. It does not show scheduled state reads, which can still refuse a new request with the busy message while it reads idle or completed. A refused request does not change it, it stays available when the connection drops, and it reports the request, not physical arrival. [How the phases change →](movement.md#operation-status)
 
+The **Keep connected** switch is your choice to hold the desk's Bluetooth link. It is on by default for existing entries. Turn it off to release the link on purpose, for example to rule out this integration during diagnostics. While it is off, LINAK does no radio lookups, connections or polls, readings show unavailable and the Connection sensor stays off. The choice survives a Home Assistant restart. Turn it on to reconnect: LINAK performs one normal connection and reads every value afresh. It never sends a target, calibrates or activates the panel client to restore telemetry. If the desk cannot be reached, the action reports a failure, the switch stays on and Home Assistant retries on its normal schedule. Turning it off during a move stops the desk first. If that Stop cannot be confirmed, the action reports a failed Stop, check the desk immediately and use the physical panel. Releasing the link is not evidence that the panel sleeps or that its display turns off. [How ownership works →](architecture.md#deliberate-connection-ownership)
+
 ## Test native controls at the panel
 
 Clear the travel path, have physical stopping available and disable any other integration controlling the same desk. Use HA alone, not the standalone BLE runner at the same time. Review the actual/reference height and bounds before each attempt.
@@ -69,6 +71,8 @@ Clear the travel path, have physical stopping available and disable any other in
 | 6 | Review a saved height/path, then test its button | Correct destination and unchanged stored value |
 | 7 | Test scoped reload/unload during motion | Stop attempted, cleanup settles, no continued/resumed target; Operation starts idle after the reload |
 | 8 | Reconnect/restart once stationary | Fresh readings; no motion until another explicit action |
+| 9 | Turn Keep connected off while stationary, wait past one polling interval, then turn it on | Readings unavailable and the Connection sensor off while released; no reconnect without the switch; a fresh read and no motion after turning it on |
+| 10 | Turn Keep connected off during an agreed nearby move, then restart HA while it is off | The desk stops before the link drops and Operation ends interrupted; after the restart the switch is still off and nothing connects |
 
 The native slider has no standalone runner's 2 cm experiment cap. Choose the test target deliberately from the fresh actual height, not a rounded value copied from another desk. Do not continue after unexpected direction, failure to stop, a reference disagreement or repeated action errors.
 

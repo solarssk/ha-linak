@@ -166,7 +166,21 @@ class DeskClient:
         self.last_control_result = "not_requested"
         self._motion_stop_sent = False
         self._stop_requested = False
+        self._released = False
         self.operation = OperationTracker(self._operation_changed)
+
+    @property
+    def released(self) -> bool:
+        """The owner deliberately released the desk; nothing may reconnect it."""
+        return self._released
+
+    async def release(self) -> None:
+        """Stop any movement, drop the link and refuse to reconnect until resumed."""
+        self._released = True
+        await self.disconnect()
+
+    def resume(self) -> None:
+        self._released = False
 
     def _operation_changed(self) -> None:
         self.changed()
@@ -340,6 +354,8 @@ class DeskClient:
     async def refresh(
         self, *, allow_partial_settings: bool = False, settings_interval: float = 0
     ) -> DeskState:
+        if self._released:
+            raise ConnectionError("The connection was released by the owner")
         if self.control_busy:
             return self.state
         async with self._lock:

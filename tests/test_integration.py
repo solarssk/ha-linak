@@ -231,6 +231,7 @@ async def test_diagnostics_do_not_contain_device_identifiers(hass):
         signal_strength=None,
         bluetooth_backend=None,
         operation=OperationStatus(),
+        connection_wanted=True,
     )
     result = await async_get_config_entry_diagnostics(hass, entry)
     serialized = json.dumps(result)

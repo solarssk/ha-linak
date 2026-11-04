@@ -67,7 +67,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         entries = er.async_entries_for_config_entry(registry, entry.entry_id)
-        assert len(entries) == 23
+        assert len(entries) == 24
         by_key = {item.unique_id.removeprefix(ADDRESS + "_"): item for item in entries}
         for key in [
             "height",
@@ -87,6 +87,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
             "go_to_memory_1",
             "go_to_memory_4",
             "operation",
+            "keep_connected",
         ]:
             assert by_key[key].disabled_by is None
             assert by_key[key].entity_category is None

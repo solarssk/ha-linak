@@ -34,7 +34,7 @@ from .motion import (
     _drain_cleanup,
 )
 from .naming import DEFAULT_NAME, desk_name
-from .operation import OperationTracker, Phase, Reason
+from .operation import OPERATION_RESET_DELAY, OperationTracker, Phase, Reason
 from .pairing import BlueZAgentUnavailable, pair_bluez
 from .protocol import (
     DPG_UUID,
@@ -167,6 +167,8 @@ class DeskClient:
         self._motion_stop_sent = False
         self._stop_requested = False
         self._released = False
+        self._operation_reset: asyncio.TimerHandle | None = None
+        self._operation_resets_closed = False
         self.operation = OperationTracker(self._operation_changed)
 
     @property
@@ -187,7 +189,31 @@ class DeskClient:
             raise ConnectionError("The connection was released by the owner")
 
     def _operation_changed(self) -> None:
+        self._schedule_operation_reset()
         self.changed()
+
+    def _schedule_operation_reset(self) -> None:
+        """Return a settled result to idle after a pause; a new request cancels it."""
+        self.cancel_operation_reset()
+        if self._operation_resets_closed or not self.operation.status.settled:
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self._operation_reset = loop.call_later(
+            OPERATION_RESET_DELAY, self.operation.reset
+        )
+
+    def cancel_operation_reset(self) -> None:
+        if self._operation_reset is not None:
+            self._operation_reset.cancel()
+            self._operation_reset = None
+
+    def close_operation_resets(self) -> None:
+        """No timer may outlive this client, even one a closing movement settles."""
+        self._operation_resets_closed = True
+        self.cancel_operation_reset()
 
     def _set_stage(self, stage: str) -> None:
         now = monotonic()

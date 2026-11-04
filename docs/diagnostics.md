@@ -163,6 +163,7 @@ Enable optional diagnostics through **Settings → Devices & services → Entiti
 | `controls.range_configured`, `controls.busy` | Whether usable bounds exist and a foreground operation owns the client |
 | `controls.last_result` | Software result: `not_requested`, `moving`, `completed`, `interrupted`, `failed`, `stop_sent` or `stop_failed` |
 | `controls.operation.phase`, `controls.operation.reason`, `controls.operation.requested_height_cm` | The Operation sensor's phase and failure reason, and the requested goal, which is never a measurement |
+| `controls.operation.last_result` | The latest settled result (`completed`, `interrupted` or `failed`) kept after the phase returned to idle, or `null` before any operation since the load |
 | `state` | Raw decoded position, reference, capabilities, memories and reminders |
 
 `completed` and `stop_sent` are software outcomes, not independent physical verification. Normal sensor/history presentation rounds heights; raw diagnostic state retains precision.

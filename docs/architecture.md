@@ -46,7 +46,7 @@ Centimeters are the primary height interface. A `number` entity supports that in
 | Target height number | Whole-centimeter target within measured bounds; state follows actual feedback | Control |
 | Stored-position buttons | Freshly read slot passed to the common movement controller | Controls |
 | Stop button | Interrupt an active operation or send Stop while idle | Control |
-| Operation sensor | Phase of the explicit request, its last result and reason; never a measurement | Ordinary sensor, available without a Bluetooth link |
+| Operation sensor | Phase of the explicit request; a settled result returns to idle after a pause and stays in the last-result attributes; never a measurement | Ordinary sensor, available without a Bluetooth link |
 | Keep connected switch | The owner's intent to hold the Bluetooth link, persisted on the config entry; not the observed link | Configuration control, disabled by default, available without a Bluetooth link |
 | Offset sensor | Technical reference used in height conversion | Diagnostic |
 | Connection binary sensor | Current client readiness | Diagnostic, enabled by default |

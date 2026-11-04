@@ -48,6 +48,7 @@ from .setup_session import offer_session
 from .ownership import DeskOwnershipConflict, has_idasen_conflict
 
 _LOGGER = logging.getLogger(__name__)
+CONF_MONITORING_ONLY = "monitoring_only"
 SETUP_IDLE_TIMEOUT = 300
 
 
@@ -101,6 +102,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         self._calibration: HeightCalibration | None = None
         self._calibration_task: asyncio.Task[str | None] | None = None
         self._preparing = False
+        self._monitoring_only = False
         self._final_height_check = False
         self._desk: DeskClient | None = None
         self._idle_timer: asyncio.TimerHandle | None = None
@@ -329,6 +331,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._name = name
                 self._user_named = True
                 self._error = None
+                if user_input.get(CONF_MONITORING_ONLY):
+                    self._monitoring_only = True
+                    return await self.async_step_save_range()
                 self._preparing = True
                 self._calibration_task = self.hass.async_create_task(
                     self._apply_calibration(), eager_start=False
@@ -336,7 +341,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_calibration_apply()
             errors["name"] = "invalid_name"
         return self.async_show_form(
-            step_id="name", data_schema=_name_schema(self._name), errors=errors
+            step_id="name",
+            data_schema=_name_schema(self._name, monitoring_option=True),
+            errors=errors,
         )
 
     async def async_step_height(self, user_input=None) -> ConfigFlowResult:
@@ -482,11 +489,12 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         if has_idasen_conflict(self.hass, self._address):
             await self._release_session()
             return self.async_abort(reason="idasen_conflict")
-        try:
-            _validate_range(self._pending_range or {}, self._validated_state)
-        except ValueError:
-            self._error = "invalid_limits"
-            return await self.async_step_finish()
+        if not self._monitoring_only:
+            try:
+                _validate_range(self._pending_range or {}, self._validated_state)
+            except ValueError:
+                self._error = "invalid_limits"
+                return await self.async_step_finish()
         if self._desk is not None:
             if self._idle_timer is not None:
                 self._idle_timer.cancel()
@@ -496,7 +504,7 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=self._name,
             data={CONF_ADDRESS: self._address, CONF_NAME: self._name},
-            options=self._pending_range,
+            options={} if self._monitoring_only else self._pending_range,
         )
 
 
@@ -746,8 +754,15 @@ def _range_schema(options) -> vol.Schema:
     return vol.Schema(schema)
 
 
-def _name_schema(name: str) -> vol.Schema:
-    return vol.Schema({vol.Required(CONF_NAME, default=name): selector.TextSelector()})
+def _name_schema(name: str, *, monitoring_option: bool = False) -> vol.Schema:
+    schema: dict[Any, Any] = {
+        vol.Required(CONF_NAME, default=name): selector.TextSelector()
+    }
+    if monitoring_option:
+        schema[vol.Optional(CONF_MONITORING_ONLY, default=False)] = (
+            selector.BooleanSelector()
+        )
+    return vol.Schema(schema)
 
 
 async def _guide_height(flow, user_input, state, next_step) -> ConfigFlowResult:

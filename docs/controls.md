@@ -13,7 +13,9 @@ Open **Settings → Devices & services → LINAK Desks → Configure**. Choose t
 | Check/correct height | Whether the current reading matches a tape measurement | A separate confirmation can correct the panel reference |
 | Height range | Measured lowest/highest desktop heights | HA command bounds; no motion or firmware-limit programming |
 
-Setup guides you through the same information. Keep the desk stationary from its current-height measurement through correction confirmation. Physical panel movement while measuring the travel range happens before the final current-height check.
+Setup guides you through the same information. To only watch the desk, choose **Monitoring only** on the name step. Nothing is written to the panel and no range is requested. Add the range in Configure when you want controls.
+
+Keep the desk stationary from its current-height measurement through correction confirmation. Physical panel movement while measuring the travel range happens before the final current-height check.
 
 ## Correct a wrong height reading
 

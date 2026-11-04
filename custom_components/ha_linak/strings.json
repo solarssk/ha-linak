@@ -38,12 +38,14 @@
       },
       "name": {
         "title": "1. Name and connect your desk",
-        "description": "Choose the name shown in Home Assistant. Continuing prepares the panel for HA control and may save a connection setting in its memory. The desk will not move. No phone app is needed.",
+        "description": "Choose the name shown in Home Assistant. Continuing prepares the panel for HA control and may save a connection setting in its memory. The desk will not move. No phone app is needed. To only watch the desk, turn on monitoring only: nothing is written to the panel and no height range is asked for.",
         "data": {
-          "name": "Name in Home Assistant"
+          "name": "Name in Home Assistant",
+          "monitoring_only": "Monitoring only"
         },
         "data_description": {
-          "name": "For example: Office desk."
+          "name": "For example: Office desk.",
+          "monitoring_only": "Read height and status without preparing the panel or setting a height range. Add controls later in Configure."
         }
       },
       "height": {

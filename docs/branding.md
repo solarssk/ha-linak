@@ -6,7 +6,6 @@ The supplied icon is 256 × 256 pixels. `icon@2x.png` is a 512 × 512 resampling
 
 Home Assistant supports local `brand/` assets since 2026.3. The dimensions and filenames follow its [integration image requirements](https://contributors.home-assistant.io/core/integrations/brands/). These images improve identification; they do not confer HACS default-catalog acceptance or a Home Assistant quality-scale award.
 
-
 ## README vector logos
 
 The maintainer additionally supplied `LINAK logo A_2colour.ai` and `LINAK logo A_neg.ai`, identified as official LINAK artwork. Both contain PDF-compatible vector paths, including the original tagline. Poppler exported those paths to the two SVGs in `docs/assets/`; the GitHub-facing READMEs in `.github/` use a `picture` element with dark/light sources and a light fallback. The same source drawing, colors and lettering are preserved. The negative version's surrounding dark rectangle was removed and the page bounds were cropped to the artwork, producing a transparent background. Both exports share a view box to avoid layout shifts. They contain paths only, without scripts, external resources or embedded fonts.

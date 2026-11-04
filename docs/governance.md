@@ -38,7 +38,6 @@ Every PR requires one supported type label, an open target release milestone and
 
 The existing required Documentation impact job runs check_pr_metadata.py in addition to check_pr_docs.py, with unchanged read-only permissions and check name. Metadata edits trigger a new run. The job is skipped once the pull request is no longer open, because a rerun after a squash merge cannot diff the deleted head and would only report a false failure; every open pull request still runs it. No admin token, automatic metadata mutation or pull_request_target checkout is introduced. The metadata validator accepts an event payload in CI and can read a live PR through --pr for maintainer handoff verification. Its passing result is a snapshot; agents must still verify live fields/current head before handoff. The maintainer remains the only merger.
 
-
 ## Label taxonomy
 
 Keep one compact taxonomy, with exactly one type per PR:

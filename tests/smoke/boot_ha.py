@@ -124,7 +124,13 @@ async def run(args) -> None:
             integration = await loader.async_get_integration(hass, "ha_linak")
             component = await integration.async_get_component()
             platforms = [str(platform) for platform in component.PLATFORMS]
-            if set(platforms) != {"sensor", "binary_sensor", "number", "button"}:
+            if set(platforms) != {
+                "sensor",
+                "binary_sensor",
+                "number",
+                "button",
+                "switch",
+            }:
                 raise RuntimeError("Declared integration platforms changed")
             for platform in [*platforms, "config_flow", "diagnostics"]:
                 await integration.async_get_platform(platform)

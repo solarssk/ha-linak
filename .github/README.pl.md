@@ -169,12 +169,7 @@ Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**
 ### Przez HACS
 
 1. Otwórz HACS → **Własne repozytoria / Custom repositories**.
-2. Dodaj ten adres i wybierz **Integracja / Integration**:
-
-   ```text
-   https://github.com/solarssk/ha-linak
-   ```
-
+2. Dodaj `https://github.com/solarssk/ha-linak` i wybierz **Integracja / Integration**.
 3. Pobierz **LINAK** i uruchom ponownie Home Assistant.
 
 <details>

@@ -169,12 +169,7 @@ Enable optional entities under **Settings → Devices & services → Entities**,
 ### With HACS
 
 1. Open HACS → **Custom repositories**.
-2. Add this address and choose **Integration**:
-
-   ```text
-   https://github.com/solarssk/ha-linak
-   ```
-
+2. Add `https://github.com/solarssk/ha-linak` and choose **Integration**.
 3. Download **LINAK** and restart Home Assistant.
 
 <details>

@@ -36,7 +36,7 @@ async def test_slider_follows_a_stored_position_move_that_ends_with_residual_spe
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_slider_still_waits_for_physical_travel_after_the_result_resets(hass):
+async def test_slider_ignores_panel_movement_while_the_previous_result_is_shown(hass):
     entry, fake = await setup_entry(hass, OPTIONS)
     target_id = hass.states.async_all("number")[0].entity_id
     coordinator = entry.runtime_data
@@ -44,8 +44,7 @@ async def test_slider_still_waits_for_physical_travel_after_the_result_resets(ha
     await hass.async_block_till_done()
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=2))
     await hass.async_block_till_done()
-    coordinator.desk.operation.reset()
-    await hass.async_block_till_done()
+    assert coordinator.desk.operation.status.settled
     before = hass.states.get(target_id).state
     fake.callbacks["99fa0021-338a-1024-8a49-009c0215f78a"](
         None, bytearray(struct.pack("<HH", 1700, 4))

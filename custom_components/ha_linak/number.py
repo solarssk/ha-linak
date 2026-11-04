@@ -12,6 +12,8 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .entity import LinakEntity, whole_centimeters
+from .operation import OperationStatus
+from .protocol import PositionSample
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
@@ -36,6 +38,8 @@ class LinakTargetHeight(LinakEntity, NumberEntity):
         self._settled_value = self._measured_value()
         self._candidate: tuple[int, int | None] | None = None
         self._cancel_settle: Callable[[], None] | None = None
+        self._seen_result: OperationStatus | None = None
+        self._finishing_sample: PositionSample | None = None
 
     def _measured_value(self) -> float | None:
         value = whole_centimeters(self.coordinator.data.height_cm)
@@ -55,18 +59,33 @@ class LinakTargetHeight(LinakEntity, NumberEntity):
         self._candidate = None
 
     @callback
+    def _note_finished_movement(self) -> None:
+        """Remember the sample that ended this integration's latest movement."""
+        desk = self.coordinator.desk
+        status = desk.operation.status if desk is not None else None
+        if status is None or not status.settled:
+            self._seen_result = None
+            self._finishing_sample = None
+        elif status is not self._seen_result:
+            self._seen_result = status
+            self._finishing_sample = self.coordinator.data.position
+
+    @callback
     def _stationary(self) -> bool:
-        """The desk stands still, or this integration just finished moving it."""
+        """The desk stands still, or this sample ended our own movement."""
         desk = self.coordinator.desk
         position = self.coordinator.data.position
         if desk is None or desk.control_busy or position is None:
             return False
         # The last sample of our own move can carry residual speed, and no later
-        # one may arrive; the move's Stop has already been sent.
-        return position.speed_raw == 0 or desk.operation.status.settled
+        # one may arrive; the move's Stop has already been sent. Later samples
+        # during the result's display time still need speed zero, so panel
+        # travel started meanwhile is not mistaken for rest.
+        return position.speed_raw == 0 or position == self._finishing_sample
 
     @callback
     def _handle_coordinator_update(self) -> None:
+        self._note_finished_movement()
         position = self.coordinator.data.position
         if not self.available or position is None or not self._stationary():
             self._cancel_pending_settle()

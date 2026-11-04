@@ -324,7 +324,29 @@
       "calibrate": "Sprawdzanie pozycji, zapis korekty i odczyt kontrolny. Nie ruszaj biurkiem. Możesz anulować; anulowanie nie cofa już wykonanego zapisu."
     }
   },
+  "services": {
+    "read_protocol_inventory": {
+      "name": "Odczytaj inwentarz protokołu",
+      "description": "Jawny odczyt badawczy wyłącznie dla administratora, przez istniejące połączenie z biurkiem. Pozostaw biurko nieruchome. Zwraca prywatne surowe dane, a nie potwierdzoną wersję firmware, błąd lub dodatkowe osie. Nie aktywuje klienta ani nie zmienia ustawień panelu.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Wpis LINAK",
+          "description": "Już połączony wpis LINAK. Ta akcja nie nawiązuje połączenia ani nie zmienia ścieżki Bluetooth."
+        },
+        "section": {
+          "name": "Zakres odczytu",
+          "description": "reference_outputs odczytuje dziesięć ustalonych charakterystyk wyjść i masek. product_info wykonuje odczyt bariery możliwości i jedno zapytanie o produkt. Dowolne komendy nie są przyjmowane."
+        }
+      }
+    }
+  },
   "exceptions": {
+    "research_not_ready": {
+      "message": "Badanie protokołu wymaga włączonego i już połączonego wpisu LINAK. Poczekaj na zwykłe odczyty. Ta akcja nie nawiąże połączenia ani nie aktywuje panelu."
+    },
+    "research_failed": {
+      "message": "Odczyt badawczy protokołu nie powiódł się. Niejednoznaczna sesja została odrzucona; HA może połączyć się ponownie podczas zwykłego odpytywania. Nie ponawiaj prób w pętli ani nie uznawaj braku danych za obsługiwaną funkcję."
+    },
     "control_unavailable": {
       "message": "Biurko nie ma gotowego połączenia. Sprawdź połączenie Bluetooth."
     },

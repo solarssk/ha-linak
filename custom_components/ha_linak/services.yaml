@@ -1,0 +1,14 @@
+read_protocol_inventory:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: ha_linak
+    section:
+      required: true
+      selector:
+        select:
+          options:
+            - reference_outputs
+            - product_info

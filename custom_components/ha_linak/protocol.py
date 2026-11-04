@@ -1,13 +1,41 @@
 """Pure protocol helpers; no Bluetooth operations or movement commands."""
 
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 import struct
 
 SERVICE_UUID = "99fa0001-338a-1024-8a49-009c0215f78a"
 DPG_UUID = "99fa0011-338a-1024-8a49-009c0215f78a"
 HEIGHT_UUID = "99fa0021-338a-1024-8a49-009c0215f78a"
 DISPLAY_HALF_STEP_RAW = 5  # Half a 1 mm display step, in 0.1 mm wire units.
+REFERENCE_INVENTORY_UUIDS = (
+    HEIGHT_UUID,
+    "99fa0029-338a-1024-8a49-009c0215f78a",
+    "99fa002a-338a-1024-8a49-009c0215f78a",
+) + tuple(f"99fa002{i}-338a-1024-8a49-009c0215f78a" for i in range(2, 9))
+type ResearchValue = (
+    dict[str, ResearchValue] | list[ResearchValue] | str | int | float | bool | None
+)
+
+
+class ResearchSection(StrEnum):
+    """Fixed explicit reads, never arbitrary opcodes or setting writes."""
+
+    REFERENCE_OUTPUTS = "reference_outputs"
+    PRODUCT_INFO = "product_info"
+
+
+def research_product_reply(payload: bytes) -> bytes | None:
+    """Bound a raw research reply without assigning product/firmware semantics."""
+    if not 2 <= len(payload) <= 512 or payload[0] != 1:
+        raise ValueError("Invalid research response framing")
+    if payload[:2] == b"\x01\x11":
+        raise ValueError("Client identity is not a product research response")
+    if len(payload) == 2:
+        if payload != b"\x01\x00":
+            raise ValueError("Unexpected research response status")
+        return None
+    return payload
 
 
 class ReadCommand(IntEnum):

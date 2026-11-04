@@ -324,7 +324,29 @@
       "calibrate": "Checking position, writing the correction and verifying readback. Keep the desk still. You can cancel; cancellation does not undo an already delivered write."
     }
   },
+  "services": {
+    "read_protocol_inventory": {
+      "name": "Read protocol inventory",
+      "description": "Explicit administrator-only research read on the existing desk connection. Keep the desk still. Returns private raw data, not verified firmware, fault or extra-axis information. Never activates the client or changes panel settings.",
+      "fields": {
+        "config_entry_id": {
+          "name": "LINAK entry",
+          "description": "The already connected LINAK entry. This action never connects or changes the Bluetooth backend."
+        },
+        "section": {
+          "name": "Read section",
+          "description": "reference_outputs reads ten fixed output/mask characteristics. product_info sends a capabilities barrier and one product-information query. No arbitrary commands are accepted."
+        }
+      }
+    }
+  },
   "exceptions": {
+    "research_not_ready": {
+      "message": "Protocol research requires an enabled, already connected LINAK entry. Wait for normal readings; this action will not connect or activate the panel."
+    },
+    "research_failed": {
+      "message": "The protocol research read failed. The ambiguous session was discarded; Home Assistant may reconnect through normal polling. Do not retry repeatedly or interpret missing data as a supported feature."
+    },
     "control_unavailable": {
       "message": "The desk has no ready connection. Check Bluetooth connectivity."
     },

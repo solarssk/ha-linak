@@ -51,6 +51,10 @@ from .protocol import (
     decode_reminders,
     decode_stored_position,
     read_request,
+    REFERENCE_INVENTORY_UUIDS,
+    ResearchSection,
+    ResearchValue,
+    research_product_reply,
 )
 
 
@@ -160,6 +164,7 @@ class DeskClient:
         self._link_lost = False
         self._pending: asyncio.Future[bytes] | None = None
         self._response_type: int | None = None
+        self._product_pending: asyncio.Future[bytes] | None = None
         self._closing = False
         self._ready = False
         self._generation = 0
@@ -254,6 +259,16 @@ class DeskClient:
 
     def _notification(self, generation: int, data: bytearray) -> None:
         if generation != self._generation:
+            return
+        product = self._product_pending
+        if product is not None and not product.done():
+            try:
+                payload = research_product_reply(bytes(data))
+            except ValueError as error:
+                product.set_exception(error)
+            else:
+                if payload is not None:
+                    product.set_result(payload)
             return
         pending = self._pending
         if pending is not None and not pending.done() and len(data) >= 2:
@@ -423,24 +438,120 @@ class DeskClient:
                         settings_interval=settings_interval,
                     )
             except BaseException as error:
-                # Cleanup owns the transport even if HA cancels the flow again.
-                cancelled = isinstance(error, asyncio.CancelledError)
-                settled = asyncio.gather(self.disconnect(), return_exceptions=True)
-                while not settled.done():
-                    try:
-                        await asyncio.shield(settled)
-                    except asyncio.CancelledError:
-                        if settled.done():
-                            raise
-                        cancelled = True
-                cleanup_error = settled.result()[0]
-                if isinstance(cleanup_error, BaseException):
-                    _LOGGER.debug(
-                        "BLE cleanup failed: %s", type(cleanup_error).__name__
-                    )
-                if cancelled:
-                    raise asyncio.CancelledError from None
+                await self._discard_after_read_error(error)
                 raise
+
+    async def _discard_after_read_error(self, error: BaseException) -> None:
+        """Retain cleanup ownership through repeated caller cancellation."""
+        cancelled = isinstance(error, asyncio.CancelledError)
+        settled = asyncio.gather(self.disconnect(), return_exceptions=True)
+        while not settled.done():
+            try:
+                await asyncio.shield(settled)
+            except asyncio.CancelledError:
+                if settled.done():
+                    raise
+                cancelled = True
+        cleanup_error = settled.result()[0]
+        if isinstance(cleanup_error, BaseException):
+            _LOGGER.debug("BLE cleanup failed: %s", type(cleanup_error).__name__)
+        if cancelled:
+            raise asyncio.CancelledError from None
+
+    async def read_protocol_inventory(
+        self, section: ResearchSection
+    ) -> dict[str, ResearchValue]:
+        """Use only the existing session, serialized with polling and controls."""
+        if not isinstance(section, ResearchSection):
+            raise ValueError("Unknown protocol inventory section")
+        self._require_unreleased()
+        if self.control_busy or self._lock.locked():
+            raise MotionError("Another desk operation is active", MotionFailure.BUSY)
+        if not self.connected:
+            raise ConnectionError("Protocol inventory requires a ready connection")
+        async with self._lock:
+            try:
+                async with asyncio.timeout(REFRESH_TIMEOUT):
+                    self._set_stage("research_read")
+                    assert self.client is not None
+                    if section is ResearchSection.REFERENCE_OUTPUTS:
+                        result = await self._read_reference_inventory()
+                    else:
+                        result = await self._read_product_info()
+                    self._set_stage("ready")
+                    return {
+                        "section": section.value,
+                        "backend": backend_category(self.client),
+                        "semantics_verified": False,
+                        **result,
+                    }
+            except BaseException as error:
+                try:
+                    await self._discard_after_read_error(error)
+                finally:
+                    self.changed()
+                raise
+
+    async def _read_reference_inventory(self) -> dict[str, ResearchValue]:
+        assert self.client is not None
+        observations: list[ResearchValue] = []
+        for uuid in REFERENCE_INVENTORY_UUIDS:
+            characteristic = self.client.services.get_characteristic(uuid)
+            if characteristic is None or "read" not in characteristic.properties:
+                if uuid == HEIGHT_UUID:
+                    raise ValueError("Position guard is not readable")
+                observations.append({"uuid": uuid, "status": "not_readable"})
+                continue
+            payload = bytes(
+                await self._io(self.client.read_gatt_char(uuid), IO_TIMEOUT)
+            )
+            if len(payload) > 512:
+                raise ValueError("Unexpected reference response length")
+            if uuid == HEIGHT_UUID and decode_position(payload).speed_raw != 0:
+                raise ValueError("Keep the desk stationary for protocol research")
+            observations.append(
+                {
+                    "uuid": uuid,
+                    "status": "returned",
+                    "length": len(payload),
+                    "hex": payload.hex(),
+                }
+            )
+        return {"observations": observations}
+
+    async def _read_product_info(self) -> dict[str, ResearchValue]:
+        assert self.client is not None
+        characteristic = self.client.services.get_characteristic(HEIGHT_UUID)
+        if characteristic is None or "read" not in characteristic.properties:
+            raise ValueError("Position guard is not readable")
+        position = decode_position(
+            bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
+        )
+        if position.speed_raw != 0:
+            raise ValueError("Keep the desk stationary for protocol research")
+        # A known response type separates the preceding exchange from raw data.
+        capabilities = decode_capabilities(
+            await self._query(ReadCommand.CAPABILITIES, 2)
+        )
+        if capabilities != self.state.capabilities:
+            raise ValueError("Capabilities changed before protocol research")
+        self._product_pending = asyncio.get_running_loop().create_future()
+        try:
+            payload = await self._io(self._exchange_product_info(), QUERY_TIMEOUT)
+        finally:
+            self._product_pending.cancel()
+            self._product_pending = None
+        return {
+            "response_hex": payload.hex(),
+            "response_length": len(payload),
+            "correlation": "serialized_raw_reply_without_request_identity",
+        }
+
+    async def _exchange_product_info(self) -> bytes:
+        assert self.client is not None and self._product_pending is not None
+        # Pinned upstream PRODUCT_INFO read; no generic write surface is exposed.
+        await self.client.write_gatt_char(DPG_UUID, b"\x7f\x08\x00", response=True)
+        return await self._product_pending
 
     async def _refresh(
         self, *, allow_partial_settings: bool = False, settings_interval: float = 0
@@ -1017,6 +1128,8 @@ class DeskClient:
         client, self.client = self.client, None
         if self._pending is not None and not self._pending.done():
             self._pending.cancel()
+        if self._product_pending is not None and not self._product_pending.done():
+            self._product_pending.cancel()
         if client is not None and client.is_connected:
             async with asyncio.timeout(IO_TIMEOUT):
                 await client.disconnect()

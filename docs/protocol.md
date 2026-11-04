@@ -158,3 +158,16 @@ Device family matching and standard model/firmware reads are defined in the [dev
 GAP name bytes must decode as printable UTF-8. Missing/denied metadata retains the cached fallback; transport timeout or link loss still invalidates the connection. Names are separate from decoded `DeskState` and downloaded diagnostics.
 
 The [settings reference](settings-reference.md) lists command candidates that are not implemented. Product documentation alone does not establish their wire encoding or authorization. The [source register](settings-reference.md#source-register) identifies pinned protocol implementations, while the [hardware evidence](hardware-results.md) states what has actually been observed.
+
+## Explicit research reads
+
+`ha_linak.read_protocol_inventory` provides two fixed administrator-triggered read sections on an already ready session. It neither creates a connection nor changes the normal refresh/subscription policy. The [diagnostic procedure](diagnostics.md#explicit-protocol-research-reads) owns how to invoke it and keep raw output private.
+
+| Section | Protocol surface | Evidence boundary |
+| --- | --- | --- |
+| `reference_outputs` | Read `99fa0021`, `99fa0029`, `99fa002a`, then `99fa0022` through `99fa0028`, using the proprietary suffix above | Output 1 is the stationary guard. Other outputs and masks remain opaque. Their presence does not establish additional desk axes. |
+| `product_info` | Read position, validate a capabilities barrier, then write exactly `7f 08 00` on the existing DPG channel | Opcode 08 comes from the pinned community catalogue. The response is bounded raw research data, not a verified product/version decoder. |
+
+The native query lock prevents competing polling, movement preparation, calibration or research exchanges. Product capture uses the existing generation-filtered DPG callback, with at most 512 bytes accepted for the first framed data reply. A two-byte success acknowledgement is not product data; malformed/status frames fail, and a type11 client-identity response is rejected rather than returned. The client neither subscribes to an unvalidated channel nor exposes a generic opcode/write action.
+
+There is no established request identifier or product response type. An arbitrarily delayed frame from an earlier exchange can therefore appear as raw research data despite the preceding capabilities barrier. Responses explicitly retain `semantics_verified: false` and `correlation: serialized_raw_reply_without_request_identity`; do not turn those bytes into model, firmware, collision or other entities without independent evidence. Timeout, lost link, cancellation or invalid required data discards the session rather than proceeding with further queries.

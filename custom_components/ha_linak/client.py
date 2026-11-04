@@ -428,26 +428,9 @@ class DeskClient:
         async with self._lock:
             try:
                 async with asyncio.timeout(REFRESH_TIMEOUT):
-                    excluded: set[str] = set()
-                    while True:
-                        try:
-                            return await self._refresh(
-                                allow_partial_settings=allow_partial_settings,
-                                settings_interval=settings_interval,
-                                excluded=excluded,
-                            )
-                        except OptionalReadTimeout as error:
-                            if not allow_partial_settings or error.group in excluded:
-                                raise
-                            excluded.add(error.group)
-                            await self._disconnect_link()
-                            health = self.settings_health[error.group]
-                            health.error = "timeout"
-                            health.retry_after = monotonic() + SETTINGS_RETRY_INTERVAL
-                            _LOGGER.warning(
-                                "LINAK %s read timed out; reconnecting with group unavailable",
-                                error.group,
-                            )
+                    return await self._refresh_with_recovery(
+                        allow_partial_settings, settings_interval
+                    )
             except BaseException as error:
                 # Cleanup owns the transport even if HA cancels the flow again.
                 cancelled = isinstance(error, asyncio.CancelledError)
@@ -468,6 +451,70 @@ class DeskClient:
                     raise asyncio.CancelledError from None
                 raise
 
+    async def _refresh_with_recovery(
+        self, allow_partial_settings: bool, settings_interval: float
+    ) -> DeskState:
+        excluded: set[str] = set()
+        while True:
+            try:
+                return await self._refresh(
+                    allow_partial_settings=allow_partial_settings,
+                    settings_interval=settings_interval,
+                    excluded=excluded,
+                )
+            except OptionalReadTimeout as error:
+                if not allow_partial_settings or error.group in excluded:
+                    raise
+                excluded.add(error.group)
+                await self._disconnect_link()
+                health = self.settings_health[error.group]
+                health.error = "timeout"
+                health.retry_after = monotonic() + SETTINGS_RETRY_INTERVAL
+                _LOGGER.warning(
+                    "LINAK %s read timed out; reconnecting with group unavailable",
+                    error.group,
+                )
+
+    async def _connect(self) -> None:
+        """Establish and subscribe a fresh session before any DPG reads."""
+        await self.disconnect()
+        self._closing = False
+        self._link_lost = False
+        self._generation += 1
+        self.protocol_validated = False
+        generation = self._generation
+        self._set_stage("connection")
+        self.client = await establish_connection(
+            BleakClientWithServiceCache,
+            self.device,
+            "LINAK desk",
+            disconnected_callback=self._disconnected,
+            # HA reevaluates the adapter on each connector retry. A local
+            # two-attempt cap can end setup before a healthy path is chosen.
+            # Keep the connector policy inside refresh's overall deadline.
+            ble_device_callback=self.device_callback,
+        )
+        _LOGGER.debug(
+            "BLE session connected: backend=%s", backend_category(self.client)
+        )
+        await self._pair()
+        await self._read_device_name()
+        await self._read_identity()
+        self._set_stage("notify_dpg")
+        await self._io(
+            self.client.start_notify(
+                DPG_UUID, lambda _, data: self._notification(generation, data)
+            ),
+            IO_TIMEOUT,
+        )
+        self._set_stage("notify_height")
+        await self._io(
+            self.client.start_notify(
+                HEIGHT_UUID, lambda _, data: self._position(generation, data)
+            ),
+            IO_TIMEOUT,
+        )
+
     async def _refresh(
         self,
         *,
@@ -477,43 +524,8 @@ class DeskClient:
         excluded: set[str] | None = None,
     ) -> DeskState:
         if self.client is None or not self.client.is_connected or not self._ready:
-            await self.disconnect()
-            self._closing = False
-            self._link_lost = False
-            self._generation += 1
-            self.protocol_validated = False
-            generation = self._generation
-            self._set_stage("connection")
-            self.client = await establish_connection(
-                BleakClientWithServiceCache,
-                self.device,
-                "LINAK desk",
-                disconnected_callback=self._disconnected,
-                # HA reevaluates the adapter on each connector retry. A local
-                # two-attempt cap can end setup before a healthy path is chosen.
-                # Keep the connector policy inside refresh's overall deadline.
-                ble_device_callback=self.device_callback,
-            )
-            _LOGGER.debug(
-                "BLE session connected: backend=%s", backend_category(self.client)
-            )
-            await self._pair()
-            await self._read_device_name()
-            await self._read_identity()
-            self._set_stage("notify_dpg")
-            await self._io(
-                self.client.start_notify(
-                    DPG_UUID, lambda _, data: self._notification(generation, data)
-                ),
-                IO_TIMEOUT,
-            )
-            self._set_stage("notify_height")
-            await self._io(
-                self.client.start_notify(
-                    HEIGHT_UUID, lambda _, data: self._position(generation, data)
-                ),
-                IO_TIMEOUT,
-            )
+            await self._connect()
+        assert self.client is not None
         self._set_stage("extended_reads")
         state = DeskState()
         state.capabilities = decode_capabilities(
@@ -530,23 +542,52 @@ class DeskClient:
         )
         force_settings = not allow_partial_settings or reference_changed
         excluded = excluded or set()
-        memories_due = (
-            not required_only
-            and "memories" not in excluded
-            and self._optional_due(
-                "memories", settings_interval, force_settings, allow_partial_settings
-            )
+        memories_due = self._optional_due(
+            "memories",
+            settings_interval,
+            force_settings,
+            allow_partial_settings,
+            required_only,
+            excluded,
         )
-        reminders_due = (
-            not required_only
-            and "reminders" not in excluded
-            and self._optional_due(
-                "reminders", settings_interval, force_settings, allow_partial_settings
-            )
+        reminders_due = self._optional_due(
+            "reminders",
+            settings_interval,
+            force_settings,
+            allow_partial_settings,
+            required_only,
+            excluded,
         )
         if required_only and reference_changed:
-            for health in self.settings_health.values():
-                health.valid = False
+            self._invalidate_settings()
+        memories_valid, reminders_valid = await self._refresh_optional(
+            state, memories_due, reminders_due, allow_partial_settings
+        )
+        self._set_stage("position_read")
+        state.position = decode_position(
+            bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
+        )
+        if memories_due:
+            self._record_settings("memories", memories_valid)
+        if reminders_due:
+            self._record_settings("reminders", reminders_valid)
+        self.state = state
+        self.protocol_validated = True
+        self._ready = True
+        self._set_stage("ready")
+        return state
+
+    async def _refresh_optional(
+        self,
+        state: DeskState,
+        memories_due: bool,
+        reminders_due: bool,
+        allow_partial_settings: bool,
+    ) -> tuple[bool, bool]:
+        """Build optional values without publishing group health prematurely."""
+        assert state.capabilities is not None
+        memories = None
+        reminders = None
         state.memories = list(self.state.memories[: state.capabilities.memory_slots])
         state.reminders = self.state.reminders
         if memories_due:
@@ -563,19 +604,7 @@ class DeskClient:
             )
             if reminders is not None:
                 state.reminders = reminders
-        self._set_stage("position_read")
-        state.position = decode_position(
-            bytes(await self._io(self.client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
-        )
-        if memories_due:
-            self._record_settings("memories", memories is not None)
-        if reminders_due:
-            self._record_settings("reminders", reminders is not None)
-        self.state = state
-        self.protocol_validated = True
-        self._ready = True
-        self._set_stage("ready")
-        return state
+        return memories is not None, reminders is not None
 
     @staticmethod
     def _decode_optional[T](
@@ -625,8 +654,16 @@ class DeskClient:
             raise OptionalReadTimeout(group) from error
 
     def _optional_due(
-        self, group: str, interval: float, force: bool, allow_partial: bool
+        self,
+        group: str,
+        interval: float,
+        force: bool,
+        allow_partial: bool,
+        required_only: bool,
+        excluded: set[str],
     ) -> bool:
+        if required_only or group in excluded:
+            return False
         if allow_partial and monotonic() < self.settings_health[group].retry_after:
             return False
         return force or self._settings_due(group, interval)
@@ -1070,14 +1107,17 @@ class DeskClient:
         finally:
             await self._disconnect_link()
 
+    def _invalidate_settings(self) -> None:
+        for health in self.settings_health.values():
+            health.valid = False
+
     async def _disconnect_link(self) -> None:
         self._closing = True
         self._link_lost = True
         if self._operation is not None:
             self._operation.cancel()
         self._ready = False
-        for health in self.settings_health.values():
-            health.valid = False
+        self._invalidate_settings()
         self._generation += 1
         client, self.client = self.client, None
         if self._pending is not None and not self._pending.done():

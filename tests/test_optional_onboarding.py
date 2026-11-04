@@ -103,7 +103,8 @@ async def test_both_optional_groups_can_timeout_with_only_two_recoveries():
         patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.01),
     ):
         state = await desk.refresh(allow_partial_settings=True)
-    assert desk.connected and state.height_cm == 82.38
+    assert desk.connected
+    assert state.height_cm == 82.38
     assert sent_commands(third) == [0x80, 0x81]
     assert all(
         not health.valid and health.error == "timeout"
@@ -144,7 +145,8 @@ async def test_failed_recovery_does_not_publish_partial_state():
     ):
         with pytest.raises(DeskLinkLost):
             await desk.refresh(allow_partial_settings=True)
-    assert not desk.connected and desk.state.offset_raw is None
+    assert not desk.connected
+    assert desk.state.offset_raw is None
 
 
 async def test_old_dpg_cannot_complete_recovery_query():
@@ -207,7 +209,8 @@ async def test_real_ha_startup_creates_unavailable_settings_and_live_height(
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     desk = entry.runtime_data.desk
-    assert desk.connected and entry.runtime_data.last_update_success
+    assert desk.connected
+    assert entry.runtime_data.last_update_success
     assert hass.states.get("sensor.desk_height").state == "82"
     assert (
         len(
@@ -322,8 +325,10 @@ async def test_cancelling_recovery_closes_the_new_session():
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
             await task
-    assert first.disconnected.is_set() and recovery.disconnected.is_set()
-    assert not desk.connected and desk.state.offset_raw is None
+    assert first.disconnected.is_set()
+    assert recovery.disconnected.is_set()
+    assert not desk.connected
+    assert desk.state.offset_raw is None
 
 
 async def test_recovery_shares_the_original_refresh_deadline():
@@ -340,7 +345,8 @@ async def test_recovery_shares_the_original_refresh_deadline():
             await desk.refresh(allow_partial_settings=True)
     assert recovery.stalled.is_set()
     assert recovery.disconnected.is_set()
-    assert not desk.connected and desk.state.offset_raw is None
+    assert not desk.connected
+    assert desk.state.offset_raw is None
 
 
 async def test_unchanged_calibration_keeps_already_valid_memories():

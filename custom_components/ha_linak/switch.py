@@ -4,6 +4,7 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -18,9 +19,15 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
 
 
 class LinakKeepConnectedSwitch(LinakEntity, SwitchEntity):
-    """The owner's intent. The Connection sensor still reports the actual link."""
+    """The owner's intent. The Connection sensor still reports the actual link.
+
+    It is a configuration control that the owner enables on purpose, so it never
+    appears on a dashboard by accident.
+    """
 
     _attr_icon = "mdi:bluetooth-connect"
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
 
     @property
     def available(self) -> bool:

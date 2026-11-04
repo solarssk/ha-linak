@@ -48,26 +48,32 @@ def track_memory_slots(
     """Create one entity per stored position, also when the desk is not readable.
 
     A persisted release starts without capabilities. Slots registered earlier are
-    restored, and any slot the first connection reveals is added afterwards.
+    restored by their registered numbers, and any slot the first connection
+    reveals is added afterwards.
     """
-    known = coordinator.data.capabilities is not None
-    if known:
-        created = len(coordinator.data.memories)
+    if coordinator.data.capabilities is not None:
+        created = set(range(len(coordinator.data.memories)))
     else:
-        registry = er.async_get(hass)
-        prefix = f"{coordinator.address}_{unique_prefix}"
-        created = sum(
-            1
-            for item in er.async_entries_for_config_entry(registry, entry.entry_id)
-            if item.unique_id.startswith(prefix)
+        created = _registered_slots(
+            hass, entry, f"{coordinator.address}_{unique_prefix}"
         )
-    async_add_entities([factory(index) for index in range(created)])
+    async_add_entities([factory(index) for index in sorted(created)])
 
     def add_revealed_slots() -> None:
-        nonlocal created
-        count = len(coordinator.data.memories)
-        if count > created:
-            async_add_entities([factory(index) for index in range(created, count)])
-            created = count
+        revealed = set(range(len(coordinator.data.memories))) - created
+        if revealed:
+            async_add_entities([factory(index) for index in sorted(revealed)])
+            created.update(revealed)
 
     entry.async_on_unload(coordinator.async_add_listener(add_revealed_slots))
+
+
+def _registered_slots(hass: HomeAssistant, entry, prefix: str) -> set[int]:
+    """Zero-based slot numbers this entry registered, whatever gaps exist."""
+    registry = er.async_get(hass)
+    slots: set[int] = set()
+    for item in er.async_entries_for_config_entry(registry, entry.entry_id):
+        number = item.unique_id.removeprefix(prefix)
+        if item.unique_id.startswith(prefix) and number.isdecimal() and int(number) > 0:
+            slots.add(int(number) - 1)
+    return slots

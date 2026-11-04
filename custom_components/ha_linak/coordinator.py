@@ -195,8 +195,11 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             return
         try:
             await desk.release()
-        except Exception:
-            _LOGGER.debug("Release after a raced refresh failed", exc_info=True)
+        except Exception as err:
+            # Only the class is logged: raw backend messages stay out of the log.
+            _LOGGER.warning(
+                "Release after a raced refresh failed: %s", type(err).__name__
+            )
         self._require_connection_wanted()
 
     async def _async_update_data(self) -> DeskState:

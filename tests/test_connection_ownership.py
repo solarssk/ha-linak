@@ -30,10 +30,22 @@ from custom_components.ha_linak.motion import (
 )
 from custom_components.ha_linak.protocol import DPG_UUID
 from custom_components.ha_linak.setup_session import offer_session
+from custom_components.ha_linak.switch import LinakKeepConnectedSwitch
 from homeassistant.const import CONF_ADDRESS
 from test_native_controls import ADDRESS, DEVICE, OPTIONS, MotionBleak
 
 SWITCH = "switch.desk_keep_connected"
+
+
+@pytest.fixture(autouse=True)
+def enabled_switch():
+    """The switch is disabled by default; these tests act as an owner who enabled it."""
+    with patch.object(
+        LinakKeepConnectedSwitch, "_attr_entity_registry_enabled_default", True
+    ):
+        yield
+
+
 CONNECTION = "binary_sensor.desk_connection"
 HEIGHT = "sensor.desk_height"
 OPERATION = "sensor.desk_operation"
@@ -110,8 +122,6 @@ async def test_an_existing_entry_stays_connected_and_gets_the_switch(hass):
         assert hass.states.get(CONNECTION).state == "on"
         item = er.async_get(hass).async_get(SWITCH)
         assert item.unique_id == f"{ADDRESS}_keep_connected"
-        assert item.entity_category is None
-        assert item.disabled_by is None
         await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -198,6 +208,47 @@ async def test_an_explicit_reconnect_reads_fresh_data_and_replays_nothing(hass):
         assert len(dpg_writes(fake)) > 0
         assert [w for w in later if w[0] in (CONTROL_UUID, TARGET_UUID)] == []
         assert any(uuid == DPG_UUID for uuid, _ in later)
+        await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_released_start_restores_exactly_the_registered_slots(hass):
+    fake = MotionBleak()
+    entry = await add_entry(hass, **{CONF_KEEP_CONNECTED: False})
+    registry = er.async_get(hass)
+    for slot in (1, 4):
+        registry.async_get_or_create(
+            "sensor",
+            DOMAIN,
+            f"{ADDRESS}_memory_{slot}",
+            config_entry=entry,
+            suggested_object_id=f"desk_stored_height_{slot}",
+        )
+        registry.async_get_or_create(
+            "button",
+            DOMAIN,
+            f"{ADDRESS}_go_to_memory_{slot}",
+            config_entry=entry,
+            suggested_object_id=f"desk_go_to_stored_position_{slot}",
+        )
+    with radio(fake):
+        await start(hass, entry)
+        for slot in (1, 4):
+            for entity_id in (
+                f"sensor.desk_stored_height_{slot}",
+                f"button.desk_go_to_stored_position_{slot}",
+            ):
+                state = hass.states.get(entity_id)
+                assert state.state == "unavailable"
+                assert "restored" not in state.attributes
+        # The registered numbers are restored, not the first N slots.
+        assert hass.states.get("sensor.desk_stored_height_2") is None
+        assert hass.states.get("button.desk_go_to_stored_position_3") is None
+        await switch(hass, "turn_on")
+        for slot in (1, 2, 3, 4):
+            assert hass.states.get(f"sensor.desk_stored_height_{slot}").state != (
+                "unavailable"
+            )
+        assert len(hass.states.async_all("button")) == 5
         await hass.config_entries.async_unload(entry.entry_id)
 
 

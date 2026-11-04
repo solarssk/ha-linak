@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add a Keep connected switch that releases the desk's Bluetooth link on purpose. While it is off LINAK does no radio lookups, connections or polls, and the choice survives a restart. Turning it on reconnects with fresh reads and never replays a movement. Existing entries stay connected, and turning it off during travel stops the desk first.
+- Add a Keep connected switch that releases the desk's Bluetooth link on purpose. It is a configuration entity that is disabled by default, so the owner enables it deliberately. While it is off LINAK does no radio lookups, connections or polls, and the choice survives a restart. Turning it on reconnects with fresh reads and never replays a movement. Existing entries stay connected, and turning it off during travel stops the desk first.
 - Add an Operation sensor that shows preparing, moving, stopping and then the last result (completed, interrupted or failed with a reason) for explicit movement requests. It stays available when the connection drops, ignores refused requests and reports the request, not physical arrival.
 - Replay duplicate, late, lost and malformed DPG replies at every request position with a deterministic synthetic transport, and document the one late-copy case a response-type barrier cannot detect. No runtime behavior changes.
 - Classify rejected competing movement commands as HA action validation, preserving the busy message, original movement and no-queue policy while keeping actual movement and Stop failures distinct.

@@ -57,14 +57,16 @@ def test_unmeasured_bounds_are_required_but_serialize_as_null_not_zero():
     assert {field["name"] for field in fields} == set(BOUNDS)
     for field in fields:
         assert field["required"]
-        assert "default" in field and field["default"] is None
+        assert "default" in field
+        assert field["default"] is None
         assert field["selector"]["number"] == {
             "mode": "box",
             "step": 0.1,
             "unit_of_measurement": "cm",
         }
+    schema = _range_schema({})
     with pytest.raises(vol.Invalid):
-        _range_schema({})({})
+        schema({})
     assert _range_schema({})(BOUNDS) == BOUNDS
 
 

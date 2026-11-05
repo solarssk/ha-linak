@@ -46,9 +46,9 @@ Centimeters are the primary height interface. A `number` entity supports that in
 | Active profile and profile-duration sensors | Reminder configuration read from the panel | Ordinary sensors |
 | Reminder profile select | Explicit Off/Profile 1/2/3 assignment; preserves intervals and other flags | Configuration control |
 | Stored panel unit preference select | Explicit Metric/Inch flag assignment; not CM/MM discrimination or current OLED text | Configuration control |
-| Profile 1 sitting time number | Typed whole-minute input, 1–60; actual state is never clipped to input bounds | Configuration control |
+| Profile 1 sitting time number | Typed whole-minute input, 1–60; actual state is never clipped to input bounds | Configuration control, disabled by default |
 | Profile 1 standing and profiles 2–3 sitting/standing numbers | Same single-field input and availability; existing readings are not normalized | Configuration controls, disabled by default |
-| Profile 1 standard-time button | Explicitly assign 55 minutes through the same interval setter; not a factory reset | Configuration control |
+| Profile 1 standard-time button | Explicitly assign 55 minutes through the same interval setter; not a factory reset | Configuration control, disabled by default |
 | Target height number | Whole-centimeter target within measured bounds; state follows actual feedback | Control |
 | Stored-position buttons | Freshly read slot passed to the common movement controller | Controls |
 | Stop button | Interrupt an active operation or send Stop while idle | Control |

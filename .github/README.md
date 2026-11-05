@@ -60,6 +60,8 @@
 
 \* DPG1C was checked on one panel within the [documented test scope](../docs/hardware-results.md). This does not mean every function and device version has been fully validated.
 
+**0.1.0 scope:** native controls and settings for supervised use on DPG1C, not a claim of completed hardware acceptance. Full-range arrival, physical stopping accuracy, repeatable panel handback and long-term Bluetooth reliability remain unverified. Startup and recovery can be slow or fail, including after enabling Keep connected. See the [release notes](../CHANGELOG.md) and [evidence and remaining tests](../docs/hardware-results.md#hardware-acceptance-matrix) before using automations.
+
 Check the model on the panel label. [Testing another model](../docs/device-support.md#test-another-panel) has its own guide.
 
 <a id="entities"></a>
@@ -121,7 +123,7 @@ Entity type is the Home Assistant domain, such as `sensor` or `button`. The sect
   <tbody>
     <tr><td><code>number</code></td><td>🎯 <strong>Target height</strong></td><td>cm</td><td>Choose a height with the slider</td></tr>
     <tr><td rowspan="2"><code>button</code></td><td>⏹️ <strong>Stop</strong></td><td>-</td><td>Interrupt the current movement</td></tr>
-    <tr><td>🔖 <strong>Go to stored position 1–4</strong></td><td>-</td><td>Move to a position saved on the panel; empty slots are unavailable</td></tr>
+    <tr><td>🔖 <strong>Position 1–4</strong></td><td>-</td><td>Move to a position saved on the panel; empty slots are unavailable. Stored height sensors only show its height</td></tr>
   </tbody>
 </table>
 
@@ -133,9 +135,9 @@ The slider selects heights in 1 cm steps within your measured range. It updates 
 | --- | --- | --- | --- |
 | `select` | 🔔 **Reminder profile** | Enabled | Choose Off or Profile 1/2/3, preserving intervals without moving the desk |
 | `select` | 📏 **Preferred panel units** | Enabled | Choose Metric or Inch for the panel, independently of Home Assistant |
-| `number` | ⏱️ **Profile 1 sitting time** | Enabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
+| `number` | ⏱️ **Profile 1 sitting time** | Entity disabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
 | `number` | ⏱️ **Profile 1 standing time**, **Profile 2–3 sitting/standing time** | Entity disabled | Optional 1–60-minute inputs for inactive profiles; preserve other fields |
-| `button` | ↩️ **Profile 1: use standard time** | Enabled | Set only its sitting time to 55 minutes, not a factory reset |
+| `button` | ↩️ **Profile 1: use standard time** | Entity disabled | Set only its sitting time to 55 minutes, not a factory reset |
 | `switch` | 🔌 **Keep connected** | Entity disabled | Turn off to release the Bluetooth connection, or on to reconnect |
 
 Enable **Keep connected** in its entity settings to show the switch. While the switch is off, polling and reconnecting stop, including after a restart. Turning it off during travel stops the desk first.
@@ -148,7 +150,7 @@ Open **Settings → Devices & services → LINAK → Configure** to change the n
 
 Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
 
-The device page's Configuration section provides sitting and standing inputs for all three profiles, in **1–60 whole minutes**. The five new inputs are disabled by default; enable only those needed. Existing **Profile 1 sitting time** keeps its name and registry settings. Select Off or another profile before changing a duration of the selected profile. Each edit preserves the other five durations and all flags, without normalizing pairs; existing out-of-range readings remain visible. **Profile 1: use standard time** assigns only its sitting time to **55 minutes**, not a factory reset or saved-backup restore. The range is integration policy, not medical or firmware limits. All six fields have simulated coverage; hardware evidence covers only 50/55 sitting minutes in inactive profile 1. [Interval contract](../docs/settings-reference.md#edit-reminder-durations).
+The device page's Configuration section provides sitting and standing inputs for all three profiles, in **1–60 whole minutes**. All six inputs and the standard-time button are disabled by default for new entities; enable only those needed. Existing names and enabled/disabled registry choices are preserved. Read-only duration sensors stay enabled by default. Select Off or another profile before changing a duration of the selected profile. Each edit preserves the other five durations and all flags, without normalizing pairs; existing out-of-range readings remain visible. **Profile 1: use standard time** assigns only its sitting time to **55 minutes**, not a factory reset or saved-backup restore. The range is integration policy, not medical or firmware limits. All six fields have simulated coverage; hardware evidence covers only 50/55 sitting minutes in inactive profile 1. [Interval contract](../docs/settings-reference.md#edit-reminder-durations).
 
 ### Diagnostics
 

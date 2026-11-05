@@ -60,6 +60,8 @@
 
 \* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](../docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
 
+**Zakres 0.1.0:** natywne sterowanie i ustawienia DPG1C do użycia pod nadzorem, bez deklaracji zakończonej akceptacji sprzętowej. Dojazd w pełnym zakresie, dokładność zatrzymania, powtarzalny powrót do obsługi panelu i długotrwała niezawodność Bluetooth pozostają niezweryfikowane. Uruchomienie i odzyskanie połączenia mogą trwać długo albo się nie udać, także po włączeniu Utrzymuj połączenie. Przed użyciem automatyzacji przeczytaj [opis wydania](../CHANGELOG.md) i [dowody oraz pozostałe testy](../docs/hardware-results.md#hardware-acceptance-matrix).
+
 Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](../docs/device-support.md#test-another-panel) jest po angielsku.
 
 <a id="entities"></a>
@@ -121,7 +123,7 @@ Typ encji to domena Home Assistanta, np. `sensor` albo `button`. Nagłówki niż
   <tbody>
     <tr><td><code>number</code></td><td>🎯 <strong>Wysokość zadana</strong></td><td>cm</td><td>Wybierz suwakiem wysokość</td></tr>
     <tr><td rowspan="2"><code>button</code></td><td>⏹️ <strong>Stop</strong></td><td>-</td><td>Przerwij bieżący ruch</td></tr>
-    <tr><td>🔖 <strong>Przejdź do zapisanej pozycji 1–4</strong></td><td>-</td><td>Przesuń biurko do pozycji zapisanej na panelu; puste pozycje są niedostępne</td></tr>
+    <tr><td>🔖 <strong>Pozycja 1–4</strong></td><td>-</td><td>Przesuń biurko do pozycji zapisanej na panelu; puste pozycje są niedostępne. Czujniki zapisanej wysokości tylko pokazują jej wysokość</td></tr>
   </tbody>
 </table>
 
@@ -133,9 +135,9 @@ Suwak wybiera wysokość co 1 cm, wewnątrz zmierzonego zakresu. Aktualizuje si�
 | --- | --- | --- | --- |
 | `select` | 🔔 **Profil przypomnień** | Włączona | Wybierz Wyłączone lub Profil 1/2/3, bez zmiany czasów i ruchu biurka |
 | `select` | 📏 **Preferowane jednostki panelu** | Włączona | Wybierz Metryczne lub Cale dla panelu, niezależnie od Home Assistanta |
-| `number` | ⏱️ **Profil 1: czas siedzenia** | Włączona | Wpisz 1–60 pełnych minut dla nieaktywnego profilu 1, zachowując pozostałe pola |
+| `number` | ⏱️ **Profil 1: czas siedzenia** | Encja wyłączona | Wpisz 1–60 pełnych minut dla nieaktywnego profilu 1, zachowując pozostałe pola |
 | `number` | ⏱️ **Profil 1: czas stania**, **Profil 2–3: czas siedzenia/stania** | Encja wyłączona | Opcjonalne pola 1–60 minut dla nieaktywnego profilu, bez zmiany pozostałych pól |
-| `button` | ↩️ **Profil 1: ustaw standardowy czas** | Włączona | Ustaw tylko czas siedzenia na 55 minut, bez resetu fabrycznego |
+| `button` | ↩️ **Profil 1: ustaw standardowy czas** | Encja wyłączona | Ustaw tylko czas siedzenia na 55 minut, bez resetu fabrycznego |
 | `switch` | 🔌 **Utrzymuj połączenie** | Encja wyłączona | Wyłącz przełącznik, aby zwolnić połączenie Bluetooth, lub włącz, aby połączyć się ponownie |
 
 Włącz encję **Utrzymuj połączenie** w jej ustawieniach, aby pokazać przełącznik. Gdy przełącznik jest wyłączony, integracja wstrzymuje odczyty i ponowne łączenie, również po restarcie. Wyłączenie podczas jazdy najpierw zatrzymuje biurko.
@@ -148,7 +150,7 @@ Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Kon
 
 Profil przypomnień można zmienić na Wyłączone lub Profil 1/2/3. Wybór zachowuje czasy i pozostałe ustawienia panelu, nie porusza biurkiem i nie aktywuje klienta. Zapis wymaga aktywnego klienta i poprawnego odczytu przypomnień. Profile 1/2 wymagają jeszcze akceptacji sprzętowej. Edycja zapisanych pozycji nadal nie jest dostępna.
 
-W sekcji Konfiguracja na stronie urządzenia są pola czasu siedzenia i stania wszystkich trzech profili, w **1–60 pełnych minutach**. Pięć nowych pól jest domyślnie wyłączonych; włącz tylko potrzebne encje. Dotychczasowy **Profil 1: czas siedzenia** zachowuje nazwę i ustawienia rejestru. Przed zmianą czasu wybranego profilu wybierz Wyłączone lub inny profil. Każda edycja zachowuje pozostałe pięć czasów i wszystkie flagi, bez przeliczania par; istniejące wartości poza zakresem pozostają widoczne. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia na **55 minut**, bez resetu fabrycznego i przywracania kopii. Zakres jest zasadą integracji, nie limitem sterownika ani zaleceniem medycznym. Wszystkie sześć pól sprawdzono w symulacji; na sprzęcie potwierdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1. [Kontrakt edycji](../docs/settings-reference.md#edit-reminder-durations).
+W sekcji Konfiguracja na stronie urządzenia są pola czasu siedzenia i stania wszystkich trzech profili, w **1–60 pełnych minutach**. Wszystkie sześć pól i przycisk standardowego czasu są domyślnie wyłączone dla nowych encji; włącz tylko potrzebne. Istniejące nazwy i wybory włączenia lub wyłączenia pozostają bez zmian. Czujniki czasów tylko do odczytu nadal są domyślnie włączone. Przed zmianą czasu wybranego profilu wybierz Wyłączone lub inny profil. Każda edycja zachowuje pozostałe pięć czasów i wszystkie flagi, bez przeliczania par; istniejące wartości poza zakresem pozostają widoczne. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia na **55 minut**, bez resetu fabrycznego i przywracania kopii. Zakres jest zasadą integracji, nie limitem sterownika ani zaleceniem medycznym. Wszystkie sześć pól sprawdzono w symulacji; na sprzęcie potwierdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1. [Kontrakt edycji](../docs/settings-reference.md#edit-reminder-durations).
 
 ### Diagnostyka
 

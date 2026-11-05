@@ -1,6 +1,6 @@
 # Repository governance and validation
 
-This public HACS package adopts Tier 2 of the [solarssk playbook](https://github.com/solarssk/playbook/blob/main/docs/tiers.md) before enabling physical hardware control. The alpha provides native movement controls using explicitly configured measured bounds. No official Home Assistant quality-scale award, HACS default-catalog acceptance, or earned OpenSSF rating is claimed.
+This public HACS package adopts Tier 2 of the [solarssk playbook](https://github.com/solarssk/playbook/blob/main/docs/tiers.md) before enabling physical hardware control. The integration provides native movement controls using explicitly configured measured bounds. No official Home Assistant quality-scale award, HACS default-catalog acceptance, or earned OpenSSF rating is claimed.
 
 CodeQL uses GitHub default setup. OpenSSF Scorecard runs in report-only mode; its result is not a certification.
 
@@ -31,6 +31,23 @@ Coverage reporting is no longer a transitive dependency of the official test plu
 Tests, type checks, CodeQL default setup (Python, weekly), workflow lint, dependency audit, secret scanning, signed protected main, documentation-impact checks, contribution/PR templates and report-only Scorecard are already configured. Live branch protection and CodeQL settings were checked during this assessment. Standard `type:` labels and the 0.1.0 milestone exist. The maintainer remains the merger; review count zero is deliberate for a solo-maintained repository.
 
 No container image is published, so container scanning and image SBOM requirements do not apply. There is no released version yet: do not display a latest-release badge or claim a release exists. Before the first external release, publish a versioned GitHub Release with installation/upgrade actions and associate its work with the milestone. The reusable playbook verification workflow is optional; this repository checks its own HA-specific gates and settings.
+
+## Release preparation and publication
+
+The prepared first public version is 0.1.0. Preparation sets the component manifest and the matching changelog section; it does not create a tag, GitHub Release, catalog listing or completed hardware acceptance. The [roadmap gates](roadmap.md#evidence-and-release-gates) and [H1–H12 matrix](hardware-results.md#hardware-acceptance-matrix) retain their outstanding requirements. Choosing to end an experiment does not pass or remove them.
+
+| Source | Responsibility |
+| --- | --- |
+| `custom_components/ha_linak/manifest.json` | Installed integration version |
+| `CHANGELOG.md` | Matching version section and the single English-only public release body, starting with the first public version; internal alpha history remains in Git |
+| `hacs.json` and the four product READMEs | Minimum HA version, installation/upgrade actions and product limitations, not a second integration-version field |
+| GitHub milestone | Live release planning, not publication evidence |
+| Git tag and GitHub Release | Published source/version only after a separate maintainer action |
+| HA test inputs, component pins, smoke targets and locks | Independently owned dependency/compatibility versions, not integration release numbers |
+
+This repository has validation workflows but no release-publishing workflow. Follow the [changelog standard](../CONTRIBUTING.md#changelog-and-release-notes) when preparing the body. Do not copy the development commit history into it, add a speculative release date or relabel historical alpha evidence as 0.1.0 testing.
+
+Publication remains a separate maintainer decision. Before it, inspect the final revision's existing checks, installation/upgrade instructions, known limitations and remaining roadmap gates. Local macOS metadata checks do not replace Linux installed-package/container validation, and no-radio CI does not replace physical acceptance. Verify the installed released artifact separately before claiming that delivery is validated. Do not close the target milestone until Dependabot's next target has been selected and updated as described in CONTRIBUTING.md.
 
 ## Agent workflow and PR metadata
 

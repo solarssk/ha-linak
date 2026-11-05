@@ -92,6 +92,7 @@ These references cover repository and presentation work rather than desk operati
 | --- | --- |
 | [Roadmap](roadmap.md) | Assessed findings, delivery order, release gates and the path to HA Core |
 | [Governance](governance.md) | CI gates, dependencies, repository policy and release boundaries |
+| [Changelog](../CHANGELOG.md) | English-only public release notes, starting with the first public version |
 | [Branding](branding.md) | Asset provenance, naming and artwork use |
 | [Marketplace and GitHub presentation](hacs-presentation.md) | Separate README/brand surfaces, local routes, catalog limits and rendering checks |
 | [Contributing](../CONTRIBUTING.md) | Report a bug, suggest an improvement or find development setup and contribution checks |

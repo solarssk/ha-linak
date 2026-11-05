@@ -390,8 +390,24 @@ def entity_ids(hass):
     )
 
 
+async def setup_enabled_controls(hass, fake):
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    for platform, key in (
+        ("number", "reminder_1_sitting_time"),
+        ("button", "reminder_1_standard_time"),
+    ):
+        registry.async_get_or_create(
+            platform, DOMAIN, f"{ADDRESS}_{key}", config_entry=entry
+        )
+    return await setup_select(hass, fake, entry=entry)
+
+
 async def test_real_number_box_and_standard_button_preserve_existing_outlier(hass):
-    entry, fake, _ = await setup_select(hass, IntervalBleak())
+    entry, fake, _ = await setup_enabled_controls(hass, IntervalBleak())
     number, button, sensor = entity_ids(hass)
     registry = er.async_get(hass)
     assert entry.runtime_data.controls is None
@@ -428,7 +444,7 @@ async def test_real_number_box_and_standard_button_preserve_existing_outlier(has
 
 @pytest.mark.parametrize("value", [0, 61, 50.5])
 async def test_ha_invalid_input_never_writes(hass, value):
-    entry, fake, _ = await setup_select(hass, IntervalBleak())
+    entry, fake, _ = await setup_enabled_controls(hass, IntervalBleak())
     number, _, _ = entity_ids(hass)
     writes = list(fake.writes)
     with pytest.raises(ServiceValidationError):
@@ -483,7 +499,7 @@ async def test_coordinator_maps_refusals_without_setting_writes(hass, kind, key)
 async def test_failed_write_is_not_published_as_success_and_controls_become_unavailable(
     hass,
 ):
-    entry, fake, _ = await setup_select(hass, IntervalBleak())
+    entry, fake, _ = await setup_enabled_controls(hass, IntervalBleak())
     number, button, sensor = entity_ids(hass)
     fake.mismatch = 2
     with pytest.raises(HomeAssistantError) as exc:
@@ -500,7 +516,7 @@ async def test_failed_write_is_not_published_as_success_and_controls_become_unav
 
 
 async def test_both_controls_follow_group_validity(hass):
-    entry, fake, _ = await setup_select(hass, IntervalBleak())
+    entry, fake, _ = await setup_enabled_controls(hass, IntervalBleak())
     number, button, _ = entity_ids(hass)
     entry.runtime_data.desk.settings_health["reminders"].valid = False
     entry.runtime_data._changed()
@@ -514,7 +530,7 @@ async def test_both_controls_follow_group_validity(hass):
 async def test_standard_button_is_explicit_and_never_switches_an_active_profile(hass):
     fake = IntervalBleak()
     fake.body = bytes((0xED, 50)) + fake.body[2:]
-    entry, fake, select = await setup_select(hass, fake)
+    entry, fake, select = await setup_enabled_controls(hass, fake)
     number, button, _ = entity_ids(hass)
     with pytest.raises(ServiceValidationError) as exc:
         await hass.services.async_call(
@@ -652,7 +668,9 @@ async def test_existing_interval_registry_choices_and_identity_survive_setup(
         config_entry=entry,
         suggested_object_id="my_standard_time",
     )
-    registry.async_update_entity(button.entity_id, name="My standard")
+    registry.async_update_entity(
+        button.entity_id, name="My standard", disabled_by=disabled_by
+    )
     await setup_select(hass, IntervalBleak(), entry=entry)
     actual = registry.async_get(number.entity_id)
     assert actual.unique_id == number.unique_id
@@ -662,6 +680,8 @@ async def test_existing_interval_registry_choices_and_identity_survive_setup(
     assert actual.disabled_by == disabled_by
     assert registry.async_get(button.entity_id).name == "My standard"
     assert registry.async_get(button.entity_id).unique_id == button.unique_id
+    assert registry.async_get(button.entity_id).entity_id == button.entity_id
+    assert registry.async_get(button.entity_id).disabled_by == disabled_by
     await hass.config_entries.async_unload(entry.entry_id)
 
 

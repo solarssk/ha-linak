@@ -45,6 +45,7 @@ class LinakReminderInterval(LinakReminderEntity, NumberEntity):
     _attr_native_max_value = MAX_INTERVAL_MINUTES
     _attr_device_class = NumberDeviceClass.DURATION
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
 
     def __init__(
         self, coordinator: LinakCoordinator, profile: int, standing: bool
@@ -53,7 +54,6 @@ class LinakReminderInterval(LinakReminderEntity, NumberEntity):
         super().__init__(coordinator, f"reminder_{profile}_{kind}_time")
         self._profile = profile
         self._standing = standing
-        self._attr_entity_registry_enabled_default = profile == 1 and not standing
 
     @property
     def native_value(self) -> int | None:

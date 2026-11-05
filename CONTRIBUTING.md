@@ -201,6 +201,27 @@ Before handing off, follow one reader path from the [index](docs/README.md), che
 
 The [writing review checklist](https://github.com/vercel-labs/writing-guidelines/blob/main/command.md) can help with clarity. Repository Markdown conventions take precedence over framework-specific front matter, MDX and frontend requirements.
 
+### Changelog and release notes
+
+`CHANGELOG.md` is the source for the public GitHub Release body, not a commit log. Follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [GitLab's user-facing entry guidance](https://docs.gitlab.com/development/changelog/): explain what changes for the user and why it matters. Group related changes, omit internal refactors and CI housekeeping without user impact, and avoid unsupported reliability or safety claims.
+
+Keep `## Unreleased` at the top and plain version headings such as `## 0.1.0` below it so anchors remain predictable. Start each version with one or two sentences about the outcome. Include only nonempty sections, in this order:
+
+| Heading | Content |
+| --- | --- |
+| `### ⚠️ Before you update` | Requirements, migration, breaking changes and required actions; always first when applicable |
+| `### ✨ New` | New user-facing capabilities |
+| `### 🔧 Improvements` | Changes to an existing user experience |
+| `### 🐛 Fixes` | Corrected visible behavior |
+| `### 🔒 Security` | Actual product-security impact, not routine tooling maintenance |
+| `### 📌 Known limitations` | Material remaining gaps, uncertainty and links to the owning reference |
+
+Deprecations and removals must be explicit in Before you update or clearly named separate sections when needed. Use one emoji per section heading, never instead of its text and not in every bullet. Emoji are this repository's visual convention, not a requirement of the cited guides. Write short, concrete bullets, with no slogans, raw logs, commit SHAs or test chronology. Link detailed evidence rather than copying the investigation into release notes.
+
+Write the public changelog and GitHub Release body in English only, without a duplicated Polish block. This exception applies only to release notes: product READMEs and bilingual public documentation retain English/Polish content, and HA strings remain aligned in both languages. Technical references retain their documented English-language structure. The first public release describes the available product, requirements and material current limitations, not fixes relative to internal alphas. Later releases describe changes since the previous public release. Unpublished alpha history and internal problem chronology stay in Git, not in the public changelog or a separate public archive. Do not invent a publication date; preparation must be marked unpublished until the maintainer actually publishes.
+
+There is no release workflow or extractor in this repository. For manual publication, use the complete English version section between its `## VERSION` heading and the next level-two heading, including limitations, without copying Unreleased. Resolve repository-relative documentation links against the actual release tag when copying the body to GitHub. Remove the preparation-only unpublished notices only as part of the actual publication. Do not maintain a second release-notes file. The [release preparation boundary](docs/governance.md#release-preparation-and-publication) separates editing from publishing.
+
 </details>
 
 <details>
@@ -290,7 +311,7 @@ Before closing a release milestone, select or create the next open one and updat
 
 ## Coverage signals
 
-Tests produce `coverage.xml` and `junit.xml`. A separate trusted-run job uploads them to Codecov/Sonar using the corresponding repository secrets. These signals are advisory during the alpha.
+Tests produce `coverage.xml` and `junit.xml`. A separate trusted-run job uploads them to Codecov/Sonar using the corresponding repository secrets. These signals are advisory and do not establish hardware acceptance.
 
 Keep Sonar Automatic Analysis disabled. The properties file separates integration code from tests and matches the verified recmedia organization. CI helpers remain covered by CodeQL and regression tests.
 

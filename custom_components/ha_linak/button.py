@@ -39,6 +39,7 @@ class LinakStandardSittingTime(LinakReminderEntity, ButtonEntity):
 
     _attr_icon = "mdi:timer-refresh-outline"
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
 
     async def async_press(self) -> None:
         await self.coordinator.async_set_reminder_sitting_minutes(

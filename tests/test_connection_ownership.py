@@ -242,13 +242,16 @@ async def test_a_released_start_restores_exactly_the_registered_slots(hass):
                 assert "restored" not in state.attributes
         # The registered numbers are restored, not the first N slots.
         assert hass.states.get("sensor.desk_stored_height_2") is None
-        assert hass.states.get("button.desk_go_to_stored_position_3") is None
+        assert (
+            registry.async_get_entity_id("button", DOMAIN, f"{ADDRESS}_go_to_memory_3")
+            is None
+        )
         await switch(hass, "turn_on")
         for slot in (1, 2, 3, 4):
             assert hass.states.get(f"sensor.desk_stored_height_{slot}").state != (
                 "unavailable"
             )
-        assert len(hass.states.async_all("button")) == 6
+        assert len(hass.states.async_all("button")) == 5
         await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -266,9 +269,9 @@ async def test_a_persisted_release_survives_a_restart_without_touching_the_radio
         assert hass.states.get(SWITCH).state == "off"
         assert hass.states.get(CONNECTION).state == "off"
         # The entities the desk exposed before are real again, not restored stubs.
-        assert len(hass.states.async_all("button")) == 6
+        assert len(hass.states.async_all("button")) == 5
         for entity_id in (
-            "button.desk_go_to_stored_position_4",
+            "button.desk_position_4",
             "sensor.desk_stored_height_4",
         ):
             state = hass.states.get(entity_id)
@@ -295,10 +298,10 @@ async def test_a_first_start_in_the_released_state_adds_stored_positions_later(h
         assert lookup.call_count == 0
         assert connect.call_count == 0
         assert hass.states.get(SWITCH).state == "off"
-        assert len(hass.states.async_all("button")) == 2
+        assert len(hass.states.async_all("button")) == 1
         assert hass.states.get("sensor.desk_stored_height_1") is None
         await switch(hass, "turn_on")
-        assert len(hass.states.async_all("button")) == 6
+        assert len(hass.states.async_all("button")) == 5
         assert hass.states.get("sensor.desk_stored_height_1").state != "unavailable"
         assert len(hass.states.async_all("sensor")) == 14
         await hass.config_entries.async_unload(entry.entry_id)

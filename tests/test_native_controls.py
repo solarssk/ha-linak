@@ -219,9 +219,9 @@ async def setup_entry(hass, options=None):
 
 async def test_existing_entry_gets_controls_and_stop_without_motion(hass):
     entry, fake = await setup_entry(hass)
-    assert len(hass.states.async_all("number")) == 2
+    assert len(hass.states.async_all("number")) == 1
     assert hass.states.async_all("number")[0].state == "unavailable"
-    assert len(hass.states.async_all("button")) == 6
+    assert len(hass.states.async_all("button")) == 5
     stop = next(
         s for s in hass.states.async_all("button") if s.entity_id.endswith("_stop")
     )
@@ -233,7 +233,7 @@ async def test_existing_entry_gets_controls_and_stop_without_motion(hass):
 async def test_native_number_buttons_and_service_errors(hass):
     entry, fake = await setup_entry(hass, OPTIONS)
     numbers = hass.states.async_all("number")
-    assert len(numbers) == 2
+    assert len(numbers) == 1
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     target = numbers[0]
     assert target.state == "82"
@@ -241,7 +241,7 @@ async def test_native_number_buttons_and_service_errors(hass):
     assert target.attributes["mode"] == "slider"
     assert target.attributes["min"] == 70
     assert target.attributes["max"] == 125
-    assert len(hass.states.async_all("button")) == 6
+    assert len(hass.states.async_all("button")) == 5
     await hass.services.async_call(
         "number",
         "set_value",
@@ -530,8 +530,8 @@ async def test_real_options_reload_sets_range_without_moving(hass):
         await hass.async_block_till_done()
         assert not first.is_connected
         assert all(uuid == DPG_UUID for uuid, _ in first.writes)
-        assert len(hass.states.async_all("number")) == 2
-        assert len(hass.states.async_all("button")) == 6
+        assert len(hass.states.async_all("number")) == 1
+        assert len(hass.states.async_all("button")) == 5
         assert all(uuid == DPG_UUID for uuid, _ in second.writes)
         assert await hass.config_entries.async_unload(entry.entry_id)
 

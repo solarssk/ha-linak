@@ -246,16 +246,16 @@
         "name": "Stop"
       },
       "go_to_memory_1": {
-        "name": "Go to stored position 1"
+        "name": "Position 1"
       },
       "go_to_memory_2": {
-        "name": "Go to stored position 2"
+        "name": "Position 2"
       },
       "go_to_memory_3": {
-        "name": "Go to stored position 3"
+        "name": "Position 3"
       },
       "go_to_memory_4": {
-        "name": "Go to stored position 4"
+        "name": "Position 4"
       },
       "reminder_1_standard_time": {
         "name": "Profile 1: use standard time"

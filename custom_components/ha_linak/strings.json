@@ -251,6 +251,13 @@
       }
     },
     "select": {
+      "panel_unit_preference": {
+        "name": "Stored panel unit preference",
+        "state": {
+          "metric": "Metric (CM/MM unspecified)",
+          "inch": "Inch"
+        }
+      },
       "reminder_profile": {
         "name": "Reminder profile",
         "state": {
@@ -398,10 +405,10 @@
       "message": "The desk did not connect. Keep connected stays on and Home Assistant will retry. Check that the desk is awake and within range of your Bluetooth adapter or proxy."
     },
     "reminder_client_inactive": {
-      "message": "The panel client is inactive. Reminder changes require status 1; this action does not activate the client. Use the explicit control preparation in Configure, then read the current profile before trying again."
+      "message": "The panel client is inactive. Panel preference and reminder changes require status 1; this action does not activate the client. Use the explicit control preparation in Configure, then read the current settings before trying again."
     },
     "reminder_failed": {
-      "message": "The reminder change could not be verified. The setting may have changed. Check the current panel profile and durations after reconnecting before trying again. No write or restoration is retried automatically."
+      "message": "The panel setting change could not be verified. The setting may have changed. Check the stored unit preference, profile and durations after reconnecting before trying again. The stored preference does not confirm the unit currently rendered on the display. No write or restoration is retried automatically."
     },
     "reminder_interval_invalid": {
       "message": "Enter a whole number of minutes from 1 to 60. These are integration edit limits, not firmware or medical limits. Existing panel values outside this range are preserved. Use Off to disable reminders."

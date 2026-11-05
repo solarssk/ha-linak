@@ -58,6 +58,7 @@ from .protocol import (
     reminder_profile_request,
     reminder_request,
     reminder_sitting_request,
+    reminder_unit_request,
     ReminderClientInactive,
     decode_stored_position,
     read_request,
@@ -1043,10 +1044,18 @@ class DeskClient:
 
         return await self._set_reminders(request_for)
 
+    async def set_panel_unit_preference(self, inch: bool) -> DeskState:
+        """Assign the stored inch flag, never wake or refresh the physical display."""
+        if type(inch) is not bool:
+            raise ValueError("Panel inch preference must be a boolean")
+        return await self._set_reminders(
+            lambda settings: reminder_unit_request(settings, inch)
+        )
+
     async def _set_reminders(
         self, request_for: Callable[[ReminderSettings], bytes]
     ) -> DeskState:
-        """Reserve one fresh-state transaction shared by both reminder controls."""
+        """Reserve one fresh-state transaction for controls sharing the 88 body."""
         if self.control_busy or self._lock.locked():
             raise MotionError("Desk is busy", MotionFailure.BUSY)
         if not self.connected or not self.settings_health["reminders"].valid:

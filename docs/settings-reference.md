@@ -8,7 +8,7 @@ Panel settings, HA preferences and presentation have different owners and side e
 
 | Layer | Examples | Where it changes | Effect |
 | --- | --- | --- | --- |
-| Panel configuration | Height reference, stored positions, reminder profiles | Only through a verified, scoped panel operation | Can affect the panel and another connected application |
+| Panel configuration | Height reference, stored positions, reminder profiles, stored inch/metric preference | Only through a verified, scoped panel operation | Can affect the panel and another connected application |
 | HA preferences | HA name and measured command bounds | Setup/Configure | Does not rename the radio or program firmware limits |
 | Presentation | Whole-centimeter sensor/history values and slider steps | Entity boundary | Does not round raw position, calibration or stored-position targets |
 
@@ -30,7 +30,7 @@ Evidence labels mean manufacturer-documented product behavior, community protoco
 | Active reminder profile | Configuration select plus the existing ordinary sensor | Fresh masked assignment, ACK and independent readback; Off/Profile 3 hardware evidence at status 1 | Hardware acceptance of profiles 1/2, reconnect persistence and other variants |
 | Sitting/standing durations | Three profile-pair sensors; configuration input/button for profile 1 sitting only | Shared protected setter; 50/55 in inactive profile 1 observed on one panel | Full input range, active-profile editing, other fields, countdown and persistence |
 | Reminder light/presentation | Capability and raw reminder data only | Manufacturer feature and community bit candidates | Confirm exact state bits; a light capability is not on/off state |
-| Display units | No setter | Manufacturer/community evidence | Verify encoding while preserving the HA centimeter contract |
+| Stored panel unit preference | Configuration select: Metric/Inch | Masked bit `0x04`, ACK/readback and one reconnect observed | Exact metric sub-unit, immediate stationary OLED redraw, power-cycle persistence and other variants |
 | Automatic up/down | Capability flags only | Manufacturer/community evidence | Distinguish panel automatic drive from host-driven target keepalives |
 | Wake preference | No setter | Community settings-bit candidate, distinct from the implemented control wake command | Verify bit semantics and persistence |
 | Firmware upper/lower limits | No remote setter or verified query | Manufacturer UI function | Discover supported protocol before claiming automatic limit import |
@@ -66,7 +66,7 @@ HA can already add automations, integration diagnostics and host-side command bo
 | --- | --- | --- | --- |
 | Favorite management | Product/app descriptions document favorites | Read and drive; no save/delete setter | Exact slot-safe write, acknowledgement, readback and persistence |
 | Reminder intervals | App/product descriptions document configurable intervals | Read three pairs; edit inactive profile 1 sitting time with preserved-field readback | Hardware input bounds, other fields, countdown and persistence |
-| Units and height reference | Panel documentation describes presentation and correction | Protected measured-height calibration; HA stays in cm | Unit-setting protocol and variant behavior |
+| Units and height reference | Panel documentation describes presentation and correction | Protected calibration and stored Inch/Metric preference; HA stays natively in cm | CM/MM-specific encoding, immediate OLED redraw and variant behavior |
 | Automatic drive | Full variants document optional automatic drive | Read capability flags; no firmware toggle | Permission, semantics and independent control behavior |
 | Lock, wake preference and display logo | Physical/product features or community candidates | No remote setters | Demonstrate a supported BLE command, not just a UI label or raw bit |
 | OEM slot visibility and firmware limits | Manufacturer/configurator functions | No firmware-limit import or OEM override | Official or reproducible variant-specific protocol evidence; never infer from favorites |
@@ -113,6 +113,18 @@ reported_height_cm = (position_raw + offset_raw) / 100
 The complete calibration budget is 60 seconds plus bounded cleanup. It does not issue wake, target, saved-position writes or firmware-limit changes. The [protocol reference](protocol.md#protected-setting-exchanges) defines acknowledgement and payload validation.
 
 If preflight detects changed position/reference, it rejects the proposal before a correction. If a write was sent but verification fails, the outcome is uncertain: read state again through a healthy session before proposing another correction. Do not retry or blindly restore an old offset. Measurement inputs are transient and never replayed at startup.
+
+## Stored panel unit preference
+
+The device page's Configuration section contains **Stored panel unit preference**, with **Metric (CM/MM unspecified)** and **Inch** options. It changes the stored panel flag, not HA's entity presentation units, calibration, measured range or centimeter geometry. HA's own unit conversion remains independent, without silent synchronization. A physical MM mode exists on the tested panel, but fresh complete `88` replies and all known decoded state were identical in CM and MM. Metric therefore means only that the inch flag is clear. No separate CM/MM option or unique MM encoder is known.
+
+The select uses the same protected transaction and reminder-group availability as profile selection below, without requiring travel bounds. It obtains fresh capabilities, stationary position and reminder bytes under the existing foreground/query reservation. An unchanged preference sends no setting write or identity query. A changed preference requires a freshly validated existing client at status 1; inactive status 0 is refused visibly without activation or identifier replacement. Busy/conflicting operations cannot queue.
+
+Set or clear only bit `0x04`, preserving the seven other flags, including unknown `0x80` and profile bits, and all six duration bytes exactly. The request is the ten-byte `7f 88 80 <flags> <six durations>` on the DPG channel. Omit the read header and raw counter. Require exact two-byte `01 00`, a different-type capabilities barrier and an independent strict thirteen-byte `88` reply matching the complete requested body. Counter changes are allowed; its semantics remain unknown.
+
+A verified stored preference is not proof of the text currently rendered on the OLED. Immediate stationary redraw is unconfirmed. This control sends no wake, activation, movement, calibration or forced reconnect to refresh the display. Never move the desk just to apply a unit change. Physical CM/MM choice and preservation of that panel-local choice across unrelated `88` writes remain unverified by the binary flag.
+
+Negative/malformed ACKs, mismatching readback, timeout, cancellation or lost/ambiguous generation discard the session and report failure without optimistic state. A delivered write may already have changed the preference. After normal read recovery, check the stored preference and the actual panel separately before another explicit request. There is no retry, queue, replay or blind restoration. See the [unit evidence](hardware-results.md#stored-unit-preference-and-physical-display) for the distinction between stored readback and physical observations.
 
 ## Reminder profile selection
 

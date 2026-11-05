@@ -132,11 +132,14 @@ Suwak wybiera wysokość co 1 cm, wewnątrz zmierzonego zakresu. Aktualizuje si�
 | Typ encji | Nazwa w HA | Domyślnie | Działanie |
 | --- | --- | --- | --- |
 | `select` | 🔔 **Profil przypomnień** | Włączona | Wybierz Wyłączone lub Profil 1/2/3, bez zmiany czasów i ruchu biurka |
+| `select` | 📏 **Zapisana preferencja jednostek panelu** | Włączona | Metryczne (CM/MM nierozróżniane) lub Cale; niezależnie od jednostek HA |
 | `number` | ⏱️ **Profil 1: czas siedzenia** | Włączona | Wpisz 1–60 pełnych minut dla nieaktywnego profilu 1, zachowując pozostałe pola |
 | `button` | ↩️ **Profil 1: ustaw standardowe 55 minut** | Włączona | Ustaw tylko ten czas, bez resetu fabrycznego |
 | `switch` | 🔌 **Utrzymuj połączenie** | Encja wyłączona | Wyłącz przełącznik, aby zwolnić połączenie Bluetooth, lub włącz, aby połączyć się ponownie |
 
 Włącz encję **Utrzymuj połączenie** w jej ustawieniach, aby pokazać przełącznik. Gdy przełącznik jest wyłączony, integracja wstrzymuje odczyty i ponowne łączenie, również po restarcie. Wyłączenie podczas jazdy najpierw zatrzymuje biurko.
+
+**Zapisana preferencja jednostek panelu** zmienia tylko zapisany bit cali, zachowując profil, pozostałe flagi i wszystkie czasy. Wymaga nieruchomego biurka, poprawnego odczytu przypomnień i już aktywnego klienta, ale nie zakresu ruchu. Fizyczne CM i MM mają ten sam znany stan BLE: to nie wybór CM/MM ani potwierdzenie jednostki obecnie widocznej na OLED. Natychmiastowe odświeżenie nieruchomego wyświetlacza nie jest potwierdzone. Czynność nie wybudza, nie aktywuje ani nie porusza biurkiem, nie wymusza ponownego połączenia i nie ponawia ani nie odwraca niepewnego zapisu. Natywne centymetry HA, zakres, kalibracja i własne przeliczanie jednostek prezentacji HA pozostają bez zmian i niezależne. Po błędzie weryfikacji poczekaj na zwykłe odzyskanie odczytów, a potem sprawdź osobno zapisaną preferencję i fizyczny wyświetlacz. [Kontrakt jednostek](../docs/settings-reference.md#stored-panel-unit-preference).
 
 Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Zmienisz tam nazwę w HA, zakres ruchu i kalibrację wysokości. W **Wysokość z miarki** wpisz aktualny pomiar od podłogi do góry blatu, a następnie sprawdź i potwierdź korektę. Zapis nie porusza biurkiem. [Instrukcja konfiguracji](../docs/controls.md).
 

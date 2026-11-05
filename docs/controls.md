@@ -45,6 +45,14 @@ The edit changes only profile 1 sitting duration. Standing time and all other pr
 
 To explicitly set the manufacturer's standard sitting-reminder value, press **Profile 1: use standard 55 minutes**. This uses the same protected setter. It is not a factory reset, does not restore all reminder pairs or a saved backup, and never runs on reconnect or failure. Use the separate Off selection to disable reminders, not zero minutes. Only 50/55 in inactive profile 1 have hardware evidence; other values are synthetic-test coverage. See the [complete interval contract](settings-reference.md#edit-profile-1-sitting-time).
 
+## Choose the stored panel unit preference
+
+On the LINAK device page, open Configuration and choose **Metric (CM/MM unspecified)** or **Inch** in **Stored panel unit preference**. Wait for a stationary desk and valid reminder readings. Travel bounds are not required. An unchanged selection performs no setting write. A changed selection requires an already active client; inactive/busy/conflicting requests are refused without activation or queuing. Explicit control preparation in Configure is separate.
+
+This is the stored inch flag, not a live OLED-unit detector. Physical CM and MM share the same known BLE state, so this control cannot select or distinguish the metric sub-unit. Successful readback does not promise immediate stationary display refresh. No wake, movement or forced reconnect is sent, and you must not move the desk just to refresh its display. HA's native centimeter heights, measured bounds, calibration and its own presentation-unit conversion are unchanged and are not synchronized to the panel.
+
+If verification fails, the preference may already have changed. Wait for normal read recovery, then check the stored setting and physical display separately before trying again. There is no automatic retry or restoration. See the [stored-preference contract](settings-reference.md#stored-panel-unit-preference).
+
 ## Set measured command bounds
 
 Enter the actual lowest and highest desktop heights from measurements or verified product data for this desk. Do not infer them from favorite positions or let the integration probe mechanical extremes.

@@ -132,11 +132,14 @@ The slider selects heights in 1 cm steps within your measured range. It updates 
 | Entity type | Name in HA | Default | Action |
 | --- | --- | --- | --- |
 | `select` | 🔔 **Reminder profile** | Enabled | Choose Off or Profile 1/2/3, preserving intervals without moving the desk |
+| `select` | 📏 **Stored panel unit preference** | Enabled | Metric (CM/MM unspecified) or Inch; independent of HA units |
 | `number` | ⏱️ **Profile 1 sitting time** | Enabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
 | `button` | ↩️ **Profile 1: use standard 55 minutes** | Enabled | Set only that duration, not a factory reset |
 | `switch` | 🔌 **Keep connected** | Entity disabled | Turn off to release the Bluetooth connection, or on to reconnect |
 
 Enable **Keep connected** in its entity settings to show the switch. While the switch is off, polling and reconnecting stop, including after a restart. Turning it off during travel stops the desk first.
+
+**Stored panel unit preference** changes only the stored inch flag, preserving the profile, other flags and all durations. A stationary desk, valid reminder readings and an already active client are required, not a travel range. Physical CM and MM share the same known BLE state; this is not a CM/MM selector or proof of the unit currently rendered on the OLED. Immediate stationary redraw is unconfirmed. It never wakes, activates or moves the desk, forces a reconnect or retries/restores an uncertain write. HA's native centimeter heights, bounds, calibration and its own presentation-unit conversion remain unchanged and independent. After a verification error, check the stored preference and physical display separately after normal read recovery. [Unit contract](../docs/settings-reference.md#stored-panel-unit-preference).
 
 Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
 

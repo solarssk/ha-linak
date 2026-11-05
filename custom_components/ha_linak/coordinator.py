@@ -278,6 +278,12 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             lambda desk: desk.set_reminder_sitting_minutes(minutes)
         )
 
+    async def async_set_panel_unit_preference(self, inch: bool) -> None:
+        """Change the panel preference independently of HA presentation units."""
+        await self._async_reminder_change(
+            lambda desk: desk.set_panel_unit_preference(inch)
+        )
+
     async def _async_reminder_change(
         self, change: Callable[[DeskClient], Awaitable[DeskState]]
     ) -> None:

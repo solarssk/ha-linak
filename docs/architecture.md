@@ -45,6 +45,7 @@ Centimeters are the primary height interface. A `number` entity supports that in
 | Stored-height sensors | Saved mechanism positions plus current offset | Ordinary sensors |
 | Active profile and profile-duration sensors | Reminder configuration read from the panel | Ordinary sensors |
 | Reminder profile select | Explicit Off/Profile 1/2/3 assignment; preserves intervals and other flags | Configuration control |
+| Stored panel unit preference select | Explicit Metric/Inch flag assignment; not CM/MM discrimination or current OLED text | Configuration control |
 | Profile 1 sitting time number | Typed whole-minute input, 1–60; actual state is never clipped to input bounds | Configuration control |
 | Profile 1 standard-time button | Explicitly assign 55 minutes through the same interval setter; not a factory reset | Configuration control |
 | Target height number | Whole-centimeter target within measured bounds; state follows actual feedback | Control |
@@ -96,7 +97,7 @@ One desk must have one active owner of its BLE connection. The [cross-integratio
 | Confirmed height calibration | Calibration reservation and query lock | Verified activation and one offset correction |
 | Explicit target or stored-position drive | Movement reservation and query lock | Verified client activation if needed, then wake/target/Stop |
 | Stop | Separate shared Stop task; preempts motion | Control Stop and reference release when idle; no activation or height target |
-| Explicit reminder selection or interval edit | Shared foreground reservation and query lock; valid reminder group and active client required; changed interval requires inactive profile 1 | One masked setting with ACK/barrier/readback; no activation, wake, motion or replay |
+| Explicit reminder selection, interval edit or stored unit preference | Shared foreground reservation and query lock; valid reminder group and active client required; changed interval requires inactive profile 1 | One masked setting with ACK/barrier/readback; no activation, wake, motion or replay |
 | Explicit protocol inventory | Existing client/query lock; already ready session only | Fixed GATT reads or a single product-info query behind a capabilities barrier, never setting or motion writes |
 | Unload/shutdown | Waits for owned cleanup | Attempts final Stop and releases the link |
 

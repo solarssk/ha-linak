@@ -429,6 +429,93 @@ def test_live_settings_guard_rejects_missing_workflow_gate():
         )
 
 
+def test_classic_settings_guard_preserves_zero_approval_pull_request_policy():
+    from scripts.check_github_settings import validate as validate_settings
+
+    checks = [
+        {"context": context, "app_id": 15368}
+        for context in json.loads((ROOT / ".github/required-checks.json").read_text())
+    ]
+    protection = {
+        "required_status_checks": {
+            "strict": True,
+            "contexts": [check["context"] for check in checks],
+            "checks": checks,
+        },
+        "required_signatures": {"enabled": True},
+        "enforce_admins": {"enabled": True},
+        "required_linear_history": {"enabled": True},
+        "required_conversation_resolution": {"enabled": True},
+        "allow_force_pushes": {"enabled": False},
+        "allow_deletions": {"enabled": False},
+        "required_pull_request_reviews": {
+            "required_approving_review_count": 0,
+            "dismiss_stale_reviews": True,
+            "require_code_owner_reviews": False,
+            "require_last_push_approval": False,
+        },
+    }
+
+    validate_settings(
+        protection,
+        set(json.loads((ROOT / ".github/required-checks.json").read_text())),
+    )
+
+
+def test_main_ruleset_matches_required_gates_and_effective_rules():
+    from scripts.check_github_settings import validate_ruleset
+
+    source = json.loads((ROOT / ".github/rulesets/main.json").read_text())
+    expected = set(json.loads((ROOT / ".github/required-checks.json").read_text()))
+    effective_rules = [
+        {
+            "type": rule["type"],
+            "ruleset_id": 123,
+            "ruleset_source": "solarssk/ha-linak",
+            **({"parameters": rule["parameters"]} if "parameters" in rule else {}),
+        }
+        for rule in source["rules"]
+    ]
+    validate_ruleset(
+        {
+            **source,
+            "id": 123,
+            "source_type": "Repository",
+            "source": "solarssk/ha-linak",
+        },
+        effective_rules,
+        expected,
+        source,
+    )
+
+
+def test_main_ruleset_guard_rejects_bypass_actors():
+    from scripts.check_github_settings import validate_ruleset
+
+    source = json.loads((ROOT / ".github/rulesets/main.json").read_text())
+    expected = set(json.loads((ROOT / ".github/required-checks.json").read_text()))
+
+    with pytest.raises(ValueError, match="must not allow bypass"):
+        validate_ruleset(
+            {
+                **source,
+                "id": 123,
+                "source_type": "Repository",
+                "source": "solarssk/ha-linak",
+                "bypass_actors": [{"actor_type": "RepositoryRole"}],
+            },
+            [],
+            expected,
+            source,
+        )
+
+
+def test_codecov_excludes_the_standalone_fuzzer_from_patch_coverage():
+    coverage = yaml.safe_load((ROOT / "codecov.yml").read_text())
+
+    assert "fuzz/fuzz_protocol.py" in coverage["ignore"]
+
+
 def test_all_locked_uv_copies_exclude_the_compromised_ca_bundle():
     from packaging.version import Version
 

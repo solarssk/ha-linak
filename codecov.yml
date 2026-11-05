@@ -1,4 +1,6 @@
 # Signals only; not required merge gates during the alpha.
+ignore:
+  - "fuzz/fuzz_protocol.py"
 coverage:
   status:
     project:

@@ -115,6 +115,8 @@ That checks generated metadata, not installed Linux packages. Linux locks and in
 
 Tests use real Home Assistant with simulated Bluetooth and no network sockets. Never connect a real desk in automated tests.
 
+On Linux x86_64, run the coverage-guided protocol fuzzer with `python fuzz/fuzz_protocol.py --duration-seconds 30`. It uses Atheris against the pure response decoders, with synthetic framing seeds and no Home Assistant, Bluetooth, network or movement. The run is bounded to 300 seconds; CI runs it for 30 seconds in the required Tests job. Atheris 3.1.0 currently publishes a Python 3.14 Linux x86_64 wheel only, so the normal macOS development environment skips this optional tool.
+
 ## Isolated HA startup smoke
 
 CI also cold-boots and restarts Home Assistant in an official container, without a desk. This checks startup and dependencies, not Bluetooth communication or hardware behavior.
@@ -330,6 +332,6 @@ Maintainers can compare live main protection with `.github/required-checks.json`
 python scripts/check_github_settings.py
 ```
 
-Use an existing administrative gh login locally. Never expose admin credentials to PR CI.
+The checker verifies the active `.github/rulesets/main.json` ruleset and GitHub's effective rules for `main`, or the classic protection during a pre-migration state. It uses the existing `gh` login locally. Never expose admin credentials to PR CI.
 
 </details>

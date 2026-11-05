@@ -62,6 +62,8 @@ Suwak działa co 1 cm w zmierzonym zakresie. Aktualizuje się po zakończeniu ja
 ### Konfiguracja
 
 - 🔔 **Profil przypomnień** (`select`): wybierz Wyłączone lub Profil 1/2/3, zachowując czasy
+- ⏱️ **Profil 1: czas siedzenia** (`number`): wpisz 1–60 pełnych minut dla nieaktywnego profilu
+- ↩️ **Profil 1: ustaw standardowe 55 minut** (`button`): zmień tylko ten czas, bez resetu fabrycznego
 - 🔌 **Utrzymuj połączenie** (`switch`): celowo zwolnij połączenie Bluetooth i połącz się ponownie, gdy będzie potrzebne
 
 **Utrzymuj połączenie** jest domyślnie wyłączone. Włącz tę encję w jej ustawieniach, aby pokazać przełącznik. Wyłączenie przełącznika wstrzymuje odczyty i ponowne łączenie, również po restarcie, do czasu jego włączenia. Podczas jazdy najpierw zatrzymuje biurko.
@@ -104,7 +106,9 @@ Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**, aby z
 
 Jeśli panel pokazuje błędną wysokość, zmierz odległość od podłogi do góry blatu. Wpisz ją w **Wysokość z miarki**, a następnie sprawdź i potwierdź korektę. Zapis korekty nie porusza biurkiem.
 
-Wysokość wyświetla się w pełnych centymetrach. Pomiary wpisuj z dokładnością miarki; kalibracja zachowuje tę dokładność. Profil przypomnień można zmienić na Wyłączone lub Profil 1/2/3. Wybór zachowuje czasy i pozostałe ustawienia panelu, nie porusza biurkiem i nie aktywuje klienta. Zapis wymaga aktywnego klienta i poprawnego odczytu przypomnień. Profile 1/2 wymagają jeszcze akceptacji sprzętowej. Edycja czasów i zapisanych pozycji nie jest dostępna.
+Wysokość wyświetla się w pełnych centymetrach. Pomiary wpisuj z dokładnością miarki; kalibracja zachowuje tę dokładność. Profil przypomnień można zmienić na Wyłączone lub Profil 1/2/3. Wybór zachowuje czasy i pozostałe ustawienia panelu, nie porusza biurkiem i nie aktywuje klienta. Zapis wymaga aktywnego klienta i poprawnego odczytu przypomnień. Profile 1/2 wymagają jeszcze akceptacji sprzętowej. Edycja zapisanych pozycji nadal nie jest dostępna.
+
+Na stronie urządzenia w sekcji **Konfiguracja** wpisz **1–60 pełnych minut** w **Profil 1: czas siedzenia** albo jawnie ustaw standardowe **55 minut** przyciskiem. Najpierw wybierz Wyłączone lub inny profil; zmiana czasu aktywnego profilu jest odrzucana. Zmienia się tylko ten czas siedzenia, bez przeliczania czasu stania i automatycznej zmiany profilu. Istniejące wartości poza zakresem pozostają widoczne i nie są nadpisywane. Zakres jest zasadą integracji, nie limitem sterownika ani zaleceniem medycznym. Na sprzęcie potwierdzono tylko 50/55 w nieaktywnym profilu 1; pozostałe czasy są tylko do odczytu. Żadna z tych czynności nie wykonuje resetu fabrycznego ani automatycznego przywracania. [Szczegóły edycji](docs/settings-reference.md#edit-profile-1-sitting-time).
 
 Nie musisz zapełniać pustych pozycji pamięci przed konfiguracją. Jeśli nie uda się odczytać zapisanych pozycji lub przypomnień, wysokość może pozostać dostępna, a niedostępna będzie tylko dana grupa ustawień. Po przekroczeniu czasu odczytu integracja ponowi próbę po pięciu minutach. Przyciski zapisanych pozycji wymagają poprawnego odczytu całej grupy pamięci.
 

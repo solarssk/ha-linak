@@ -1,6 +1,7 @@
-"""Stop and drive-to-memory controls on the coordinator's existing connection."""
+"""Explicit movement and reminder actions on the coordinator's existing connection."""
 
 from homeassistant.components.button import ButtonEntity
+from homeassistant.const import EntityCategory
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN
@@ -8,7 +9,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity import LinakEntity, track_memory_slots
+from .entity import LinakEntity, LinakReminderEntity, track_memory_slots
+from .reminder_settings import STANDARD_SITTING_MINUTES
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
@@ -16,7 +18,12 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities([LinakStop(coordinator)])
+    async_add_entities(
+        [
+            LinakStop(coordinator),
+            LinakStandardSittingTime(coordinator, "reminder_1_standard_time"),
+        ]
+    )
     track_memory_slots(
         hass,
         entry,
@@ -25,6 +32,18 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
         lambda index: LinakMemory(coordinator, index),
         async_add_entities,
     )
+
+
+class LinakStandardSittingTime(LinakReminderEntity, ButtonEntity):
+    """Set one documented standard value, not a factory reset."""
+
+    _attr_icon = "mdi:timer-refresh-outline"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_set_reminder_sitting_minutes(
+            STANDARD_SITTING_MINUTES
+        )
 
 
 class LinakStop(LinakEntity, ButtonEntity):

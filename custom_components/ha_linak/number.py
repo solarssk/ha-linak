@@ -1,19 +1,20 @@
-"""Native centimeter target with explicit movement, without target restoration."""
+"""Native centimeter target and explicitly edited reminder minutes."""
 
 import math
 from collections.abc import Callable
 
 from homeassistant.components.number import NumberEntity, NumberMode, NumberDeviceClass
-from homeassistant.const import UnitOfLength
+from homeassistant.const import EntityCategory, UnitOfLength, UnitOfTime
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity import LinakEntity, whole_centimeters
+from .entity import LinakEntity, LinakReminderEntity, whole_centimeters
 from .operation import OperationStatus
 from .protocol import PositionSample
+from .reminder_settings import MIN_SITTING_MINUTES, MAX_SITTING_MINUTES
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
@@ -21,7 +22,32 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     _hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities([LinakTargetHeight(coordinator)])
+    async_add_entities(
+        [
+            LinakTargetHeight(coordinator),
+            LinakReminderSittingTime(coordinator, "reminder_1_sitting_time"),
+        ]
+    )
+
+
+class LinakReminderSittingTime(LinakReminderEntity, NumberEntity):
+    """Report the actual value, even outside the narrower host edit policy."""
+
+    _attr_mode = NumberMode.BOX
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_native_step = 1
+    _attr_native_min_value = MIN_SITTING_MINUTES
+    _attr_native_max_value = MAX_SITTING_MINUTES
+    _attr_device_class = NumberDeviceClass.DURATION
+    _attr_entity_category = EntityCategory.CONFIG
+
+    @property
+    def native_value(self) -> int | None:
+        reminders = self.coordinator.data.reminders
+        return reminders.profiles_raw[0][0] if self.available and reminders else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.coordinator.async_set_reminder_sitting_minutes(value)
 
 
 class LinakTargetHeight(LinakEntity, NumberEntity):

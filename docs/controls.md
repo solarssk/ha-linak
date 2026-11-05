@@ -37,6 +37,14 @@ In the LINAK device's Configuration section, use **Reminder profile** to choose 
 
 Wait for valid reminder readings and a stationary desk. A busy operation is refused. If HA reports an inactive client, use explicit control preparation in Configure separately, then read the profile before another selection. A failed verification may follow a delivered write: check the actual profile after reconnecting before trying again. There is no automatic retry or restoration. Profiles 1/2 still need owner hardware acceptance; see the [setting contract](settings-reference.md#reminder-profile-selection).
 
+## Edit one reminder duration
+
+On the LINAK device page, open Configuration and type a whole number from **1 to 60 minutes** into **Profile 1 sitting time**. This is a number box, not a height slider or a clock time. Use Off or another profile before changing profile 1's duration; active-profile interval changes are refused. No profile is switched automatically. The stationary/active-client and error-recovery requirements above apply, without requiring a travel range.
+
+The edit changes only profile 1 sitting duration. Standing time and all other profiles/flags are preserved, with no requirement for the pair to total 60 minutes. Existing readings outside 1–60, such as 90, stay visible and are never clipped or automatically overwritten. The range restricts newly submitted edits only; it is a product choice, not medical guidance or the panel's established firmware range.
+
+To explicitly set the manufacturer's standard sitting-reminder value, press **Profile 1: use standard 55 minutes**. This uses the same protected setter. It is not a factory reset, does not restore all reminder pairs or a saved backup, and never runs on reconnect or failure. Use the separate Off selection to disable reminders, not zero minutes. Only 50/55 in inactive profile 1 have hardware evidence; other values are synthetic-test coverage. See the [complete interval contract](settings-reference.md#edit-profile-1-sitting-time).
+
 ## Set measured command bounds
 
 Enter the actual lowest and highest desktop heights from measurements or verified product data for this desk. Do not infer them from favorite positions or let the integration probe mechanical extremes.

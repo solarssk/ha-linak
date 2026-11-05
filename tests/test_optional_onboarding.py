@@ -223,7 +223,7 @@ async def test_real_ha_startup_creates_unavailable_settings_and_live_height(
         )
         == 4
     )
-    assert len(hass.states.async_all("button")) == 5
+    assert len(hass.states.async_all("button")) == 6
     if command != 0x88:
         assert all(
             s.state == "unavailable"

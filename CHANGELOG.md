@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a configuration input for profile 1 sitting time in whole minutes from 1 to 60 and an explicit standard-55-minute button. Reuse the serialized reminder transaction, preserve other fields and existing out-of-range readings, and refuse edits of the active profile. The range is integration policy, not medical or firmware limits; hardware evidence covers 50/55 in inactive profile 1 only.
 - Add a native reminder-profile select with fresh masked writes, strict acknowledgement and independent readback. Preserve intervals and unrelated flags; never activate, wake, move or replay. Hardware evidence covers Off/Profile 3 at client status 1 only.
 - Declare config-entry-only setup and report an unsupported `ha_linak:` YAML block through Repairs without changing action registration or starting Bluetooth work.
 - Add an explicit administrator-only protocol inventory action using the existing native connection and query lock on local Bluetooth or a proxy. Fixed reference-output and raw product-info reads never connect, activate the panel, move the desk or write settings; unverified payloads remain research data.

@@ -132,13 +132,17 @@ The slider selects heights in 1 cm steps within your measured range. It updates 
 | Entity type | Name in HA | Default | Action |
 | --- | --- | --- | --- |
 | `select` | 🔔 **Reminder profile** | Enabled | Choose Off or Profile 1/2/3, preserving intervals without moving the desk |
+| `number` | ⏱️ **Profile 1 sitting time** | Enabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
+| `button` | ↩️ **Profile 1: use standard 55 minutes** | Enabled | Set only that duration, not a factory reset |
 | `switch` | 🔌 **Keep connected** | Entity disabled | Turn off to release the Bluetooth connection, or on to reconnect |
 
 Enable **Keep connected** in its entity settings to show the switch. While the switch is off, polling and reconnecting stop, including after a restart. Turning it off during travel stops the desk first.
 
 Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
 
-Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Editing intervals and saved positions is unavailable.
+Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
+
+The device page's Configuration section also provides **Profile 1 sitting time**, a typed **1–60 whole-minute** input, and an explicit standard-**55-minute** button. Select Off or another profile before changing this duration. Standing time, other profiles and flags are preserved; an existing value outside the input range stays visible without clipping or automatic writeback. The range is integration policy, not medical or firmware limits. Hardware evidence covers 50/55 in inactive profile 1 only. Other durations remain read-only; the button is not a factory reset or saved-backup restore. [Interval contract](../docs/settings-reference.md#edit-profile-1-sitting-time).
 
 ### Diagnostics
 

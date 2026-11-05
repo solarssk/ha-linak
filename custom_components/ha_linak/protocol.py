@@ -155,16 +155,34 @@ def decode_reminders(payload: bytes) -> ReminderSettings:
     )
 
 
+def reminder_request(settings: ReminderSettings) -> bytes:
+    """Encode the complete seven-byte body, excluding the uninterpreted counter."""
+    if len(settings.profiles_raw) != 3 or any(
+        len(pair) != 2 for pair in settings.profiles_raw
+    ):
+        raise ValueError("Reminder settings require exactly three interval pairs")
+    body = bytes((settings.flags_raw,)) + bytes(
+        value for pair in settings.profiles_raw for value in pair
+    )
+    return b"\x7f\x88\x80" + body
+
+
 def reminder_profile_request(settings: ReminderSettings, profile: int) -> bytes:
     """Assign the profile, preserving every unrelated flag and interval byte."""
     if type(profile) is not int or profile not in range(4):
         raise ValueError("Reminder profile must be 0, 1, 2 or 3")
-    body = bytes(((settings.flags_raw & ~3) | profile,)) + bytes(
-        value for pair in settings.profiles_raw for value in pair
-    )
-    if len(body) != 7:
-        raise ValueError("Reminder settings require exactly three interval pairs")
-    return b"\x7f\x88\x80" + body
+    request = bytearray(reminder_request(settings))
+    request[3] = (request[3] & ~3) | profile
+    return bytes(request)
+
+
+def reminder_sitting_request(settings: ReminderSettings, minutes: int) -> bytes:
+    """Replace only profile 1 sitting duration; host input policy is separate."""
+    if type(minutes) is not int or not 0 <= minutes <= 255:
+        raise ValueError("Reminder duration must fit one byte")
+    request = bytearray(reminder_request(settings))
+    request[4] = minutes
+    return bytes(request)
 
 
 class ReminderClientInactive(ValueError):

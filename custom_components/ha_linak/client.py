@@ -27,6 +27,7 @@ from .calibration import (
 from .protocol import activation_request
 from .device_profile import DeviceIdentity, MODEL_UUID, FIRMWARE_UUID
 from .control_settings import ControlSettings
+from .reminder_settings import ReminderProfileActive, sitting_minutes
 from .motion import (
     BleakMotionTransport,
     CONTROL_UUID,
@@ -55,6 +56,8 @@ from .protocol import (
     decode_position,
     decode_reminders,
     reminder_profile_request,
+    reminder_request,
+    reminder_sitting_request,
     ReminderClientInactive,
     decode_stored_position,
     read_request,
@@ -984,7 +987,7 @@ class DeskClient:
         ):
             raise DeskLinkLost()
 
-    async def _change_reminder_profile(
+    async def _change_reminders(
         self,
         request: bytes,
         sample: PositionSample,
@@ -992,7 +995,7 @@ class DeskClient:
         client: BleakClient,
         generation: int,
     ) -> ReminderSettings:
-        """Write and independently verify a changed profile under caller ownership."""
+        """Write and independently verify all reminder bytes under caller ownership."""
         identity = await self._query(ReadCommand.USER_ID, 17)
         # Validate the entire identity without using its activation payload.
         activation_request(identity)
@@ -1014,7 +1017,7 @@ class DeskClient:
             raise ValueError("Capabilities changed during reminder write")
         after = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
         self._require_reminder_session(client, generation)
-        if reminder_profile_request(after, after.selected_profile) != request:
+        if reminder_request(after) != request:
             raise ValueError("Reminder readback mismatch; do not retry automatically")
         return after
 
@@ -1022,6 +1025,28 @@ class DeskClient:
         """One explicit profile assignment on the existing session, never replayed."""
         if type(profile) is not int or profile not in range(4):
             raise ValueError("Invalid reminder profile")
+        return await self._set_reminders(
+            lambda settings: reminder_profile_request(settings, profile)
+        )
+
+    async def set_reminder_sitting_minutes(self, value: float) -> DeskState:
+        """Edit only inactive profile 1, without normalizing its standing duration."""
+        minutes = sitting_minutes(value)
+
+        def request_for(settings: ReminderSettings) -> bytes:
+            if (
+                settings.selected_profile == 1
+                and settings.profiles_raw[0][0] != minutes
+            ):
+                raise ReminderProfileActive("Select Off or another profile first")
+            return reminder_sitting_request(settings, minutes)
+
+        return await self._set_reminders(request_for)
+
+    async def _set_reminders(
+        self, request_for: Callable[[ReminderSettings], bytes]
+    ) -> DeskState:
+        """Reserve one fresh-state transaction shared by both reminder controls."""
         if self.control_busy or self._lock.locked():
             raise MotionError("Desk is busy", MotionFailure.BUSY)
         if not self.connected or not self.settings_health["reminders"].valid:
@@ -1050,10 +1075,10 @@ class DeskClient:
                 if sample.speed_raw != 0:
                     raise ValueError("Wait until the desk stops")
                 before = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
-                request = reminder_profile_request(before, profile)
                 self._require_reminder_session(client, generation)
-                if before.selected_profile != profile:
-                    after = await self._change_reminder_profile(
+                request = request_for(before)
+                if reminder_request(before) != request:
+                    after = await self._change_reminders(
                         request, sample, capabilities, client, generation
                     )
                 else:
@@ -1062,7 +1087,7 @@ class DeskClient:
                 self._record_settings("reminders", True)
                 self._set_stage("ready")
                 return self.state
-        except ReminderClientInactive:
+        except ReminderClientInactive, ReminderProfileActive:
             self._set_stage("ready")
             raise
         except BaseException:

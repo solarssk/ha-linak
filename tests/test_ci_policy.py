@@ -510,6 +510,12 @@ def test_main_ruleset_guard_rejects_bypass_actors():
         )
 
 
+def test_codecov_excludes_the_standalone_fuzzer_from_patch_coverage():
+    coverage = yaml.safe_load((ROOT / "codecov.yml").read_text())
+
+    assert "fuzz/fuzz_protocol.py" in coverage["ignore"]
+
+
 def test_all_locked_uv_copies_exclude_the_compromised_ca_bundle():
     from packaging.version import Version
 

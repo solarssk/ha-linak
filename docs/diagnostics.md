@@ -30,12 +30,12 @@ Suspected vulnerabilities or sensitive raw evidence belong in [private reporting
 
 ### Zgłoszenie i logi po polsku
 
-Nie musisz ustalać przyczyny. W [formularzu błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml) możesz pisać po polsku, a brakujące informacje oznaczyć „nie wiem”. Nie powtarzaj nieoczekiwanego ruchu, nie zrywaj połączenia podczas jazdy i nie resetuj parowania dla zebrania logów.
+Nie musisz ustalać przyczyny. Wypełnij [polski formularz błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml), a brakujące informacje oznacz „nie wiem”. Nie powtarzaj nieoczekiwanego ruchu, nie zrywaj połączenia podczas jazdy i nie resetuj parowania dla zebrania logów.
 
 1. Podaj dokładne wersje LINAK i HA Core, sposób instalacji HA/integracji, model i znany firmware panelu oraz adapter lokalny/proxy lub oba. Wersje podaj osobno: plik diagnostyczny ich nie zawiera.
 2. Opisz oczekiwany i rzeczywisty wynik, dokładny błąd, czas ze strefą i kolejność działań, także użycie panelu lub restart/aktualizację. Podaj stan Połączenie, Operacja i jej przyczynę, zamiar Utrzymuj połączenie oraz czy i po jakim czasie nastąpił samoczynny powrót.
 3. Pobierz diagnostykę z menu urządzenia LINAK w **Ustawienia → Urządzenia i usługi**, jeśli to możliwe przed i po błędzie. To odczyt danych z pamięci integracji, nie nowa próba Bluetooth. Jeśli pierwsza konfiguracja się nie zakończyła, podaj jej błąd i etap zamiast pliku.
-4. Na karcie integracji wybierz **Włącz rejestrowanie debugowania / Enable debug logging**, zaobserwuj jedno bezpieczne zdarzenie, następnie **Wyłącz / Disable debug logging** i pobierz log. Gdy menu jest niedostępne, powyższa akcja `logger.set_level` włącza wyłącznie logger integracji bez restartu. Potem przywróć poprzedni poziom, np. `info`; log pobierz z **Ustawienia → System → Dzienniki**. Nie restartuj ani nie poruszaj biurkiem tylko dla tego zgłoszenia.
+4. Na karcie integracji wybierz **Włącz rejestrowanie debugowania**, zaobserwuj jedno bezpieczne zdarzenie, następnie **Wyłącz rejestrowanie debugowania** i pobierz log. Gdy menu jest niedostępne, powyższa akcja `logger.set_level` włącza wyłącznie logger integracji bez restartu. Potem przywróć poprzedni poziom, np. `info`; log pobierz z **Ustawienia → System → Dzienniki**. Nie restartuj ani nie poruszaj biurkiem tylko dla tego zgłoszenia.
 5. Zachowaj pierwszy błąd i poprzedzające etapy, czasy, kody i nazwy poleceń. Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i dane dostępowe; używaj stałych zastępników `DESK_A`/`PROXY_A`. **Logi debugowania nie są automatycznie anonimizowane.** Nie dołączaj kopii HA, konfiguracji, `.storage`, surowego inwentarza protokołu ani przechwyconych ramek. Nie włączaj globalnego debugowania ani dodatkowych loggerów bez uzgodnienia.
 
 Podatności i wrażliwe dowody zgłaszaj [prywatnie](../SECURITY.md). Wynik Operacji lub udany zapis Stop nie jest niezależnym dowodem fizycznego zatrzymania.

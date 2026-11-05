@@ -56,7 +56,7 @@ Nie publikuj danych logowania, tokenów, identyfikatorów urządzeń i klientów
 
 Maintainer oceni zgłoszenie oraz uzgodni poprawkę i ujawnienie w prywatnym zgłoszeniu. Nie gwarantujemy terminu odpowiedzi ani płatnego wsparcia. Jeśli dane wrażliwe trafiły do publicznego wpisu, usuń je i unieważnij ujawnione dane dostępowe, zanim przejdziesz do rozmowy prywatnej.
 
-Zwykłe błędy połączenia, konfiguracji i interfejsu zgłaszaj przez [formularz błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). [Instrukcja diagnostyczna](docs/diagnostics.md#prepare-a-bug-report) opisuje bezpieczne zebranie danych, także po polsku.
+Zwykłe błędy połączenia, konfiguracji i interfejsu zgłaszaj przez [polski formularz błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml). [Instrukcja diagnostyczna po polsku](docs/diagnostics.md#zgłoszenie-i-logi-po-polsku) opisuje bezpieczne zebranie danych.
 
 ### Granice bezpieczeństwa
 

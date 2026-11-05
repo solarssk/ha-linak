@@ -34,11 +34,11 @@ The pure protocol decoders have a bounded Atheris fuzz target in `fuzz/fuzz_prot
 
 Tests, type checks, CodeQL default setup (Python, weekly), workflow lint, dependency audit, secret scanning, signed protected main, documentation-impact checks, contribution/PR templates and report-only Scorecard are already configured. Live branch protection and CodeQL settings were checked during this assessment. Standard `type:` labels and the 0.1.0 milestone exist. The maintainer remains the merger; review count zero is deliberate for a solo-maintained repository.
 
-No container image is published, so container scanning and image SBOM requirements do not apply. There is no released version yet: do not display a latest-release badge or claim a release exists. Before the first external release, publish a versioned GitHub Release with installation/upgrade actions and associate its work with the milestone. The reusable playbook verification workflow is optional; this repository checks its own HA-specific gates and settings.
+No container image is published, so container scanning and image SBOM requirements do not apply. Display a latest-release badge or claim a release exists only when a published GitHub Release provides that evidence. The first external release needs a versioned GitHub Release with installation/upgrade actions and associated milestone work. The reusable playbook verification workflow is optional; this repository checks its own HA-specific gates and settings.
 
 ## Release preparation and publication
 
-The prepared first public version is 0.1.0. Preparation sets the component manifest and the matching changelog section; it does not create a tag, GitHub Release, catalog listing or completed hardware acceptance. The [roadmap gates](roadmap.md#evidence-and-release-gates) and [H1–H12 matrix](hardware-results.md#hardware-acceptance-matrix) retain their outstanding requirements. Choosing to end an experiment does not pass or remove them.
+The 0.1.0 changelog section describes the first public version. Preparing it sets the component manifest and the matching changelog section; it does not create a tag, GitHub Release, catalog listing or completed hardware acceptance. The [roadmap gates](roadmap.md#evidence-and-release-gates) and [H1–H12 matrix](hardware-results.md#hardware-acceptance-matrix) retain their outstanding requirements. Choosing to end an experiment does not pass or remove them.
 
 | Source | Responsibility |
 | --- | --- |

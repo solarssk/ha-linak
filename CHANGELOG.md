@@ -4,8 +4,6 @@
 
 ## 0.1.0
 
-Prepared for the first public release; not yet published.
-
 LINAK brings DPG1C desk readings, centimeter controls and selected panel settings directly into Home Assistant over Bluetooth. No phone app or separate bridge is needed.
 
 ### ⚠️ Before you update

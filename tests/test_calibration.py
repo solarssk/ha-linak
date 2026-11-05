@@ -169,6 +169,21 @@ async def test_changed_snapshot_or_missing_operation_never_writes(change):
     assert not desk.connected
 
 
+async def test_unavailable_preflight_position_never_activates_or_calibrates():
+    desk, fake = await ready()
+    proposal = HeightCalibration.prepare(
+        desk.state.position, desk.state.offset_raw, 75.6
+    )
+    fake.position = 0xFFFF
+    fake.activation = 0
+    with pytest.raises(ValueError, match="position is unavailable"):
+        await desk.calibrate_height(proposal, activate_client=True)
+    assert not writes(fake)
+    assert fake.activation == 0
+    assert fake.offset == 6800
+    assert not desk.connected
+
+
 async def test_successful_write_without_matching_readback_is_not_success():
     desk, fake = await ready()
     fake.ignore_write = True

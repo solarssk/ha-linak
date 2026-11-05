@@ -21,6 +21,8 @@ Reading `99fa0011` directly is not an extended-configuration query. Subscribe to
 
 Height feedback contains exactly four bytes: little-endian unsigned `position_raw`, followed by the preserved raw speed word. Position uses 0.1 mm units, or 100 raw units per centimeter.
 
+A position word of `ffff` is rejected as unavailable instead of being added to the height reference. It cannot be used for a displayed height, calibration or movement. The speed word remains uninterpreted; this position check does not reject or normalize speed flags.
+
 ```text
 height_cm = (position_raw + offset_raw) / 100
 relative_target_raw = round(target_cm * 100 - offset_raw)

@@ -50,7 +50,7 @@
       },
       "height": {
         "title": "3. Check the current height",
-        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. If it is correct, finish adding the desk. Otherwise, enter the current measurement in the next step. From now on, keep the desk still.",
+        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. Turn on the confirmation only if the reading is correct. Otherwise, leave it off and enter the current measurement in the next step. From now on, keep the desk still.",
         "data": {
           "height_correct": "The height is correct"
         }
@@ -70,6 +70,7 @@
       "cannot_connect": "Unable to read the desk. Check pairing, range and other connected apps.",
       "timeout": "The desk did not respond in time. Check pairing, Bluetooth range and connected phone apps, then try again.",
       "unsupported_device": "The desk returned an unsupported data format. This alpha requires the DPG1C extended readings.",
+      "position_unavailable": "The desk did not return a usable height reading. Leave it still and retry. Do not confirm or correct the height until a valid reading is available.",
       "unknown": "An unexpected setup error occurred. Check the Home Assistant log for ha_linak.",
       "pairing_timeout": "Bluetooth pairing did not finish in time. Enable pairing on the panel and try again.",
       "authentication_failed": "Bluetooth authentication failed. Enable pairing on the panel and close connected desk apps, then try again.",
@@ -300,7 +301,7 @@
       },
       "height": {
         "title": "Check the height",
-        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. If the reading is correct, continue. Otherwise, enter your tape measurement in the next step.",
+        "description": "Current reading: {height} cm. Check the distance from the floor to the top of the desktop. Turn on the confirmation only if the reading is correct. Otherwise, leave it off and enter your tape measurement in the next step.",
         "data": {
           "height_correct": "The height is correct"
         }

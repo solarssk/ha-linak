@@ -29,6 +29,18 @@ class ProtocolTests(unittest.TestCase):
             with self.subTest(payload=payload), self.assertRaises(ValueError):
                 protocol.decode_position(payload)
 
+    def test_unavailable_position_is_rejected_without_reinterpreting_speed(self):
+        for speed in (0, 1, 0xFFFF):
+            payload = b"\xff\xff" + speed.to_bytes(2, "little")
+            with (
+                self.subTest(speed=speed),
+                self.assertRaises(protocol.PositionUnavailable),
+            ):
+                protocol.decode_position(payload)
+        sample = protocol.decode_position(bytes.fromhex("feffffff"))
+        self.assertEqual(sample.position_raw, 0xFFFE)
+        self.assertEqual(sample.speed_raw, 0xFFFF)
+
     def test_queries_match_independently_observed_framing(self):
         self.assertEqual(
             protocol.read_request(protocol.ReadCommand.CAPABILITIES),

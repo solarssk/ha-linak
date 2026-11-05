@@ -50,7 +50,7 @@
       },
       "height": {
         "title": "3. Sprawdź aktualną wysokość",
-        "description": "Aktualny odczyt: {height} cm. Sprawdź odległość od podłogi do górnej powierzchni blatu. Jeśli wysokość jest poprawna, zakończymy dodawanie biurka. Jeśli nie, wpiszesz aktualny pomiar w następnym kroku. Od teraz pozostaw biurko nieruchomo.",
+        "description": "Aktualny odczyt: {height} cm. Sprawdź odległość od podłogi do górnej powierzchni blatu. Włącz potwierdzenie tylko wtedy, gdy odczyt jest poprawny. W przeciwnym razie pozostaw je wyłączone i wpisz aktualny pomiar w następnym kroku. Od teraz pozostaw biurko nieruchomo.",
         "data": {
           "height_correct": "Wysokość jest poprawna"
         }
@@ -70,6 +70,7 @@
       "cannot_connect": "Nie udało się odczytać danych biurka. Sprawdź parowanie, zasięg i inne połączone aplikacje.",
       "timeout": "Biurko nie odpowiedziało w wymaganym czasie. Sprawdź parowanie, zasięg Bluetooth i połączenie aplikacji telefonu, a następnie ponów próbę.",
       "unsupported_device": "Biurko zwróciło nieobsługiwany format danych. Ta wersja wymaga rozszerzonych odczytów DPG1C.",
+      "position_unavailable": "Biurko nie zwróciło poprawnego odczytu wysokości. Pozostaw je nieruchomo i ponów próbę. Nie potwierdzaj ani nie koryguj wysokości, dopóki poprawny odczyt nie będzie dostępny.",
       "unknown": "Wystąpił nieoczekiwany błąd konfiguracji. Sprawdź dziennik Home Assistanta dla integracji ha_linak.",
       "pairing_timeout": "Parowanie Bluetooth nie zakończyło się w wyznaczonym czasie. Włącz parowanie na panelu i spróbuj ponownie.",
       "authentication_failed": "Uwierzytelnianie Bluetooth nie powiodło się. Włącz parowanie na panelu, zamknij połączone aplikacje biurka i spróbuj ponownie.",
@@ -300,7 +301,7 @@
       },
       "height": {
         "title": "Sprawdź wysokość",
-        "description": "Aktualny odczyt: {height} cm. Sprawdź odległość od podłogi do górnej powierzchni blatu. Jeśli odczyt jest poprawny, kontynuuj. Jeśli jest błędny, wpiszesz pomiar z miarki w następnym kroku.",
+        "description": "Aktualny odczyt: {height} cm. Sprawdź odległość od podłogi do górnej powierzchni blatu. Włącz potwierdzenie tylko wtedy, gdy odczyt jest poprawny. W przeciwnym razie pozostaw je wyłączone i wpisz pomiar z miarki w następnym kroku.",
         "data": {
           "height_correct": "Wysokość jest poprawna"
         }

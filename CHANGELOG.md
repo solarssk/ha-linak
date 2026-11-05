@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Reject an unavailable `ffff` position word before height conversion, report a specific onboarding error and leave height confirmation off until explicitly selected. Preserve centimeter scaling, raw speed flags and measured travel bounds.
 - Add a native configuration select for the stored panel Inch/Metric preference, preserving all other flags and durations through the protected reminder transaction. Metric does not distinguish physical CM/MM, and verified preference readback does not confirm immediate OLED redraw. HA centimeter geometry and unit conversion are unchanged; no wake, activation or movement is sent.
 - Make the shared refresh/recovery deadline regression deterministic by expiring real timeout contexts at observed protocol phases instead of racing a 30-millisecond wall-clock budget. Runtime deadlines and CI gates are unchanged.
 - Reorganize the contribution guide around bug reports, ideas and tester help, with a Polish welcome, shorter instructions and expandable developer/maintainer details.

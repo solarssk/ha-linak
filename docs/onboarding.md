@@ -46,6 +46,8 @@ flowchart TD
 
 An unchanged height correction sends no offset write. Calibration inputs are transient and are not replayed after restart. Failed preparation returns to its form instead of silently creating an unprepared entry.
 
+The height-correct confirmation starts off and must be enabled deliberately after checking the measurement. An unavailable position word (`ffff`) fails the read with a specific setup error, not a large centimeter value or an inferred unit conversion. Setup can retry a read, but never substitutes an unavailable position into a calibration proposal.
+
 ## Monitoring only
 
 On the name step of setup, **Monitoring only** is an optional choice. It is off by default, so the normal path with controls stays the default.

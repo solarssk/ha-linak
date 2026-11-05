@@ -70,11 +70,18 @@ class PositionSample:
         return base_height_m + self.position_raw / 10_000
 
 
+class PositionUnavailable(ValueError):
+    """The position word cannot be used as a height measurement."""
+
+
 def decode_position(payload: bytes) -> PositionSample:
     """Reject malformed frames instead of publishing misleading readings."""
     if len(payload) != 4:
         raise ValueError("Position sample must contain exactly four bytes")
-    return PositionSample(*struct.unpack("<HH", payload))
+    position, speed = struct.unpack("<HH", payload)
+    if position == 0xFFFF:
+        raise PositionUnavailable("Desk position is unavailable")
+    return PositionSample(position, speed)
 
 
 def _frame(payload: bytes, response_type: int, length: int) -> None:

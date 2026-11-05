@@ -228,13 +228,12 @@ async def test_real_ha_startup_creates_unavailable_settings_and_live_height(
         )
         == 4
     )
-    assert len(hass.states.async_all("button")) == 6
+    assert len(hass.states.async_all("button")) == 5
     if command != 0x88:
-        assert all(
-            s.state == "unavailable"
-            for s in hass.states.async_all("button")
-            if "stored_position" in s.entity_id
-        )
+        for slot in range(1, 5):
+            assert (
+                hass.states.get(f"button.desk_position_{slot}").state == "unavailable"
+            )
         before = len(fake.writes)
         with pytest.raises(HomeAssistantError):
             await entry.runtime_data.async_move_to_memory(0)

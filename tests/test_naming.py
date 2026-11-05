@@ -1,5 +1,7 @@
 """Native Bluetooth names in discovery, validated entries and device metadata."""
 
+import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -16,6 +18,69 @@ from custom_components.ha_linak.naming import desk_name, discovery_title
 from custom_components.ha_linak.protocol import SERVICE_UUID
 from test_client import FakeBleak
 from test_integration import ADDRESS, finish_progress
+from test_reminder_profile import setup_select
+
+
+@pytest.mark.parametrize(
+    "filename,position,stored",
+    [
+        ("strings.json", "Position", "Stored height"),
+        ("translations/en.json", "Position", "Stored height"),
+        ("translations/pl.json", "Pozycja", "Zapisana wysokość"),
+    ],
+)
+def test_short_position_button_labels_keep_stored_height_sensors_distinct(
+    filename, position, stored
+):
+    root = Path(__file__).parents[1] / "custom_components/ha_linak"
+    entities = json.loads((root / filename).read_text())["entity"]
+    for slot in range(1, 5):
+        assert (
+            entities["button"][f"go_to_memory_{slot}"]["name"] == f"{position} {slot}"
+        )
+        assert entities["sensor"][f"memory_{slot}"]["name"] == f"{stored} {slot}"
+
+
+@pytest.mark.parametrize("disabled_by", [None, er.RegistryEntryDisabler.USER])
+async def test_position_labels_preserve_existing_registry_identity_and_overrides(
+    hass, disabled_by
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    buttons = []
+    for slot in range(1, 5):
+        item = registry.async_get_or_create(
+            "button",
+            DOMAIN,
+            f"{ADDRESS}_go_to_memory_{slot}",
+            config_entry=entry,
+            suggested_object_id=f"desk_go_to_stored_position_{slot}",
+        )
+        buttons.append(
+            registry.async_update_entity(
+                item.entity_id, name=f"My favorite {slot}", disabled_by=disabled_by
+            )
+        )
+    profile = registry.async_get_or_create(
+        "sensor", DOMAIN, f"{ADDRESS}_reminder_profile", config_entry=entry
+    )
+    registry.async_update_entity(profile.entity_id, icon="mdi:alarm")
+    await setup_select(hass, entry=entry)
+    for slot, previous in enumerate(buttons, 1):
+        actual = registry.async_get(previous.entity_id)
+        assert actual.unique_id == previous.unique_id
+        assert actual.entity_id == previous.entity_id
+        assert actual.name == previous.name
+        assert actual.original_name == f"Position {slot}"
+        assert actual.original_icon == "mdi:table-chair"
+        assert actual.disabled_by == disabled_by
+    assert registry.async_get(profile.entity_id).icon == "mdi:alarm"
+    assert registry.async_get(profile.entity_id).original_icon == "mdi:bell-outline"
+    assert hass.states.get(profile.entity_id).attributes["icon"] == "mdi:alarm"
+    await hass.config_entries.async_unload(entry.entry_id)
 
 
 class NamedDesk(FakeBleak):
@@ -580,7 +645,11 @@ async def test_released_entry_registers_names_without_radio_and_preserves_regist
         assert height_id == "sensor.my_workspace_height"
         assert reminder_id == "number.my_workspace_profile_1_sitting_time"
         assert hass.states.get(height_id).state == "unavailable"
-        assert hass.states.get(reminder_id).state == "unavailable"
+        assert hass.states.get(reminder_id) is None
+        assert (
+            registry.async_get(reminder_id).disabled_by
+            == er.RegistryEntryDisabler.INTEGRATION
+        )
 
         old_sensor = registry.async_get(old_sensor.entity_id)
         old_number = registry.async_get(old_number.entity_id)
@@ -672,9 +741,10 @@ async def test_released_mac_title_uses_readable_default_entity_ids(
         assert entry.title == "LINAK"
         assert entry.runtime_data.name == "LINAK"
         assert hass.states.get("sensor.linak_height").state == "unavailable"
+        assert hass.states.get("number.linak_profile_1_sitting_time") is None
         assert (
-            hass.states.get("number.linak_profile_1_sitting_time").state
-            == "unavailable"
+            registry.async_get("number.linak_profile_1_sitting_time").disabled_by
+            == er.RegistryEntryDisabler.INTEGRATION
         )
 
         old_sensor = registry.async_get(old_sensor.entity_id)

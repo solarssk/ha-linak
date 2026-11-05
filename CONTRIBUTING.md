@@ -1,8 +1,8 @@
 # 🤝 Help improve LINAK
 
-You can help by reporting a problem, suggesting an improvement or pointing out confusing instructions. You don't need to write code.
+**English** · [Polski](CONTRIBUTING.pl.md)
 
-🇵🇱 Problemy i pomysły możesz opisać po polsku. Napisz, co chcesz zrobić i co się dzieje. Nie musisz znać technicznych szczegółów.
+You can help by reporting a problem, suggesting an improvement or pointing out confusing instructions. You don't need to write code.
 
 ## Where to start
 
@@ -19,7 +19,7 @@ Choose the kind of help you'd like to give:
 
 Tell us what happened in your own words. A screenshot can help; you don't need to diagnose the cause.
 
-1. Check the [troubleshooting guide](docs/diagnostics.md) and [existing issues](https://github.com/solarssk/ha-linak/issues) for the same problem.
+1. Check the [bug-report and debug-log guide](docs/diagnostics.md#prepare-a-bug-report) and [existing issues](https://github.com/solarssk/ha-linak/issues) for the same problem.
 2. Open a [bug report](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
 3. Describe what you expected, what happened instead and the steps that led to it.
 
@@ -30,9 +30,14 @@ The form also asks for a few details:
 | Versions | Your Home Assistant and LINAK integration versions |
 | Desk | Panel model, if you know it |
 | Connection | A Bluetooth adapter or proxy, if you know which one |
-| Screenshot or log | The error message or behavior you want to show |
+| Timeline and recovery | Time with timezone, action, first error, whether readings returned by themselves and how long you waited |
+| Diagnostics and log | Reviewed LINAK diagnostic JSON and a narrow debug interval, collected with [these steps](docs/diagnostics.md#collect-a-narrow-debug-log) |
 
 Write “not sure” if you can't find a detail. You can add it later if the maintainer needs it.
+
+Prefer help writing? The optional [AI-assisted report instructions](docs/diagnostics.md#prepare-a-report-with-ai) turn your observations into a draft for review. Reporting does not require AI or log attachments.
+
+### Before sharing
 
 🔒 **Before sharing:** hide device names, Bluetooth addresses, room/location details and credentials in screenshots and logs. Report a suspected security vulnerability through [private vulnerability reporting](https://github.com/solarssk/ha-linak/security/advisories/new), not a public issue.
 
@@ -199,7 +204,30 @@ When updating a document:
 
 Before handing off, follow one reader path from the [index](docs/README.md), check links/anchors, verify names and commands against the implementation, and remove contradictory claims. Keep one source of truth per fact.
 
+Keep each owner guide in one language. Put Polish guidance in a separate `.pl.md` file with reciprocal language links at the top. Do not insert Polish paragraphs into English procedures or switch back to English after a Polish subsection. Label links to English-only technical references explicitly in the Polish guide. Repository-wide policies such as SECURITY.md may keep complete English and Polish sections under separate level-two language headings, without alternating between them.
+
 The [writing review checklist](https://github.com/vercel-labs/writing-guidelines/blob/main/command.md) can help with clarity. Repository Markdown conventions take precedence over framework-specific front matter, MDX and frontend requirements.
+
+### Changelog and release notes
+
+`CHANGELOG.md` is the source for the public GitHub Release body, not a commit log. Follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [GitLab's user-facing entry guidance](https://docs.gitlab.com/development/changelog/): explain what changes for the user and why it matters. Group related changes, omit internal refactors and CI housekeeping without user impact, and avoid unsupported reliability or safety claims.
+
+Keep `## Unreleased` at the top and plain version headings such as `## 0.1.0` below it so anchors remain predictable. Start each version with one or two sentences about the outcome. Include only nonempty sections, in this order:
+
+| Heading | Content |
+| --- | --- |
+| `### ⚠️ Before you update` | Requirements, migration, breaking changes and required actions; always first when applicable |
+| `### ✨ New` | New user-facing capabilities |
+| `### 🔧 Improvements` | Changes to an existing user experience |
+| `### 🐛 Fixes` | Corrected visible behavior |
+| `### 🔒 Security` | Actual product-security impact, not routine tooling maintenance |
+| `### 📌 Known limitations` | Material remaining gaps, uncertainty and links to the owning reference |
+
+Deprecations and removals must be explicit in Before you update or clearly named separate sections when needed. Use one emoji per section heading, never instead of its text and not in every bullet. Emoji are this repository's visual convention, not a requirement of the cited guides. Write short, concrete bullets, with no slogans, raw logs, commit SHAs or test chronology. Link detailed evidence rather than copying the investigation into release notes.
+
+Write the public changelog and GitHub Release body in English only, without a duplicated Polish block. This exception applies only to release notes: product READMEs and bilingual public documentation retain English/Polish content, and HA strings remain aligned in both languages. Technical references retain their documented English-language structure. The first public release describes the available product, requirements and material current limitations, not fixes relative to internal alphas. Later releases describe changes since the previous public release. Unpublished alpha history and internal problem chronology stay in Git, not in the public changelog or a separate public archive. Do not invent a publication date; preparation must be marked unpublished until the maintainer actually publishes.
+
+There is no release workflow or extractor in this repository. For manual publication, use the complete English version section between its `## VERSION` heading and the next level-two heading, including limitations, without copying Unreleased. Resolve repository-relative documentation links against the actual release tag when copying the body to GitHub. Remove the preparation-only unpublished notices only as part of the actual publication. Do not maintain a second release-notes file. The [release preparation boundary](docs/governance.md#release-preparation-and-publication) separates editing from publishing.
 
 </details>
 
@@ -239,8 +267,6 @@ Lock freshness checks preserve existing transitive pins. To deliberately update 
 Dependabot's pip `allow` list names only independent tools from `requirements-tools.txt` and `requirements-build.txt`; update that list and its tooling group when adding a tool. HA-owned packages and the deliberately chosen `uv` resolver are not eligible for independent updates. Keep generated component, audit and resolver inputs fetchable: excluding a file referenced through `-r` or `-c` prevents Dependabot from parsing the graph before package filters run. Only `.github/locks/**` is path-excluded. Regenerate locks after an accepted tool update; the policy tests check input reachability and package ownership. See the [native allow/ignore semantics](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#allow--).
 
 Locks target Python 3.14.2 and Linux glibc 2.39; don't use them as macOS or runtime HA dependency files.
-
-🇵🇱 Lista pip `allow` Dependabota obejmuje tylko niezależne narzędzia z `requirements-tools.txt` i `requirements-build.txt`. Dodając narzędzie, zaktualizuj tę listę i grupę tooling. Pakiety zarządzane przez HA oraz świadomie wybrany resolver `uv` nie podlegają osobnym aktualizacjom. Pliki wskazane przez `-r` lub `-c` muszą pozostać dostępne do pobrania, także wygenerowane wejścia komponentów, audytu i resolvera. Wykluczenie ścieżki przerywa parsowanie przed filtrowaniem pakietów. Wykluczone pozostaje tylko `.github/locks/**`; po zaakceptowaniu aktualizacji narzędzi wygeneruj locki ponownie. Testy polityki sprawdzają dostępność wejść i podział odpowiedzialności za pakiety.
 
 </details>
 
@@ -290,7 +316,7 @@ Before closing a release milestone, select or create the next open one and updat
 
 ## Coverage signals
 
-Tests produce `coverage.xml` and `junit.xml`. A separate trusted-run job uploads them to Codecov/Sonar using the corresponding repository secrets. These signals are advisory during the alpha.
+Tests produce `coverage.xml` and `junit.xml`. A separate trusted-run job uploads them to Codecov/Sonar using the corresponding repository secrets. These signals are advisory and do not establish hardware acceptance.
 
 Keep Sonar Automatic Analysis disabled. The properties file separates integration code from tests and matches the verified recmedia organization. CI helpers remain covered by CodeQL and regression tests.
 

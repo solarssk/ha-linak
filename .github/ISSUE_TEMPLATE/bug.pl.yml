@@ -1,0 +1,48 @@
+name: Zgłoszenie błędu (Polski)
+description: Zgłoś problem po polsku i dołącz informacje diagnostyczne.
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Skorzystaj z [instrukcji diagnostycznej](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.pl.md). Nie powtarzaj niebezpiecznego ruchu dla zebrania dowodów. Podatności zgłaszaj [prywatnie](https://github.com/solarssk/ha-linak/security/advisories/new).
+
+        Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i tokeny z załączników. Jeśli czegoś nie wiesz, wpisz „nie wiem”.
+
+        Potrzebujesz pomocy w opisaniu problemu? Skorzystaj z opcjonalnej [instrukcji przygotowania zgłoszenia z AI](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.pl.md#przygotuj-zgłoszenie-z-pomocą-ai), sprawdź szkic i skopiuj go do formularza. Zgłoszenie nie wymaga logów ani konta w usłudze AI.
+  - type: input
+    id: versions
+    attributes:
+      label: Wersje integracji i Home Assistanta
+      description: Dokładna wersja LINAK lub rewizja rozwojowa, wersja HA Core, sposób instalacji integracji (Marketplace/ręcznie) i środowisko HA (HA OS/Container).
+      placeholder: "LINAK 0.1.0; HA Core 2026.11.0; Marketplace; HA OS"
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Oczekiwane i rzeczywiste zachowanie
+      description: Co zrobiono, co miało się stać i co się stało? Podaj dokładną treść błędu.
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Panel i połączenie Bluetooth
+      description: Model i znany firmware panelu, adapter lokalny lub proxy ESPHome oraz sposób połączenia podany w diagnostyce. Wymień inne aplikacje lub integracje biurka. Bez nazw urządzeń, adresów i lokalizacji.
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Przebieg i odzyskanie połączenia
+      description: Czas ze strefą, działanie lub postój, stan Połączenie/Operacja i przyczyna, zamiar Utrzymuj połączenie, czas trwania i samoczynny powrót. Wspomnij restart lub aktualizację HA oraz użycie panelu fizycznego.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostyka
+      description: Dołącz sprawdzony plik JSON diagnostyki LINAK ze strony urządzenia, najlepiej przed i po błędzie. Jeśli konfiguracja się nie zakończyła, podaj jej błąd i etap zamiast pliku. Nie dołączaj pełnej konfiguracji HA, kopii zapasowych ani surowego inwentarza protokołu.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Zanonimizowane logi debugowania
+      description: Zgodnie z instrukcją zbierz jedną bezpieczną próbę z pierwszym błędem i wcześniejszymi etapami, potem wyłącz debugowanie. Zachowaj czasy i kody błędów; konsekwentnie zastąp prywatne identyfikatory.
+      render: text

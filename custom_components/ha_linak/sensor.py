@@ -64,7 +64,9 @@ class LinakSensor(LinakEntity, SensorEntity):
             self._attr_device_class = SensorDeviceClass.DISTANCE
             self._attr_native_unit_of_measurement = UnitOfLength.CENTIMETERS
             self._attr_suggested_display_precision = 0
-        elif key != "reminder_profile":
+        elif key == "reminder_profile":
+            self._attr_icon = "mdi:bell-outline"
+        else:
             self._attr_device_class = SensorDeviceClass.DURATION
             self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
         if key == "height":

@@ -246,16 +246,16 @@
         "name": "Stop"
       },
       "go_to_memory_1": {
-        "name": "Przejdź do zapisanej pozycji 1"
+        "name": "Pozycja 1"
       },
       "go_to_memory_2": {
-        "name": "Przejdź do zapisanej pozycji 2"
+        "name": "Pozycja 2"
       },
       "go_to_memory_3": {
-        "name": "Przejdź do zapisanej pozycji 3"
+        "name": "Pozycja 3"
       },
       "go_to_memory_4": {
-        "name": "Przejdź do zapisanej pozycji 4"
+        "name": "Pozycja 4"
       },
       "reminder_1_standard_time": {
         "name": "Profil 1: ustaw standardowy czas"

@@ -10,8 +10,8 @@ Use these pages to install and operate the integration:
 | --- | --- | --- |
 | [Marketplace product guide](../README.md) / [Polish guide](../README.pl.md) | English / Polish | Supported devices, entities, installation and settings |
 | [GitHub product guide](../.github/README.md) / [Polish guide](../.github/README.pl.md) | English / Polish | Product overview and complete entity tables |
-| [Control guide](controls.md) | English | Configuration, height calibration and a first supervised control test |
-| [Troubleshooting](diagnostics.md) | English | Follow an error and collect a report |
+| [Control guide](controls.md) / [Polish owner guide](controls.pl.md) | Separate English / Polish pages | Configuration and controls; detailed acceptance procedure in English |
+| [Troubleshooting](diagnostics.md) / [Polish reporting guide](diagnostics.pl.md) | Separate English / Polish pages | Report a problem, collect evidence and optionally draft with AI; technical error reference in English |
 
 ## Technical documentation
 
@@ -28,7 +28,7 @@ Use the references below to test another model, investigate communication or cha
 | Understand the implementation | [Architecture](architecture.md) → [connection lifecycle](onboarding.md) → [protocol](protocol.md) → [movement](movement.md) | Trace an HA action to its BLE exchange and cleanup |
 | Extend the reverse engineering | [Investigation method and findings](bluetooth-research.md) → [hardware evidence](hardware-results.md) → [settings reference](settings-reference.md) | Distinguish a protocol candidate from a verified device behavior |
 
-Technical documents use English. Product guides and the HA interface also have Polish translations.
+Technical references use English. Polish owner guides are separate `.pl.md` pages linked at the top of their English counterparts. They identify any English-only technical material before linking to it. Do not insert translated paragraphs into an English procedure.
 
 ## How the documents fit together
 
@@ -92,6 +92,7 @@ These references cover repository and presentation work rather than desk operati
 | --- | --- |
 | [Roadmap](roadmap.md) | Assessed findings, delivery order, release gates and the path to HA Core |
 | [Governance](governance.md) | CI gates, dependencies, repository policy and release boundaries |
+| [Changelog](../CHANGELOG.md) | English-only public release notes, starting with the first public version |
 | [Branding](branding.md) | Asset provenance, naming and artwork use |
 | [Marketplace and GitHub presentation](hacs-presentation.md) | Separate README/brand surfaces, local routes, catalog limits and rendering checks |
 | [Contributing](../CONTRIBUTING.md) | Report a bug, suggest an improvement or find development setup and contribution checks |

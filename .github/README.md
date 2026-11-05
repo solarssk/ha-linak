@@ -60,6 +60,13 @@
 
 \* DPG1C was checked on one panel within the [documented test scope](../docs/hardware-results.md). This does not mean every function and device version has been fully validated.
 
+**0.1.0 is for supervised use on DPG1C.** Hardware acceptance is not complete:
+
+- Full-range arrival, physical stopping accuracy and repeatable panel handback remain unverified.
+- Long-term Bluetooth reliability remains unverified. Startup and recovery can be slow or fail, including after enabling Keep connected.
+
+Before using automations, read the [release notes](../CHANGELOG.md) and [remaining hardware tests](../docs/hardware-results.md#hardware-acceptance-matrix).
+
 Check the model on the panel label. [Testing another model](../docs/device-support.md#test-another-panel) has its own guide.
 
 <a id="entities"></a>
@@ -121,7 +128,7 @@ Entity type is the Home Assistant domain, such as `sensor` or `button`. The sect
   <tbody>
     <tr><td><code>number</code></td><td>🎯 <strong>Target height</strong></td><td>cm</td><td>Choose a height with the slider</td></tr>
     <tr><td rowspan="2"><code>button</code></td><td>⏹️ <strong>Stop</strong></td><td>-</td><td>Interrupt the current movement</td></tr>
-    <tr><td>🔖 <strong>Go to stored position 1–4</strong></td><td>-</td><td>Move to a position saved on the panel; empty slots are unavailable</td></tr>
+    <tr><td>🔖 <strong>Position 1–4</strong></td><td>-</td><td>Move to a position saved on the panel; empty slots are unavailable. Stored height sensors only show its height</td></tr>
   </tbody>
 </table>
 
@@ -133,9 +140,9 @@ The slider selects heights in 1 cm steps within your measured range. It updates 
 | --- | --- | --- | --- |
 | `select` | 🔔 **Reminder profile** | Enabled | Choose Off or Profile 1/2/3, preserving intervals without moving the desk |
 | `select` | 📏 **Preferred panel units** | Enabled | Choose Metric or Inch for the panel, independently of Home Assistant |
-| `number` | ⏱️ **Profile 1 sitting time** | Enabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
+| `number` | ⏱️ **Profile 1 sitting time** | Entity disabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
 | `number` | ⏱️ **Profile 1 standing time**, **Profile 2–3 sitting/standing time** | Entity disabled | Optional 1–60-minute inputs for inactive profiles; preserve other fields |
-| `button` | ↩️ **Profile 1: use standard time** | Enabled | Set only its sitting time to 55 minutes, not a factory reset |
+| `button` | ↩️ **Profile 1: use standard time** | Entity disabled | Set only its sitting time to 55 minutes, not a factory reset |
 | `switch` | 🔌 **Keep connected** | Entity disabled | Turn off to release the Bluetooth connection, or on to reconnect |
 
 Enable **Keep connected** in its entity settings to show the switch. While the switch is off, polling and reconnecting stop, including after a restart. Turning it off during travel stops the desk first.
@@ -144,11 +151,17 @@ Choose **Metric** or **Inch** in **Preferred panel units**. This doesn't change 
 
 The panel may still display the previous unit after saving. Don't move the desk just to refresh its display. [How to change panel units](../docs/controls.md#choose-panel-units).
 
-Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
+For settings beyond the table, follow the procedure for your task:
 
-Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
+| Task | Where to start | Before saving |
+| --- | --- | --- |
+| Name, measured range or height correction | [Configure the desk](../docs/controls.md#configure-the-desk-after-installation) | For correction, enter the floor-to-desktop measurement, then review and confirm; no motion |
+| Reminder profile | [Select Off or Profile 1/2/3](../docs/controls.md#choose-a-reminder-profile) | Active client, valid readings and stationary desk; intervals stay unchanged |
+| Reminder duration | [Edit one duration](../docs/controls.md#edit-one-reminder-duration) | Enable the input, select Off or another profile, then enter 1–60 whole minutes |
 
-The device page's Configuration section provides sitting and standing inputs for all three profiles, in **1–60 whole minutes**. The five new inputs are disabled by default; enable only those needed. Existing **Profile 1 sitting time** keeps its name and registry settings. Select Off or another profile before changing a duration of the selected profile. Each edit preserves the other five durations and all flags, without normalizing pairs; existing out-of-range readings remain visible. **Profile 1: use standard time** assigns only its sitting time to **55 minutes**, not a factory reset or saved-backup restore. The range is integration policy, not medical or firmware limits. All six fields have simulated coverage; hardware evidence covers only 50/55 sitting minutes in inactive profile 1. [Interval contract](../docs/settings-reference.md#edit-reminder-durations).
+Reminder edits preserve other durations and flags. Existing names and enablement choices are preserved; read-only sensors stay enabled. Out-of-range readings remain visible without automatic overwrite. The standard-time button sets only profile 1 sitting time to 55 minutes, not a reset or backup restore. Saved-position editing is unavailable.
+
+Profile 1/2 selection still needs hardware acceptance. Duration hardware evidence covers only 50/55 sitting minutes in inactive profile 1; other fields have simulated coverage. The input range is integration policy, not medical guidance or a firmware limit.
 
 ### Diagnostics
 
@@ -234,8 +247,9 @@ Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then re
 Choose the guide for your task:
 
 - **Configuration:** [Settings and first control test](../docs/controls.md).
-- **Connection or control problems:** [Troubleshooting](../docs/diagnostics.md).
-- **Bug report:** [Issue form](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). Include the panel model, HA version and connection type. Download diagnostics from the device page; remove names and Bluetooth addresses from additional logs.
+- **Connection or control problems:** [Troubleshooting](../docs/diagnostics.md#choose-the-symptom).
+- **Bug report:** [Collect safe evidence](../docs/diagnostics.md#prepare-a-bug-report), then use the [issue form](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
+- **Help writing a report:** [Optional AI instructions](../docs/diagnostics.md#prepare-a-report-with-ai), without HA access or automatic submission.
 
 ### For testers and developers
 

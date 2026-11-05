@@ -107,16 +107,23 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         assert by_key["keep_connected"].disabled_by is not None
         for key in ("reminder_1_sitting_time", "reminder_1_standard_time"):
             assert by_key[key].entity_category == EntityCategory.CONFIG
-            assert by_key[key].disabled_by is None
+            assert by_key[key].disabled_by == er.RegistryEntryDisabler.INTEGRATION
+            assert hass.states.get(by_key[key].entity_id) is None
         for profile in range(1, 4):
+            for kind in ("sit", "stand"):
+                item = by_key[f"reminder_{profile}_{kind}"]
+                assert item.disabled_by is None
+                assert hass.states.get(item.entity_id) is not None
             for kind in ("sitting", "standing"):
-                if profile == 1 and kind == "sitting":
-                    continue
                 item = by_key[f"reminder_{profile}_{kind}_time"]
                 assert item.entity_category == EntityCategory.CONFIG
                 assert item.disabled_by == er.RegistryEntryDisabler.INTEGRATION
                 assert hass.states.get(item.entity_id) is None
         assert hass.states.get("switch.desk_keep_connected") is None
+        assert (
+            hass.states.get(by_key["reminder_profile"].entity_id).attributes["icon"]
+            == "mdi:bell-outline"
+        )
         for key in ["offset", "connection", "signal_strength", "bluetooth_backend"]:
             assert by_key[key].entity_category == EntityCategory.DIAGNOSTIC
         assert hass.states.get(signal.entity_id).state == "-65"

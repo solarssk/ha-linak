@@ -1,6 +1,22 @@
 # Configure and test desk controls
 
-The device page provides a centimeter height slider, Stop and buttons for positions already saved on the panel. These controls use actual feedback and measured command bounds. Initial tests require someone at the desk; complete travel and physical Stop accuracy are not yet validated across supported environments.
+**English** · [Polski](controls.pl.md)
+
+Use this guide to configure height, reminders and native controls. **Position 1–4** buttons request movement; **Stored height 1–4** sensors only display saved heights.
+
+**Initial tests require someone at the desk with physical stopping available.** Complete travel and physical Stop accuracy are not yet validated across supported environments.
+
+Choose your task:
+
+| Task | Section |
+| --- | --- |
+| First setup or monitoring without movement | [Configure the desk](#configure-the-desk-after-installation) |
+| Wrong displayed height | [Correct the reading](#correct-a-wrong-height-reading) |
+| Reminders | [Choose a profile](#choose-a-reminder-profile) or [edit one duration](#edit-one-reminder-duration) |
+| Panel display units | [Choose panel units](#choose-panel-units) |
+| Slider, Position buttons or Stop | [Set measured bounds](#set-measured-command-bounds), then [use controls](#use-the-native-controls) |
+| Release or reconnect Bluetooth | [Keep connected](#keep-connected-switch) |
+| Agreed hardware test | [Test at the panel](#test-native-controls-at-the-panel) |
 
 ## Configure the desk after installation
 
@@ -15,9 +31,7 @@ Open **Settings → Devices & services → LINAK → Configure**. Choose the tas
 
 Setup guides you through the same information. To only watch the desk, choose **Monitoring only** on the name step. Nothing is written to the panel and no range is requested. Add the range in Configure when you want controls.
 
-Saved positions are shown from the first setup form and alongside the travel range. They are informational, not physical limits or confirmed tape measurements. Missing measured bounds stay blank, never inferred from favorites. Enter both measured ends before requesting a target or saved-position move. See [saved-position display states](onboarding.md#saved-positions-and-missing-bounds) for empty, unavailable and unsupported slots.
-
-🇵🇱 Pozycje pamięci są widoczne od pierwszego formularza oraz obok zakresu ruchu. To informacja, nie fizyczne limity ani potwierdzone pomiary. Puste pola wymagają wpisania obu zmierzonych granic. Ulubione pozycje nie wypełniają zakresu i nie odblokowują ruchu.
+Saved positions appear from the first setup form and alongside the travel range. They are informational, not physical limits or tape measurements. Enter both measured bounds before requesting movement; favorites never fill missing bounds. See [saved-position display states](onboarding.md#saved-positions-and-missing-bounds) for empty, unavailable and unsupported slots.
 
 Keep the desk stationary from its current-height measurement through correction confirmation. Physical panel movement while measuring the travel range happens before the final current-height check.
 
@@ -37,21 +51,48 @@ A changed position/reference rejects the proposal before correction. If verifica
 
 ## Choose a reminder profile
 
-In the LINAK device's Configuration section, use **Reminder profile** to choose Off or Profile 1/2/3. It preserves the configured sitting/standing times and other panel flags. It needs no travel range and sends no activation, wake or movement. The existing active-profile sensor remains available for automations.
+Use **Reminder profile** to select Off or Profile 1/2/3 without changing the configured durations or other panel flags:
 
-Wait for valid reminder readings and a stationary desk. A busy operation is refused. If HA reports an inactive client, use explicit control preparation in Configure separately, then read the profile before another selection. A failed verification may follow a delivered write: check the actual profile after reconnecting before trying again. There is no automatic retry or restoration. Profiles 1/2 still need owner hardware acceptance; see the [setting contract](settings-reference.md#reminder-profile-selection).
+1. Leave the desk stationary and wait for valid reminder readings.
+2. On the device page, open **Configuration → Reminder profile**.
+3. Select the profile and check the reported result.
+
+No travel range is needed. Selection sends no activation, wake or movement; the active-profile sensor remains available for automations. Profile 1/2 selection still needs hardware acceptance.
+
+If selection fails, use the matching recovery:
+
+| Message | What to do |
+| --- | --- |
+| Busy | Wait for the current operation to finish |
+| Inactive client | Prepare the client through Configure, then read the profile before selecting again |
+| Verification failed | A write may have arrived. Reconnect and check the actual profile before another attempt; no automatic retry or restoration |
+
+The [reminder setting contract](settings-reference.md#reminder-profile-selection) defines the exact checks.
 
 ## Edit one reminder duration
 
-On the LINAK device page, open Configuration and use the sitting or standing time input for Profile 1/2/3. The five new inputs are disabled by default; enable only those you need in the entity settings. Existing **Profile 1 sitting time** keeps its name and registry settings. Type a whole number from **1 to 60 minutes**. This is a number box, not a height slider or a clock time. Use Off or another profile before changing a duration of the selected profile; active-profile interval changes are refused. No profile is switched automatically. The stationary/active-client and error-recovery requirements above apply, without requiring a travel range.
+Change one sitting or standing duration for Profile 1/2/3:
 
-Each edit changes only the chosen duration. The paired duration and all other profiles/flags are preserved, with no requirement for the pair to total 60 minutes. Existing readings outside 1–60, such as 90, stay visible and are never clipped or automatically overwritten. The range restricts newly submitted edits only; it is a product choice, not medical guidance or the panel's established firmware range.
+1. Leave the desk stationary with an active client and valid reminder readings.
+2. Select **Off** or another profile. Editing the active profile is refused; profiles never switch automatically.
+3. Enable the required duration entity in its settings, then open the device page's **Configuration** section.
+4. Type **1–60 whole minutes** into the number box. This is a duration, not a clock time.
+5. Check the result. For a failure, follow the [profile recovery table](#choose-a-reminder-profile) before trying again.
 
-To explicitly set the manufacturer's standard sitting-reminder value, press **Profile 1: use standard time**. It assigns **55 minutes** to profile 1 sitting time using the same protected setter. It is not a factory reset, does not restore all reminder pairs or a saved backup, and never runs on reconnect or failure. Use the separate Off selection to disable reminders, not zero minutes. Only 50/55 in inactive profile 1 have hardware evidence; the other fields and values are synthetic-test coverage. See the [complete interval contract](settings-reference.md#edit-reminder-durations).
+No travel range is needed. All six inputs and the standard-time button are disabled by default for new entities. Existing names and enablement choices are preserved. Read-only sensors stay enabled; hiding an input changes neither panel reminders nor Bluetooth polling.
 
-Zmiana dotyczy tylko wybranego czasu siedzenia lub stania w profilu 1/2/3. Pięć nowych pól jest domyślnie wyłączonych; włącz potrzebne encje w ich ustawieniach. Dotychczasowy czas siedzenia profilu 1 zachowuje nazwę i ustawienia rejestru. Wpisz 1–60 pełnych minut, po wybraniu Wyłączone lub innego profilu. Przycisk **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia profilu 1 na **55 minut**, bez resetu pozostałych pól. Zakres jest zasadą integracji, nie limitem firmware ani zaleceniem medycznym. Na sprzęcie potwierdzono tylko 50/55 w nieaktywnym profilu 1, nie pozostałe pola.
+Each action has a limited effect:
 
-Physical panel changes wait for the ordinary 300-second reminder refresh; about five to six minutes of delay is consistent with this policy. HA changes publish after their own verified ACK/readback. Zmiany na panelu pojawiają się po zwykłym odświeżeniu przypomnień co 300 sekund, więc opóźnienie około 5–6 minut jest zgodne z tą polityką. Zapis z HA aktualizuje stan po potwierdzonym odczycie w tej samej transakcji.
+| Action or value | Effect |
+| --- | --- |
+| Edit one duration | Preserve its paired duration, other profiles and flags; pairs need not total 60 minutes |
+| Existing value outside 1–60 | Keep it visible; never clip or overwrite automatically |
+| **Profile 1: use standard time** | Set only profile 1 sitting time to **55 minutes**; no factory reset, backup restore or automatic execution after reconnect/failure |
+| Disable reminders | Select **Off**, not zero minutes |
+
+**Hardware evidence covers only 50/55 sitting minutes in inactive profile 1.** Other fields and values have simulated coverage. The input range is integration policy, not medical guidance or an established firmware limit.
+
+Panel edits appear after the ordinary 300-second refresh; about five to six minutes of delay is consistent with this policy. HA edits publish after their own verified acknowledgement/readback. See the [complete interval contract](settings-reference.md#edit-reminder-durations).
 
 ## Choose panel units
 
@@ -93,9 +134,17 @@ Calibration inputs, raw diagnostics and stored-position targets retain decimal p
 
 Before either a target or stored-position drive, the integration checks client readiness and prepares the existing identifier only if inactive. It verifies preparation before wake/target commands. Stored-position drive re-reads that slot and the reference; it does not overwrite the saved position.
 
-Stop preempts an active request. Stop sends control Stop and reference-input release, with no activation, wake or height target. A successful interruption retains the ready link for the next command; failed or ambiguous cleanup still discards it. A successful Stop completes the interrupted action without an error notice. A failed Stop remains an error. During an operation, another slider or stored-position request is rejected with a busy message. Wait for completion or press Stop, then select the new target. Repeated Stop clicks during cleanup share that operation. Failed commands are not queued or resumed after reload/reconnect.
+For another target, wait for completion or press **Stop** first. Commands are not queued or resumed after reload/reconnect.
 
-A busy message means that the new command was not accepted; it does not mean that the desk disconnected or the ongoing movement failed. HA classifies it as action validation, and an automation calling the rejected action still receives an error. In HA 2026.10.4 this expected refusal can also appear at `ERROR` level in frontend logs. Check the message and connection state before treating a log entry as a device fault.
+| Situation | What happens |
+| --- | --- |
+| Press Stop during a request | Interrupt it with control Stop and reference-input release; no activation, wake or new target |
+| Stop succeeds | Finish the interrupted request without an error notice; keep the ready link |
+| Stop or cleanup fails/is ambiguous | Report an error and discard the session; check physical stopping |
+| Press Stop again during cleanup | Share the same Stop operation |
+| Select another target while busy | Reject the new request without changing the ongoing move |
+
+A busy refusal is not evidence of a disconnect or failed active move. The rejected automation still receives an action-validation error. HA 2026.10.4 also logged this refusal at `ERROR`; check the message and connection state, not log color alone.
 
 ### Operation sensor
 
@@ -137,6 +186,11 @@ Releasing the link is not evidence that the panel sleeps or that its display tur
 
 Clear the travel path, have physical stopping available and disable any other integration controlling the same desk. Use HA alone, not the standalone BLE runner at the same time. Review the actual/reference height and bounds before each attempt.
 
+**This is an acceptance checklist, not permission to run experiments.** Agree the test scope with the maintainer first.
+
+<details>
+<summary>Supervised hardware acceptance steps</summary>
+
 | Step | Action | Pass condition and record |
 | --- | --- | --- |
 | 1 | Add/update the desk and range | Existing sensors and controls appear without spontaneous movement |
@@ -151,6 +205,8 @@ Clear the travel path, have physical stopping available and disable any other in
 | 10 | Turn Keep connected off during an agreed nearby move, then restart HA while it is off | The desk stops before the link drops and Operation ends interrupted; after the restart the switch is still off and nothing connects |
 
 The native slider has no standalone runner's 2 cm experiment cap. Choose the test target deliberately from the fresh actual height, not a rounded value copied from another desk. Do not continue after unexpected direction, failure to stop, a reference disagreement or repeated action errors.
+
+</details>
 
 ## Interpret and report the result
 

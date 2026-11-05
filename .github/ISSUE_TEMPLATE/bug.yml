@@ -1,26 +1,48 @@
-name: Bug report
-description: Report a reproducible problem with the integration.
+name: Bug report (English)
+description: Report a problem with diagnostic context in English.
 labels: ["type: bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Follow the [diagnostic guide](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#prepare-a-bug-report). Do not repeat unsafe movement to collect evidence. Report vulnerabilities [privately](https://github.com/solarssk/ha-linak/security/advisories/new).
+
+        Remove names, Bluetooth/IP addresses, locations, identifiers and tokens from attachments. Write “unknown” for missing details.
+
+        Prefer help writing? Use the optional [AI-assisted report instructions](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#prepare-a-report-with-ai), then review and copy the draft into this form. No logs or AI account are required to report a bug.
   - type: input
     id: versions
     attributes:
       label: Integration and Home Assistant versions
+      description: Exact LINAK version or commit, HA Core version, installation method (Marketplace/manual) and HA OS/Container environment.
+      placeholder: "LINAK 0.1.0; HA Core 2026.11.0; Marketplace; HA OS"
     validations:
       required: true
   - type: textarea
     id: behavior
     attributes:
-      label: Expected behavior and reproduction steps
+      label: Expected and actual behavior
+      description: What did you do, what should happen and what happened instead? Include the exact error text.
     validations:
       required: true
   - type: textarea
     id: hardware
     attributes:
-      label: Panel model and Bluetooth adapter or proxy
-      description: Do not include names, addresses or location identifiers.
+      label: Panel and Bluetooth path
+      description: Panel model/firmware if known, local adapter or ESPHome proxy, and backend reported by diagnostics. List competing desk apps/integrations without identifiers.
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline and recovery
+      description: Time with timezone, action or stationary state, Connection/Operation state and reason, Keep connected intent, duration and whether it recovered by itself. Mention recent HA restart/update or physical-panel use.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Attach reviewed LINAK diagnostic JSON from the device page, ideally before and after the failure. If setup never completed, say so and provide its error/stage instead. Never attach full HA configuration, backups or raw protocol inventory.
   - type: textarea
     id: logs
     attributes:
-      label: Redacted logs
+      label: Redacted debug logs
+      description: Follow the guide to capture one safe attempt, including the first error and preceding stages, then turn debugging off. Keep timestamps and error codes; redact private identifiers consistently.
       render: text

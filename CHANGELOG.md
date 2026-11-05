@@ -2,172 +2,32 @@
 
 ## Unreleased
 
-- Repair older address-only config-entry titles before registering entities, including when the Bluetooth connection is released. Use `LINAK` as the offline fallback without radio work, and preserve existing entity registry IDs, manual names and enablement choices.
-- Fix Dependabot pip parsing by keeping referenced generated inputs fetchable and allowing updates only for independent tools. Preserve HA/test-stack and resolver ownership, keep hashed locks excluded and add deterministic checks for excluded requirement references and package eligibility.
-- Require HA 2026.11.0 or newer and document installation through the built-in Marketplace, including migration from HACS and the custom-link/catalog distinction. Migrate to the official HA-owned pytest package, regenerate component pins and Linux locks, and pin the supported smoke to the official stable image. The advisory preview temporarily repeats stable because no newer preview exists. Verify existing local PNG bytes through both HA brand handlers, including dark and high-resolution fallbacks, without sockets, CDN or placeholders; pre-installation catalog branding still requires catalog/release ingestion.
-- Extend protected reminder editing to sitting and standing times in all three profiles, changing only the requested byte and refusing changes to the selected profile. Default-disable the five new number entities, preserve existing registry identities/settings and keep the standard-time button at 55 minutes without the number in its name. Retain the 1–60 whole-minute product policy and five-minute reminder refresh. All six edits have synthetic coverage; hardware evidence remains limited to 50/55 sitting minutes in inactive profile 1.
-- Leave unmeasured onboarding/Travel range bounds blank instead of HA's implicit 0 cm selector defaults, preserving existing measured values. Show last-read saved positions from the first setup form and beside the range in English and Polish, distinguishing empty, unavailable and unsupported slots. Favorites never supply physical limits, configure bounds or enable movement. Reuse existing verified reads and barriers without new commands; validation is simulated, with no new hardware acceptance.
-- Reject an unavailable `ffff` position word before height conversion, report a specific onboarding error and leave height confirmation off until explicitly selected. Preserve centimeter scaling, raw speed flags and measured travel bounds.
-- Add a native configuration select for the stored panel Inch/Metric preference, preserving all other flags and durations through the protected reminder transaction. Metric does not distinguish physical CM/MM, and verified preference readback does not confirm immediate OLED redraw. HA centimeter geometry and unit conversion are unchanged; no wake, activation or movement is sent.
-- Make the shared refresh/recovery deadline regression deterministic by expiring real timeout contexts at observed protocol phases instead of racing a 30-millisecond wall-clock budget. Runtime deadlines and CI gates are unchanged.
-- Reorganize the contribution guide around bug reports, ideas and tester help, with a Polish welcome, shorter instructions and expandable developer/maintainer details.
-- Add a configuration input for profile 1 sitting time in whole minutes from 1 to 60 and an explicit standard-55-minute button. Reuse the serialized reminder transaction, preserve other fields and existing out-of-range readings, and refuse edits of the active profile. The range is integration policy, not medical or firmware limits; hardware evidence covers 50/55 in inactive profile 1 only.
-- Add a native reminder-profile select with fresh masked writes, strict acknowledgement and independent readback. Preserve intervals and unrelated flags; never activate, wake, move or replay. Hardware evidence covers Off/Profile 3 at client status 1 only.
-- Declare config-entry-only setup and report an unsupported `ha_linak:` YAML block through Repairs without changing action registration or starting Bluetooth work.
-- Add an explicit administrator-only protocol inventory action using the existing native connection and query lock on local Bluetooth or a proxy. Fixed reference-output and raw product-info reads never connect, activate the panel, move the desk or write settings; unverified payloads remain research data.
-- Refuse research reads during a query-lock handoff, abort when position feedback becomes invalid, distinguish explicit optional-read denials from transport loss and observe discarded parser errors during failed writes. Cover these paths with synthetic regressions without changing coverage thresholds.
-- Allow onboarding and startup with unavailable saved positions or reminders. Optional-query timeouts discard their session, then recover fresh height on a new connection without the failed group for five minutes. Keep memory controls unavailable until a complete group read succeeds, create slots from reported capabilities and verify calibration independently of optional settings. Hardware confirmation for empty-slot timeouts remains pending (#54).
-- Rename the integration to LINAK, identify device families before DPG commands, expose reported model/firmware and separate product guides from technical compatibility documentation.
-- Make the Target height slider follow the measured height after a stored-position move or Stop. The last position sample of a finished movement could carry residual speed, which kept the slider at its old value until a later read.
-- Skip the Documentation impact job once a pull request is closed or merged, so a rerun after a squash merge no longer reports a false failure.
-- Add an optional Monitoring only choice to setup. It connects and reads without preparing the panel client, calibrating or asking for a height range. Controls stay the default path, and the range can be added later in Configure.
-- Add a Keep connected switch that releases the desk's Bluetooth link on purpose. It is a configuration entity that is disabled by default, so the owner enables it deliberately. While it is off LINAK does no radio lookups, connections or polls, and the choice survives a restart. Turning it on reconnects with fresh reads and never replays a movement. Existing entries stay connected, and turning it off during travel stops the desk first.
-- Add an Operation sensor that shows preparing, moving and stopping, then the result (completed, interrupted or failed with a reason) for explicit movement requests. About 10 seconds after a result it returns to idle and keeps the result in `last_result`, so a notification can trigger on the result. It stays available when the connection drops, ignores refused requests and reports the request, not physical arrival.
-- Replay duplicate, late, lost and malformed DPG replies at every request position with a deterministic synthetic transport, and document the one late-copy case a response-type barrier cannot detect. No runtime behavior changes.
-- Classify rejected competing movement commands as HA action validation, preserving the busy message, original movement and no-queue policy while keeping actual movement and Stop failures distinct.
-- Keep the connector's normal retry policy within the existing refresh deadline so two failed local attempts do not prevent HA from selecting a working proxy before setup fails; document the measured connectability limits.
-- Detect an enabled IKEA Idasen Desk entry for the same Bluetooth address before new LINAK reads, calibration or movement; explain the conflict without changing the IKEA entry, while retaining Stop and owned cleanup.
-- Keep reference/position checks on a 60-second schedule during height notifications; read memories and reminders independently every five minutes, and force both groups after reconnect or reference changes. Before movement, reread the offset and, for a saved-position move, the selected slot.
-- Defer desk connection until Home Assistant is running and allow the normal refresh budget after startup, avoiding an outer deadline equal to a single Bluetooth connection attempt.
-- Recognize known wrapped Bluetooth backends and identify timed-out DPG reads and runtime failure stages without exposing backend payloads or identifiers.
-- Isolate malformed memory/reminder replies during runtime refresh, expose group validity and last-success age in diagnostics, and retain strict setup, calibration and transport-failure handling.
-- Document model/variant capabilities and setting candidates against LINAK data sheets without claiming additional panel compatibility or app-exclusive settings.
-- Add isolated official-container HA cold-boot/restart checks, with a required supported-version gate, advisory pinned preview, retained failure reports/logs and bounded cleanup.
-- Define the reliability and HA Core delivery plan, proposed state/library boundaries and an evidence-based hardware acceptance matrix without expanding runtime support.
-- Treat successful Stop interruption as a normal HA action outcome and give competing movement requests a clear busy response without queueing or sending extra commands.
-- Cover rapid mixed slider/favorite requests, repeated Stop cleanup and failed Stop propagation with simulated HA regression tests.
-- Bound the first connection/read during integration setup to 20 seconds before cleanup and let Home Assistant retry in the background, instead of waiting for successive long connection attempts during startup.
-- Log the allowlisted backend after connecting and identify diagnostic RSSI as advertisement data, which may come from a different scanner than the active connection.
-- Release both movement command channels on Stop and retain a ready connection after a successful explicit interruption, so the next target or saved position does not require reconnecting.
-- Allow three seconds for movement feedback reads while retaining the one-second Stop/write deadline; measured local BlueZ read latency could exceed the old shared limit.
-- Keep the height slider at the last settled height instead of recording every intermediate centimeter; preserve live height feedback and suppress identical notification/read publications.
-- Deliver a requested Stop during offset, memory and client-activation preparation before disconnecting; retain shared cleanup through cancellation and report failed or timed-out Stop delivery.
-- Reorganize technical documentation into task-based manuals, protocol/lifecycle references and question-based hardware evidence, with diagrams, diagnostic decision tables and a shared authoring convention.
-- Check and prepare the existing panel client before explicit height and stored-position commands. Verify activation before sending motion; background reads, reconnect and Stop remain free of activation writes.
-- Log a stable movement-failure reason and the connection backend before cleanup, distinguishing no progress, reverse travel, overshoot, invalid bounds and lost links.
-- Preserve one bounded Bluetooth session through setup and transfer it to the coordinator instead of reconnecting between forms. Release abandoned sessions and avoid immediate connection retries after preparation connection failure.
-- Prepare an inactive panel client during confirmed calibration, preserving its identifier and verifying the status before the offset write. Require the panel acknowledgement and report rejected setting statuses.
-- Accept a single 0.1 mm position quantum between the calibration preview and fresh stationary checks; distinguish rejected preflight checks from uncertain writes.
-- Recover fresh readings after failed calibration without replaying writes, hide disconnected cached heights and reject oversized measurements before conversion.
-- Use cached BlueZ panel names during discovery and preserve connector timeout reasons in setup errors.
-- Add a documentation index with task-based entry points and a purpose for each reference.
-- Separate consecutive stored-position replies with validated read barriers to prevent duplicate BlueZ notifications from shifting memory slots.
-- Name the integration LINAK Desks, fix the HACS badge link transformation, remove the illustrative dashboard graphic and use readable control lists in HACS.
-- Clarify required HA coroutine hooks and simplify test setup/assertions to address existing Sonar findings without changing device behavior.
-- Group sensors, diagnostics and controls in one entity section across GitHub/HACS READMEs; link the native HA test procedure.
-- Add a standalone supervised movement test runner with characteristic checks, a 2 cm experiment limit, timed Stop and English result-recording instructions.
-- Record manufacturer settings/variant evidence, pinned community protocol candidates, protected offset calibration and post-install configuration requirements for the next control milestones.
-- Standardize Markdown prose and list-item paragraphs on single source lines; document the authoring convention while preserving structural markup and rendered content.
-- Use a readable desk name instead of the Bluetooth address when Home Assistant has no advertised name, and replace an existing address-only entry title on the next setup.
-- Preserve the GitHub presentation in .github/README files and provide separate HACS product descriptions with portable Markdown and artwork.
-- Consolidate repository labels into four change types plus dependency and security markers.
-- Require PR type, release milestone and assignee in the existing documentation gate; document the complete agent workflow and handoff checks.
-- Document DPG1C authentication/initialization research and the hardware validation plan; distinguish notification stages and log elapsed stage time without device identifiers.
-- Show LINAK and the advertised desk name on Bluetooth discovery cards instead of the internal integration domain.
-- Detect cumulative retreat from the best position in the requested direction. Backward movement and jitter no longer reset the progress deadline.
-- Preserve the final movement Stop and its reservation through repeated cancellation using the same bounded cleanup-draining path as close().
-- Wait for the reserved Stop to settle before disconnecting on close cancellation, including repeated cancellation and Stop timeout. Observe late errors from shielded cleanup tasks.
-- Discard the movement controller and BLE transport after a timeout, even when final Stop succeeds. Reserve the controller until a shared explicit Stop fully completes, preventing overlapping targets and late Stop writes.
-- Group sensor rows under one merged entity-type cell in both README tables and place icons beside the HA entity labels.
-- Separate supported panels, HA sensor entities, requirements and environment validation in both READMEs; match entity labels to HA translations and add section icons and quality badges.
-- Extract the supplied official Illustrator logos as theme-aware SVGs; simplify both READMEs for hobbyist users with language flags, centered HA/HACS badges and a collapsible contents list.
-- Redesign the English and Polish READMEs with LINAK branding, matching navigation, feature tables and one shared installation/configuration path per language.
-- Add an unregistered movement research controller with explicit centimeter conversion, measured travel limits, bounded I/O, Stop on completion/cancellation, progress checks and simulated failure tests. The controller now also supports the native HA entities described in 0.1.0a7.
-- Adopt the playbook Tier 2 maintenance baseline and document the native-control contract.
-- Package the supplied LINAK icon and logo as local HA brand images, with provenance and trademark notices.
+## 0.1.0
 
-### Adopter action
+Prepared for the first public release; not yet published.
 
-- Update Home Assistant to 2026.10.4 or newer before installing this alpha.
-- **Safer dependency downloads:** Update the lock generator and HA test stack to remove vulnerable uv certificate stores (GHSA-hq85-5cpj-mr62).
-- **Visible test reports:** Codecov and Sonar receive integration coverage and test results separately from required CI checks.
-- **Predictable validation:** CI uses hashed dependency files and checks that updates keep the Home Assistant test stack consistent.
-- **Reviewed maintenance:** Dependency proposals respect HA-owned versions, and workflow/documentation checks protect future changes.
+LINAK brings DPG1C desk readings, centimeter controls and selected panel settings directly into Home Assistant over Bluetooth. No phone app or separate bridge is needed.
 
-## 0.1.0a9 (unpublished alpha)
+### ⚠️ Before you update
 
-- Handle preparation while the desk is moving, allow post-install height correction before storing bounds, refresh the final height check before saving bounds and log rejected panel status codes.
-- Guide setup through naming and explicit client preparation, measured travel bounds, then a fresh height check and optional correction. Add focused post-install settings and preserve names chosen in HA.
-- Record height, saved-height and offset sensor states in whole centimeters and use 1 cm slider targets inside the exact measured bounds; keep protocol, calibration and movement calculations precise.
-- Activate an inactive client only during confirmed calibration, preserve its identifier, require application acknowledgements and verify activation before the offset write.
-- Record successful DPG1C activation, measured-height correction and persistence across a separate Bluetooth connection; physical movement and power-cycle persistence remain unverified.
+- Use **Home Assistant 2026.11.0 or newer**. Add this repository through **Settings → Marketplace → Add from link**. HA migrates existing HACS installations; restart HA after updating an already loaded integration.
+- Enter your measured minimum and maximum desktop heights before using target or saved-position travel. Favorites are not physical limits. Stop does not require configured bounds.
+- Disable an IKEA Idasen Desk entry for the same desk and disconnect competing desk apps. Keep existing pairing, entity IDs and custom names when updating a development installation.
+- Initial control tests require someone at the desk and physical stopping access. Bluetooth loss can prevent remote Stop; unattended movement is not validated.
 
-## 0.1.0a8 (unpublished alpha)
+### ✨ New
 
-- Add confirmed measured-height calibration during setup and in Configure, with a stationary-position check, offset-only write, full readback and no automatic retry.
-- Apply corrected height conversion before validating measured bounds; account for half-step display rounding at the zero wire position.
+- Read desktop height, available saved heights, the active reminder profile and sitting/standing durations. Check connection state and optional Bluetooth diagnostics.
+- Move with a **Target height** slider in 1 cm steps, **Position 1–4** buttons and **Stop** within your measured range. Stored height sensors only show saved heights; Operation shows the request's phase and result, not independent proof of physical arrival.
+- Choose monitoring-only setup or prepare controls through guided configuration. Check and correct the measured height reference without moving the desk.
+- Select Off or a reminder profile, edit an inactive profile's sitting/standing durations in 1–60 whole minutes, or explicitly set profile 1 sitting time to 55 minutes. All six duration inputs and the standard-time button are disabled by default for new entities; enable only those you need. Existing registry choices are preserved.
+- Choose the stored Metric/Inch panel preference independently of Home Assistant's centimeter readings.
+- Optionally enable **Keep connected** to deliberately release the link and suspend polling until connection is requested again. Connection intent survives restart; reconnection uses fresh reads and never replays a movement.
+- Use English or Polish setup and entity labels. Administrators can explicitly request a read-only protocol inventory on an existing ready connection; review raw research responses privately before sharing.
 
-## 0.1.0a7 (unpublished alpha)
+### 📌 Known limitations
 
-- Recheck the desk on range submission and keep disconnected readings unavailable during control cleanup; test stalled feedback and both connections during range reload.
-- Add a native centimeter height slider, Stop and go-to-memory buttons, with English/Polish labels and action errors.
-- Collect measured command bounds during onboarding and support range changes through Options Flow; controls are registered by default. No target is restored or sent on setup/reconnect.
-- Reserve the shared BLE session across fresh offset/memory reads, movement, feedback and final Stop; reject concurrent targets, yield polling and stop/disconnect on interruption or unload.
-- Validate characteristic operations, retain the bounded motion guards and expose software control outcomes in redacted diagnostics. Physical movement/Stop verification remains pending.
-
-### Adopter action
-
-- Update via HACS and restart HA. For an existing entry, set measured centimeter bounds once in LINAK configuration. New onboarding includes the range. Follow [the supervised HA test](docs/controls.md) before using automations. Offset/memory/reminder writes are not included.
-
-## 0.1.0a6: unpublished alpha
-
-- Show the native desk name with a short address suffix on discovery cards, using the same naming helper as HA Idasen and removing the repeated LINAK prefix.
-- Resolve cached discovery/device names consistently for cards, selection and entry titles; generic LINAK/address fallbacks do not hide native names.
-- Read optional standard GAP Device Name after pairing when cached naming is unavailable, and improve an existing fallback device name without changing user device names, existing LINAK entry titles, entity IDs or bonds.
-
-### Adopter action
-
-- Redownload and restart HA. Keep the existing integration and pairing; the device name can improve during setup. A discovery card can still use LINAK plus a short suffix until a native name is available. Physical naming behavior needs validation.
-
-## 0.1.0a5: unpublished alpha
-
-- Show stored heights and reminder profiles as regular desk sensors; retain height offset as a diagnostic parameter without changing existing entity IDs.
-- Add a diagnostic connection binary sensor and optional, default-disabled Bluetooth signal-strength and backend sensors using HA-managed data only. Recheck enabled RSSI availability every 60 seconds even during repeated connection failures.
-- Add the Bluetooth address to local device information; keep downloaded diagnostics free of names, addresses and adapter identifiers.
-
-### Adopter action
-
-- Redownload and restart HA. Enable optional Bluetooth sensors in the entity registry when needed; no new pairing, bond reset or desk setting write is required. Automatic first pairing from 0.1.0a4 still needs hardware validation.
-
-## 0.1.0a4: unpublished alpha
-
-- Provide a temporary, device-restricted BlueZ agent for local Just Works pairing, using the same application connection for registration and pairing. Reuse existing bonds; retain backend pairing for proxies.
-- Report unavailable local pairing-agent infrastructure separately from rejected authentication.
-- Suppress incomplete height notifications before initial setup is ready, while retaining unavailable-state notifications after invalid readings or link loss.
-
-### Adopter action
-
-- Redownload and restart HA to load the updated integration. The new automatic first-pairing path still requires a supervised Raspberry Pi test; keep an existing working bond. No movement or panel setting writes are enabled.
-
-## 0.1.0a3: unpublished alpha
-
-- Pair through the selected Bluetooth backend before subscribing; let CoreBluetooth manage authentication automatically.
-- Distinguish authentication failure, pairing timeout, unsupported pairing and lost connections in English and Polish setup errors.
-- Interrupt pending BLE operations on link loss and drain transport cleanup through repeated cancellation.
-- Wait for HA-managed local/proxy adapters before setup. No panel user-ID writes or movement are enabled.
-
-### Adopter action
-
-- Redownload the integration and restart HA, then retry with pairing enabled on the panel. Raspberry Pi and proxy validation of this change is still required.
-
-## 0.1.0a2: unpublished alpha
-
-- Add native HA progress, translated validation failures and retry for desk onboarding.
-- Bound complete connection/read attempts and individual notification/position operations; release connections after failure or flow cancellation.
-- Select the current connectable device through HA's Bluetooth manager and pass an adapter-update callback to the connector.
-- Test slow/failed setup, progress revisits, retry, cancellation and HA setup-retry behavior. Real Raspberry Pi onboarding remains unverified.
-
-### Adopter action
-
-- Redownload/update the custom integration and restart HA. Cancel an old pending setup before trying again. If it still fails, report the setup-stage warning and HA version with private identifiers removed.
-
-## 0.1.0a1: unpublished local alpha
-
-- Add native Home Assistant UI configuration and Bluetooth discovery.
-- Validate extended reads before creating a config entry.
-- Add actual height in centimeters, offset, stored positions and reminder profiles.
-- Share one asynchronous BLE connection, serialize queries and reconnect after failed reads.
-- Add English/Polish translations and diagnostics omitting device identifiers.
-- Add captured DPG1C protocol fixtures and real Home Assistant tests with simulated Bluetooth.
-
-Hardware movement, setting changes, Raspberry Pi operation and HACS publication are not yet validated.
+- Hardware evidence covers one DPG1C, not every function or firmware. Other panel variants, fresh unbonded onboarding and proxy-only/mixed-backend control acceptance remain unverified. Default-catalog acceptance is not claimed.
+- Bluetooth startup and recovery can be slow or fail, including after enabling Keep connected. Long-term reliability, complete travel, measured Stop accuracy and repeatable physical-panel handback remain unverified.
+- Reminder profiles and durations have only partial hardware coverage. The 1–60-minute input range is product policy, not medical guidance or a firmware limit. Saved-position editing is unavailable.
+- Metric cannot distinguish physical CM from MM. Immediate OLED unit redraw, sleep behavior and power-cycle persistence remain unverified. See the [hardware evidence](docs/hardware-results.md) and [remaining acceptance gates](docs/roadmap.md#evidence-and-release-gates).

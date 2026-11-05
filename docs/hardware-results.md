@@ -10,7 +10,7 @@ Read each conclusion within the recorded environment and its evidence class. Unk
 | --- | --- |
 | Panel | DPG1C; standard device information reports LINAK A/S and model family DPG |
 | Research host | macOS CoreBluetooth for initial service/read inspection |
-| HA host | Raspberry Pi 4B, HAOS 18.4 and HA Core 2026.10.4 during the recorded investigation |
+| HA host | Earlier investigation: Raspberry Pi 4B, HAOS 18.4 and HA Core 2026.10.4. Later native-use/startup observations below: HA Core 2026.11.0 |
 | Confirmed control-test backend | Local BlueZ; this does not validate ESPHome or mixed-adapter behavior |
 | Firmware/OEM variant | Exact firmware and Full/Limited SKU not established |
 | Source material | Private logs/captures and public synthetic/configuration fixtures; no names, addresses or client identifiers published |
@@ -151,6 +151,25 @@ Offset, name and stored-position settings were not written. This evidence suppor
 
 **Limits:** equal budgets do not establish the cause of every failed connection, proxy GATT error or idle loss. The proposed startup change has simulated lifecycle/deadline coverage, not a completed cold-start hardware result. It does not pin the local adapter, remove a proxy, change polling cadence or prove the overnight disconnects are fixed.
 
+## Native use, startup and deliberate connection release
+
+**Question:** what do the latest native HA observations establish about controls and recovery before 0.1.0?
+
+**Method:** distinguish the owner's physical reports from the maintainer's summaries of passive logs and stationary connection-switch observations on 2026-11-05. After an owner-installed update/restart, the installed component files matched revision `717a718` and HA reported 2026.11.0. No agent-issued movement belonged to these observations. Earlier observations without a revision/backend record cannot be retroactively assigned to that deployment.
+
+| Evidence | Observation | Supported conclusion and limit |
+| --- | --- | --- |
+| Owner-observed native controls | The owner confirmed movement using the HA slider and Stop | Native controls worked in the reported use; no measured full-range arrival, Stop delay or overshoot was recorded |
+| Owner-observed physical memory and recovery | The owner later used a physical-panel favorite, reported a BLE disconnection and said the entities returned without restarting or pairing | Recovery was reported in this instance; no time-aligned trace establishes the cause or complete panel handback |
+| Passive native observation | In 300 seconds, five refreshes succeeded with zero recorded native link-loss, reconnect or timeout events | A bounded quiet interval, not a long soak or proof that losses cannot occur |
+| Updated native startup | Three timeouts preceded a connection after about 2 minutes 40 seconds, then four refreshes succeeded | Eventual startup recovery on that deployment; not fast, repeated or backend-complete startup acceptance |
+| Stationary Keep connected off | One 90-second observation confirmed connection intent false and connected state false | Deliberate release was observed once, not panel sleep or OLED behavior |
+| Stationary Keep connected on | One 90-second observation contained three attempts, two timeout messages and a failed refresh, without ready/recovery | Requested reconnection did not complete in that window. Later recovery was not observed; this is neither proof of permanent failure nor attribution to the driver |
+
+**Conclusion:** retain these as bounded evidence, including the failed reconnect observation. The final connection intent was restored to true. Software retry behavior and the observed link state must remain distinct; no settings, firmware or connection-policy change follows from these records alone.
+
+**Limits:** these summaries do not pass H1–H12. Physical Stop accuracy, complete travel, repeatable handback, long-term recovery, OLED behavior and independent backend coverage remain open. No further hardware experiment is part of release preparation; the acceptance plan remains in force.
+
 ## Reminder profile setting
 
 **Question:** can a BLE reminder profile change preserve the remaining settings without activation, wake or movement?
@@ -193,21 +212,21 @@ For owner acceptance, explicitly agree one supervised sequence covering Profile 
 
 ## Hardware acceptance matrix
 
-This matrix is a test plan and evidence index, not eleven successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.
+This matrix is a test plan and evidence index, not twelve successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.
 
 | ID | Scenario | Acceptance evidence | Current evidence |
 | --- | --- | --- | --- |
-| H1 | Start/reconnect on a bonded local host | Valid reads, bounded setup/retry and no activation or movement from background setup | Local reads/reconnect observed; repeated-start acceptance pending |
+| H1 | Start/reconnect on a bonded local host | Valid reads, bounded setup/retry and no activation or movement from background setup | Local reads/reconnect observed; later HA 2026.11.0 startup recovered after timeouts, but one Keep connected on trial did not recover in 90 seconds; repeated-start acceptance pending |
 | H2 | Fresh unbonded onboarding | Complete pairing and setup without a manual agent; no movement | Manual bond evidence only; automatic fresh-host run pending |
-| H3 | Targets in both directions | Feedback, physical direction and measured final height within the declared test tolerance; no replay | Nearby arrivals trace-observed; complete acceptance pending |
-| H4 | Stop during target travel | Physical stop, measured delay/overshoot, two-channel cleanup and a new explicit command afterward | Stop/release and next-command sequence trace-observed; physical accuracy pending |
+| H3 | Targets in both directions | Feedback, physical direction and measured final height within the declared test tolerance; no replay | Nearby arrivals trace-observed and native slider movement owner-reported; complete acceptance pending |
+| H4 | Stop during target travel | Physical stop, measured delay/overshoot, two-channel cleanup and a new explicit command afterward | Stop/release and next-command sequence trace-observed; native Stop owner-reported, measured physical accuracy pending |
 | H5 | Slider/favorite/Stop bursts | No competing packet streams or delayed goals; physical panel remains usable | Simulated burst/Stop ownership tests; supervised hardware run pending |
 | H6 | Link loss during motion | Observe local controller behavior, bound failed operations and never resume the old goal after recovery | Simulated failure paths; scoped physical observation pending |
 | H7 | HA reload/restart during motion | Distinguish graceful unload's Stop attempt from abrupt process loss; no goal replay afterward | Simulated unload cleanup; physical lifecycle run pending |
-| H8 | Physical panel handback | Manual controls and double-tap favorites work after HA move/Stop without unplugging | Owner-reported freeze prompted release fix; physical recovery unverified |
+| H8 | Physical panel handback | Manual controls and double-tap favorites work after HA move/Stop without unplugging | Earlier freeze prompted release fix; later physical favorite use, BLE loss and automatic entity return owner-reported; repeatable handback and cause unverified |
 | H9 | Proxy-only and mixed adapters | Repeat onboarding, reads, travel and Stop with actual backend/path evidence for each environment | Local BlueZ control evidence only |
 | H10 | Calibration/settings persistence | Before/after reference and exact raw memories, no unintended movement, agreed restart/power-cycle readback | Activation/calibration and one reconnect observed; power-cycle result pending |
-| H11 | Idle session and display | Count settings queries/control writes, reconnects and freshness gaps; visually compare OLED with/without periodic reads | Short idle capture had no outgoing writes; periodic-poll/OLED comparison pending |
+| H11 | Idle session and display | Count settings queries/control writes, reconnects and freshness gaps; visually compare OLED with/without periodic reads | Short isolated capture had no outgoing writes; later 300-second native observation had five successful refreshes and no recorded native link loss/reconnect/timeout; long soak and periodic-poll/OLED comparison pending |
 | H12 | Competing local client/integration | Actionable conflict, no silent takeover and no unexpected movement | Configured-entry conflict guard covered by synthetic HA tests; physical competing-client acceptance pending |
 
 Choose travel distances, repetitions and stopping tolerances before the test. Respect manufacturer duty-cycle and local safety constraints, keep physical stopping access and terminate on a failure. Loss of BLE can prevent remote Stop; a successful API call cannot prove the mechanism stopped. Do not induce destructive interference or clear a working bond as an incidental test setup step.

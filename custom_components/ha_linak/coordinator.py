@@ -273,9 +273,15 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         )
 
     async def async_set_reminder_sitting_minutes(self, minutes: float) -> None:
-        """Set the single editable duration through the shared reminder transaction."""
+        """Keep the original profile 1 sitting control and standard button."""
+        await self.async_set_reminder_interval_minutes(1, False, minutes)
+
+    async def async_set_reminder_interval_minutes(
+        self, profile: int, standing: bool, minutes: float
+    ) -> None:
+        """Set one duration through the shared reminder transaction."""
         await self._async_reminder_change(
-            lambda desk: desk.set_reminder_sitting_minutes(minutes)
+            lambda desk: desk.set_reminder_interval_minutes(profile, standing, minutes)
         )
 
     async def async_set_panel_unit_preference(self, inch: bool) -> None:

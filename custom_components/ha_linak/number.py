@@ -12,9 +12,10 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .entity import LinakEntity, LinakReminderEntity, whole_centimeters
+from .coordinator import LinakCoordinator
 from .operation import OperationStatus
 from .protocol import PositionSample
-from .reminder_settings import MIN_SITTING_MINUTES, MAX_SITTING_MINUTES
+from .reminder_settings import MIN_INTERVAL_MINUTES, MAX_INTERVAL_MINUTES
 
 
 # HA requires this coroutine hook even when constructing entities needs no I/O.
@@ -25,29 +26,48 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     async_add_entities(
         [
             LinakTargetHeight(coordinator),
-            LinakReminderSittingTime(coordinator, "reminder_1_sitting_time"),
+            *(
+                LinakReminderInterval(coordinator, profile, standing)
+                for profile in range(1, 4)
+                for standing in (False, True)
+            ),
         ]
     )
 
 
-class LinakReminderSittingTime(LinakReminderEntity, NumberEntity):
+class LinakReminderInterval(LinakReminderEntity, NumberEntity):
     """Report the actual value, even outside the narrower host edit policy."""
 
     _attr_mode = NumberMode.BOX
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_native_step = 1
-    _attr_native_min_value = MIN_SITTING_MINUTES
-    _attr_native_max_value = MAX_SITTING_MINUTES
+    _attr_native_min_value = MIN_INTERVAL_MINUTES
+    _attr_native_max_value = MAX_INTERVAL_MINUTES
     _attr_device_class = NumberDeviceClass.DURATION
     _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(
+        self, coordinator: LinakCoordinator, profile: int, standing: bool
+    ) -> None:
+        kind = "standing" if standing else "sitting"
+        super().__init__(coordinator, f"reminder_{profile}_{kind}_time")
+        self._profile = profile
+        self._standing = standing
+        self._attr_entity_registry_enabled_default = profile == 1 and not standing
 
     @property
     def native_value(self) -> int | None:
         reminders = self.coordinator.data.reminders
-        return reminders.profiles_raw[0][0] if self.available and reminders else None
+        return (
+            reminders.profiles_raw[self._profile - 1][int(self._standing)]
+            if self.available and reminders
+            else None
+        )
 
     async def async_set_native_value(self, value: float) -> None:
-        await self.coordinator.async_set_reminder_sitting_minutes(value)
+        await self.coordinator.async_set_reminder_interval_minutes(
+            self._profile, self._standing, value
+        )
 
 
 class LinakTargetHeight(LinakEntity, NumberEntity):

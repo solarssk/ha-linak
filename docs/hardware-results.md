@@ -175,7 +175,7 @@ For owner acceptance, explicitly agree one supervised sequence covering Profile 
 
 **Conclusion:** 50 and 55 are accepted values for this one inactive-profile field on the tested DPG1C at client status 1. This supports a protected single-field setter, not a requirement for each sitting/standing pair to total one hour.
 
-**Limits:** the trial did not validate every value from 1 to 60, the source application's 1–255 bounds, zero, other fields, active-profile edits, actual countdown timing or persistence. The new HA input and standard-time button are software implementations tested with synthetic BLE, not deployed or hardware-accepted by this trial. Their 1–60 range is an integration input policy, not medical or firmware limits. Any further physical test needs its own approved scope and must stop on uncertain delivery without retry or blind restoration.
+**Limits:** the trial did not validate every value from 1 to 60, the source application's 1–255 bounds, zero, other fields, active-profile edits, actual countdown timing or persistence. The six HA duration inputs and profile 1 standard-time button are software implementations tested with synthetic BLE, not deployed or hardware-accepted by this trial. Their 1–60 range is an integration input policy, not medical or firmware limits. All six byte addresses are backed by the pinned community layout and independent UI fields, not six hardware experiments. Tests verify isolated byte changes, fresh-state active-profile refusal/no-op, preserved flags/counter handling, ACK/readback failures and real HA services. Any further physical test needs its own approved scope and must stop on uncertain delivery without retry or blind restoration.
 
 ## Stored unit preference and physical display
 

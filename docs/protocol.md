@@ -127,13 +127,13 @@ A refresh that fails never replaces the previously published snapshot. A refresh
 
 ## Protected setting exchanges
 
-Client activation, height-reference correction, reminder profile selection, profile 1 sitting-duration editing and the stored panel inch/metric preference have implemented protected setters. There is no generic arbitrary-write service.
+Client activation, height-reference correction, reminder profile selection, sitting/standing editing for all three profiles and the stored panel inch/metric preference have implemented protected setters. There is no generic arbitrary-write service.
 
 | Operation | Allowlisted request | Preconditions | Required verification |
 | --- | --- | --- | --- |
 | Existing client activation | `7f 86 80 01 <same 16 identifier bytes>` | Valid `01 11` frame, recognized status, usable identifier; skip status `1` | Application acknowledgement, then status `1` and unchanged identifier |
 | Reminder profile | `7f 88 80 <flags> <sit1> <stand1> <sit2> <stand2> <sit3> <stand3>` | Existing ready DPG session, valid group, fresh reminders, stationary position and status 1; skip unchanged profile | Exact `01 00`, capabilities barrier, independent `88` readback matching masked flags and all six intervals; counter ignored |
-| Profile 1 sitting duration | Same `88` envelope; replace only `<sit1>` from fresh settings | Same shared transaction; integer minutes 1–60 by integration policy; changed field requires profile 1 inactive; skip unchanged value | Exact `01 00`, capabilities barrier and independent full-body readback; preserve flags and the other five durations, ignore counter changes |
+| Sitting or standing duration, profiles 1–3 | Same `88` envelope; replace only the addressed duration from fresh settings | Same shared transaction; integer minutes 1–60 by integration policy; changed field requires its profile inactive; skip unchanged value | Exact `01 00`, capabilities barrier and independent full-body readback; preserve flags and the other five durations, ignore counter changes |
 | Stored inch/metric preference | Same ten-byte `88` envelope; set/clear only flags `0x04` | Same shared transaction; fresh stationary baseline and existing client status 1 for a change; skip unchanged preference | Exact `01 00`, capabilities barrier and independent strict thirteen-byte `88` readback; preserve seven other flag bits and all six durations, omit/ignore counter |
 | Height-reference correction | `7f 81 80 01 <offset-low> <offset-high>` | Confirmed stationary calibration proposal and valid unsigned reference | Application acknowledgement, then capabilities, reference and position reads with matching reference and position |
 
@@ -143,7 +143,7 @@ The client rejects empty/all-`ff` identifiers and unsupported status values. It 
 
 A capabilities read barrier precedes each setting exchange. `01 00` is the successful application acknowledgement. A non-success two-byte status, including the observed `0b 00`, aborts without automatic retry. Its detailed vendor meaning remains unknown. GATT's write response and the DPG acknowledgement are separate checks.
 
-The shared reminder serializer accepts the raw byte representation without imposing the interval edit policy on untouched fields. A profile change preserves a sitting duration of 90 or another value outside 1–60. The narrower interval input policy belongs to `reminder_settings.py`, not decoding or profile selection. No pair is normalized to a 60-minute total. An unchanged fresh body sends no setting or identity query, including when profile 1 is active. Only an explicit change requires active-client validation and the second stationary sample. See the [interval contract](settings-reference.md#edit-profile-1-sitting-time).
+The shared reminder serializer accepts the raw byte representation without imposing the interval edit policy on untouched fields. A profile change preserves a sitting duration of 90 or another value outside 1–60. The narrower interval input policy belongs to `reminder_settings.py`, not decoding or profile selection. The duration index is `2 * (profile - 1) + standing`, with profiles 1–3 and standing 0/1, after the flags byte. No pair is normalized to a 60-minute total. An unchanged fresh body sends no setting or identity query, including when the edited profile is active. Only an explicit change requires active-client validation and the second stationary sample. See the [interval contract and source provenance](settings-reference.md#edit-reminder-durations).
 
 Activation is permitted during confirmed preparation/calibration or an explicit foreground movement request. Ordinary reads, connection establishment and Stop do not activate clients. Persistent effects must not be inferred from one successful reconnect; see [hardware evidence](hardware-results.md).
 

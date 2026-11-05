@@ -64,7 +64,8 @@ The slider uses 1 cm steps within your measured range. It updates after a move f
 - 🔔 **Reminder profile** (`select`): choose Off or Profile 1/2/3, preserving the intervals
 - 📏 **Preferred panel units** (`select`): choose Metric or Inch for the panel, independently of Home Assistant
 - ⏱️ **Profile 1 sitting time** (`number`): type 1–60 whole minutes for an inactive profile
-- ↩️ **Profile 1: use standard 55 minutes** (`button`): change only that duration, not a factory reset
+- ⏱️ **Profile 1 standing time** and **Profile 2–3 sitting/standing time** (`number`): optional 1–60-minute inputs, disabled by default
+- ↩️ **Profile 1: use standard time** (`button`): set only its sitting time to 55 minutes, not a factory reset
 - 🔌 **Keep connected** (`switch`): release the Bluetooth connection on purpose, then reconnect when needed
 
 **Keep connected** is disabled by default. Enable it in the entity settings to show the switch. Turning the switch off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk first.
@@ -113,7 +114,7 @@ If the panel shows the wrong height, measure from the floor to the top of the de
 
 Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
 
-On the device page under **Configuration**, type **1–60 whole minutes** into **Profile 1 sitting time**, or explicitly choose its standard **55 minutes** with the button. Select Off or another profile first; changing an active profile's duration is refused. Only this sitting duration changes, with no adjustment of standing time or automatic profile change. Existing values outside the input range stay visible and are not overwritten. The range is integration policy, not medical or firmware limits. Hardware evidence covers 50/55 in inactive profile 1 only; other durations remain read-only. Neither action is a factory reset or an automatic restore. [Interval details](docs/settings-reference.md#edit-profile-1-sitting-time).
+On the device page under **Configuration**, type **1–60 whole minutes** into a sitting or standing input for Profile 1/2/3. Enable the five new inputs in their entity settings if needed; the existing Profile 1 sitting input keeps its name and registry settings. Select Off or another profile first; changing an active profile's duration is refused. Only the chosen duration changes, without adjusting its pair or switching profiles. **Profile 1: use standard time** assigns only its sitting time to **55 minutes**, not a factory reset or automatic restore. Existing out-of-range values stay visible without automatic overwrite. The range is integration policy, not medical or firmware limits. All six fields have simulated coverage; hardware evidence covers only 50/55 sitting minutes in inactive profile 1. [Interval details](docs/settings-reference.md#edit-reminder-durations).
 
 Unused memory slots do not need to be filled before setup. If saved positions or reminders cannot be read, height can remain available while the affected settings are unavailable. A timed-out group is retried after five minutes; stored-position buttons require a complete valid memory read.
 

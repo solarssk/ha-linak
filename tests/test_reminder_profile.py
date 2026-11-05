@@ -280,12 +280,13 @@ async def test_reminder_reservation_excludes_motion_calibration_polling_and_anot
         await task
 
 
-async def setup_select(hass, fake=None):
+async def setup_select(hass, fake=None, *, entry=None):
     fake = fake or ReminderBleak()
-    entry = MockConfigEntry(
-        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
-    )
-    entry.add_to_hass(hass)
+    if entry is None:
+        entry = MockConfigEntry(
+            domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+        )
+        entry.add_to_hass(hass)
     with (
         patch(
             "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",

@@ -332,6 +332,6 @@ Maintainers can compare live main protection with `.github/required-checks.json`
 python scripts/check_github_settings.py
 ```
 
-Use an existing administrative gh login locally. Never expose admin credentials to PR CI.
+The checker verifies the active `.github/rulesets/main.json` ruleset and GitHub's effective rules for `main`, or the classic protection during a pre-migration state. It uses the existing `gh` login locally. Never expose admin credentials to PR CI.
 
 </details>

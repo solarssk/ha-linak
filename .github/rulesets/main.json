@@ -1,0 +1,43 @@
+{
+  "name": "LINAK main protection",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH"],
+      "exclude": []
+    }
+  },
+  "bypass_actors": [],
+  "rules": [
+    { "type": "required_signatures" },
+    { "type": "required_linear_history" },
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": true
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "required_status_checks": [
+          { "context": "Quality", "integration_id": 15368 },
+          { "context": "Tests", "integration_id": 15368 },
+          { "context": "Hassfest", "integration_id": 15368 },
+          { "context": "Dependency audit", "integration_id": 15368 },
+          { "context": "Secret scan", "integration_id": 15368 },
+          { "context": "Lint workflows (actionlint, zizmor)", "integration_id": 15368 },
+          { "context": "Documentation impact", "integration_id": 15368 }
+        ],
+        "strict_required_status_checks_policy": true
+      }
+    }
+  ]
+}

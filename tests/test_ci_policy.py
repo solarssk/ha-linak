@@ -429,6 +429,54 @@ def test_live_settings_guard_rejects_missing_workflow_gate():
         )
 
 
+def test_main_ruleset_matches_required_gates_and_effective_rules():
+    from scripts.check_github_settings import validate_ruleset
+
+    source = json.loads((ROOT / ".github/rulesets/main.json").read_text())
+    expected = set(json.loads((ROOT / ".github/required-checks.json").read_text()))
+    effective_rules = [
+        {
+            "type": rule["type"],
+            "ruleset_id": 123,
+            "ruleset_source": "solarssk/ha-linak",
+            **({"parameters": rule["parameters"]} if "parameters" in rule else {}),
+        }
+        for rule in source["rules"]
+    ]
+    validate_ruleset(
+        {
+            **source,
+            "id": 123,
+            "source_type": "Repository",
+            "source": "solarssk/ha-linak",
+        },
+        effective_rules,
+        expected,
+        source,
+    )
+
+
+def test_main_ruleset_guard_rejects_bypass_actors():
+    from scripts.check_github_settings import validate_ruleset
+
+    source = json.loads((ROOT / ".github/rulesets/main.json").read_text())
+    expected = set(json.loads((ROOT / ".github/required-checks.json").read_text()))
+
+    with pytest.raises(ValueError, match="must not allow bypass"):
+        validate_ruleset(
+            {
+                **source,
+                "id": 123,
+                "source_type": "Repository",
+                "source": "solarssk/ha-linak",
+                "bypass_actors": [{"actor_type": "RepositoryRole"}],
+            },
+            [],
+            expected,
+            source,
+        )
+
+
 def test_all_locked_uv_copies_exclude_the_compromised_ca_bundle():
     from packaging.version import Version
 

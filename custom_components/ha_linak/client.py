@@ -54,6 +54,8 @@ from .protocol import (
     decode_offset,
     decode_position,
     decode_reminders,
+    reminder_profile_request,
+    ReminderClientInactive,
     decode_stored_position,
     read_request,
     REFERENCE_INVENTORY_UUIDS,
@@ -203,6 +205,7 @@ class DeskClient:
         self._ready = False
         self._generation = 0
         self._calibration_task: asyncio.Task[Any] | None = None
+        self._reminder_task: asyncio.Task[Any] | None = None
         self._motion_task: asyncio.Task[None] | None = None
         self._stop_task: asyncio.Task[None] | None = None
         self.last_control_result = "not_requested"
@@ -896,6 +899,7 @@ class DeskClient:
     def control_busy(self) -> bool:
         return (
             self._calibration_task is not None
+            or self._reminder_task is not None
             or self._motion_task is not None
             or (self._stop_task is not None and not self._stop_task.done())
         )
@@ -913,18 +917,31 @@ class DeskClient:
                 raise MotionError("The required Bluetooth operation is unavailable")
         return client
 
-    async def _write_setting(self, payload: bytes) -> None:
+    async def _write_setting(
+        self, payload: bytes, *, expected_capabilities: Capabilities | None = None
+    ) -> None:
         """Send one allowlisted setting and require the application ACK, no retry."""
         if not (
             (payload[:4] == b"\x7f\x81\x80\x01" and len(payload) == 6)
             or (payload[:4] == b"\x7f\x86\x80\x01" and len(payload) == 20)
+            or (payload[:3] == b"\x7f\x88\x80" and len(payload) == 10)
         ):
             raise ValueError("Unsupported setting request")
-        await self._query(ReadCommand.CAPABILITIES, 2)
+        client, generation = self.client, self._generation
+        barrier = await self._query(ReadCommand.CAPABILITIES, 2)
+        if (
+            expected_capabilities is not None
+            and decode_capabilities(barrier) != expected_capabilities
+        ):
+            raise ValueError("Capabilities changed before setting write")
+        if self.client is not client or self._generation != generation:
+            raise DeskLinkLost()
         self._pending = asyncio.get_running_loop().create_future()
         self._response_type = 0
         try:
-            await self._io(self._exchange_setting(payload), QUERY_TIMEOUT)
+            ack = await self._io(self._exchange_setting(payload), QUERY_TIMEOUT)
+            if ack != b"\x01\x00":
+                raise ValueError("Invalid setting acknowledgement")
         finally:
             self._pending.cancel()
             self._pending = None
@@ -958,6 +975,103 @@ class DeskClient:
             if characteristic is None or operation not in characteristic.properties:
                 raise MotionError("Calibration Bluetooth operation is unavailable")
         return client
+
+    def _require_reminder_session(self, client: BleakClient, generation: int) -> None:
+        if (
+            self.client is not client
+            or self._generation != generation
+            or not self.connected
+        ):
+            raise DeskLinkLost()
+
+    async def _change_reminder_profile(
+        self,
+        request: bytes,
+        sample: PositionSample,
+        capabilities: Capabilities,
+        client: BleakClient,
+        generation: int,
+    ) -> ReminderSettings:
+        """Write and independently verify a changed profile under caller ownership."""
+        identity = await self._query(ReadCommand.USER_ID, 17)
+        # Validate the entire identity without using its activation payload.
+        activation_request(identity)
+        if identity[2] != 1:
+            raise ReminderClientInactive("Reminder writes require client status 1")
+        self._require_reminder_session(client, generation)
+        stationary = decode_position(
+            bytes(await self._io(client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
+        )
+        if stationary != sample:
+            raise ValueError("Desk position changed before reminder write")
+        self._require_reminder_session(client, generation)
+        self._set_stage("reminder_write")
+        await self._write_setting(request, expected_capabilities=capabilities)
+        self._require_reminder_session(client, generation)
+        # Do not mistake an unsolicited setter echo for independent readback.
+        barrier = decode_capabilities(await self._query(ReadCommand.CAPABILITIES, 2))
+        if barrier != capabilities:
+            raise ValueError("Capabilities changed during reminder write")
+        after = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
+        self._require_reminder_session(client, generation)
+        if reminder_profile_request(after, after.selected_profile) != request:
+            raise ValueError("Reminder readback mismatch; do not retry automatically")
+        return after
+
+    async def set_reminder_profile(self, profile: int) -> DeskState:
+        """One explicit profile assignment on the existing session, never replayed."""
+        if type(profile) is not int or profile not in range(4):
+            raise ValueError("Invalid reminder profile")
+        if self.control_busy or self._lock.locked():
+            raise MotionError("Desk is busy", MotionFailure.BUSY)
+        if not self.connected or not self.settings_health["reminders"].valid:
+            raise MotionError("A ready connection and valid reminders are required")
+        self.identity.require_driver()
+        self._reminder_task = asyncio.current_task()
+        client = self.client
+        assert client is not None
+        generation = self._generation
+        try:
+            async with self._lock, asyncio.timeout(REFRESH_TIMEOUT):
+                self._set_stage("reminder_check")
+                self._calibration_transport()
+                capabilities = decode_capabilities(
+                    await self._query(ReadCommand.CAPABILITIES, 2)
+                )
+                if capabilities != self.state.capabilities:
+                    raise ValueError(
+                        "Capabilities changed; refresh before changing reminders"
+                    )
+                sample = decode_position(
+                    bytes(
+                        await self._io(client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT)
+                    )
+                )
+                if sample.speed_raw != 0:
+                    raise ValueError("Wait until the desk stops")
+                before = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
+                request = reminder_profile_request(before, profile)
+                self._require_reminder_session(client, generation)
+                if before.selected_profile != profile:
+                    after = await self._change_reminder_profile(
+                        request, sample, capabilities, client, generation
+                    )
+                else:
+                    after = before
+                self.state.reminders = after
+                self._record_settings("reminders", True)
+                self._set_stage("ready")
+                return self.state
+        except ReminderClientInactive:
+            self._set_stage("ready")
+            raise
+        except BaseException:
+            settled = asyncio.gather(self._disconnect_link(), return_exceptions=True)
+            await _drain_cleanup(settled)
+            raise
+        finally:
+            self._reminder_task = None
+            self.changed()
 
     async def calibrate_height(
         self, proposal: HeightCalibration, *, activate_client: bool = False
@@ -1290,6 +1404,10 @@ class DeskClient:
             self.changed()
 
     async def disconnect(self) -> None:
+        reminder = self._reminder_task
+        if reminder is not None and reminder is not asyncio.current_task():
+            reminder.cancel()
+            await _drain_cleanup(asyncio.gather(reminder, return_exceptions=True))
         calibration = self._calibration_task
         if calibration is not None and calibration is not asyncio.current_task():
             calibration.cancel()

@@ -61,9 +61,10 @@ The slider uses 1 cm steps within your measured range. It updates after a move f
 
 ### Configuration
 
+- 🔔 **Reminder profile** (`select`): choose Off or Profile 1/2/3, preserving the intervals
 - 🔌 **Keep connected** (`switch`): release the Bluetooth connection on purpose, then reconnect when needed
 
-The entity is disabled by default. Enable it in the entity settings to show the switch. Turning the switch off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk first.
+**Keep connected** is disabled by default. Enable it in the entity settings to show the switch. Turning the switch off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk first.
 
 ### Diagnostics
 
@@ -103,7 +104,7 @@ Open **Settings → Devices & services → LINAK → Configure** to change the n
 
 If the panel shows the wrong height, measure from the floor to the top of the desktop. Enter that value in **Height measured with a tape**, then review and confirm the correction. Saving the correction doesn't move the desk.
 
-Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. The integration can read saved positions and reminders, but doesn't yet edit them.
+Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Editing intervals and saved positions is unavailable.
 
 Unused memory slots do not need to be filled before setup. If saved positions or reminders cannot be read, height can remain available while the affected settings are unavailable. A timed-out group is retried after five minutes; stored-position buttons require a complete valid memory read.
 

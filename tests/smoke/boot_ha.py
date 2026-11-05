@@ -130,6 +130,7 @@ async def run(args) -> None:
                 "number",
                 "button",
                 "switch",
+                "select",
             }:
                 raise RuntimeError("Declared integration platforms changed")
             for platform in [*platforms, "config_flow", "diagnostics"]:

@@ -31,6 +31,12 @@ Height correction is available even if no bounds have been saved yet. It changes
 
 A changed position/reference rejects the proposal before correction. If verification fails after a write, the setting may already have changed. Check the current reading before another attempt; there is no automatic retry or rollback. See the [calibration contract](settings-reference.md#height-calibration-contract) for exact checks.
 
+## Choose a reminder profile
+
+In the LINAK device's Configuration section, use **Reminder profile** to choose Off or Profile 1/2/3. It preserves the configured sitting/standing times and other panel flags. It needs no travel range and sends no activation, wake or movement. The existing active-profile sensor remains available for automations.
+
+Wait for valid reminder readings and a stationary desk. A busy operation is refused. If HA reports an inactive client, use explicit control preparation in Configure separately, then read the profile before another selection. A failed verification may follow a delivered write: check the actual profile after reconnecting before trying again. There is no automatic retry or restoration. Profiles 1/2 still need owner hardware acceptance; see the [setting contract](settings-reference.md#reminder-profile-selection).
+
 ## Set measured command bounds
 
 Enter the actual lowest and highest desktop heights from measurements or verified product data for this desk. Do not infer them from favorite positions or let the integration probe mechanical extremes.

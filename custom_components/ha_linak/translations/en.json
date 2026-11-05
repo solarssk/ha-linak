@@ -243,6 +243,17 @@
       "keep_connected": {
         "name": "Keep connected"
       }
+    },
+    "select": {
+      "reminder_profile": {
+        "name": "Reminder profile",
+        "state": {
+          "off": "Off",
+          "profile_1": "Profile 1",
+          "profile_2": "Profile 2",
+          "profile_3": "Profile 3"
+        }
+      }
     }
   },
   "options": {
@@ -379,6 +390,12 @@
     },
     "connection_failed": {
       "message": "The desk did not connect. Keep connected stays on and Home Assistant will retry. Check that the desk is awake and within range of your Bluetooth adapter or proxy."
+    },
+    "reminder_client_inactive": {
+      "message": "The panel client is inactive. Reminder changes require status 1; this action does not activate the client. Use the explicit control preparation in Configure, then read the current profile before trying again."
+    },
+    "reminder_failed": {
+      "message": "The reminder change could not be verified. The setting may have changed. Check the current panel profile after reconnecting before trying again. No write or restoration is retried automatically."
     }
   }
 }

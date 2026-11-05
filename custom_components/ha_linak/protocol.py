@@ -155,6 +155,22 @@ def decode_reminders(payload: bytes) -> ReminderSettings:
     )
 
 
+def reminder_profile_request(settings: ReminderSettings, profile: int) -> bytes:
+    """Assign the profile, preserving every unrelated flag and interval byte."""
+    if type(profile) is not int or profile not in range(4):
+        raise ValueError("Reminder profile must be 0, 1, 2 or 3")
+    body = bytes(((settings.flags_raw & ~3) | profile,)) + bytes(
+        value for pair in settings.profiles_raw for value in pair
+    )
+    if len(body) != 7:
+        raise ValueError("Reminder settings require exactly three interval pairs")
+    return b"\x7f\x88\x80" + body
+
+
+class ReminderClientInactive(ValueError):
+    """Reminder writes require observed status 1; never activate implicitly."""
+
+
 def activation_request(payload: bytes) -> bytes | None:
     """Activate the existing identity only; never generate or replace its bytes."""
     _frame(payload, 17, 19)

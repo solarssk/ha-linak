@@ -125,6 +125,67 @@ async def test_failed_preparation_cannot_skip_to_range(hass, desk_transport):
     hass.config_entries.flow.async_abort(result["flow_id"])
 
 
+async def test_unavailable_initial_position_is_not_presented_as_a_height(
+    hass, desk_transport
+):
+    fake = desk_transport
+    fake.offset = 6162
+    fake.position = 0xFFFF
+    result = await initial_form(hass, fake, guide=False)
+    assert result["step_id"] == "retry"
+    assert result["errors"] == {"base": "position_unavailable"}
+    assert not fake.is_connected
+    assert not writes(fake)
+    assert not hass.config_entries.async_entries("ha_linak")
+    fake.position = 1438
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await complete_progress(hass, result)
+    assert result["step_id"] == "name"
+    hass.config_entries.flow.async_abort(result["flow_id"])
+
+
+async def test_unavailable_position_after_range_cannot_be_confirmed(
+    hass, desk_transport
+):
+    result = await initial_form(hass, desk_transport)
+    desk_transport.position = 0xFFFF
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], BOUNDS)
+    result = await complete_progress(hass, result)
+    assert result["step_id"] == "finish"
+    assert result["errors"] == {"base": "position_unavailable"}
+    assert result["description_placeholders"]["height"] == "?"
+    assert not hass.config_entries.async_entries("ha_linak")
+    assert not writes(desk_transport)
+    hass.config_entries.flow.async_abort(result["flow_id"])
+
+
+@pytest.mark.parametrize("options", [False, True])
+async def test_height_confirmation_is_not_enabled_by_default(
+    hass, desk_transport, options
+):
+    entry = None
+    if options:
+        entry = await setup_calibration_entry(hass, desk_transport)
+        manager = hass.config_entries.options
+        result = await manager.async_init(entry.entry_id)
+        result = await manager.async_configure(
+            result["flow_id"], {"next_step_id": "height"}
+        )
+    else:
+        manager = hass.config_entries.flow
+        result = await initial_form(hass, desk_transport)
+        result = await manager.async_configure(result["flow_id"], BOUNDS)
+        result = await complete_progress(hass, result)
+    assert result["step_id"] == "height"
+    assert result["data_schema"]({}) == {"height_correct": False}
+    result = await manager.async_configure(result["flow_id"], {})
+    assert result["step_id"] == "measure"
+    assert not writes(desk_transport)
+    manager.async_abort(result["flow_id"])
+    if entry is not None:
+        assert await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_options_can_rename_only_in_home_assistant(hass, desk_transport):
     fake = desk_transport
     entry = await setup_calibration_entry(hass, fake)

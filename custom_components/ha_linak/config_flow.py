@@ -44,7 +44,7 @@ from .const import DOMAIN
 from .entity import whole_centimeters
 from .device_profile import UnsupportedFamily
 from .naming import DEFAULT_NAME, cached_bluez_names, desk_name, discovery_title
-from .protocol import SERVICE_UUID
+from .protocol import SERVICE_UUID, PositionUnavailable
 from .setup_session import offer_session
 from .ownership import DeskOwnershipConflict, has_idasen_conflict
 
@@ -65,6 +65,7 @@ def _validation_error(error: Exception, stage: str) -> str:
         (DeskAuthenticationError, "authentication_failed"),
         (DeskPairingUnsupported, "pairing_unsupported"),
         (DeskLinkLost, "connection_lost"),
+        (PositionUnavailable, "position_unavailable"),
         (TimeoutError, "timeout"),
         (ValueError, "unsupported_device"),
     ):
@@ -770,7 +771,7 @@ def _name_schema(name: str, *, monitoring_option: bool = False) -> vol.Schema:
 async def _guide_height(flow, user_input, state, next_step) -> ConfigFlowResult:
     if user_input is not None and state is not None:
         flow._calibration = None
-        if user_input.get("height_correct", True):
+        if user_input.get("height_correct", False):
             return await getattr(flow, f"async_step_{next_step}")()
         return await flow.async_step_measure()
     error = getattr(flow, "_error", None) or getattr(flow, "_calibration_error", None)
@@ -781,7 +782,7 @@ async def _guide_height(flow, user_input, state, next_step) -> ConfigFlowResult:
     return flow.async_show_form(
         step_id="height",
         data_schema=vol.Schema(
-            {vol.Required("height_correct", default=True): selector.BooleanSelector()}
+            {vol.Required("height_correct", default=False): selector.BooleanSelector()}
         ),
         description_placeholders=_height_placeholders(state),
         errors={"base": error} if error else {},

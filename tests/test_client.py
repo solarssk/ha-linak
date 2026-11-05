@@ -242,6 +242,24 @@ async def test_unrelated_notifications_are_ignored_and_bad_position_invalidates_
     await desk.disconnect()
 
 
+async def test_unavailable_position_notification_invalidates_the_ready_link():
+    fake = FakeBleak()
+    changes = []
+    desk = DeskClient(
+        BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: changes.append(True)
+    )
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", return_value=fake
+    ):
+        await desk.refresh()
+    previous_height = desk.state.height_cm
+    fake.callbacks[HEIGHT_UUID](None, bytearray.fromhex("ffff0000"))
+    assert not desk.connected
+    assert changes
+    assert desk.state.height_cm == previous_height
+    await desk.disconnect()
+
+
 @pytest.mark.parametrize(
     "command,payload,reason",
     [("81", "010300901a", "offset"), ("80", "0102fd01", "slots")],

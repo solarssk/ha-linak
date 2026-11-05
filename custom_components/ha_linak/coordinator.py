@@ -282,11 +282,9 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 translation_domain=DOMAIN, translation_key="reminder_client_inactive"
             ) from err
         except MotionError as err:
-            key = (
-                "control_busy"
-                if err.reason == MotionFailure.BUSY
-                else "control_unavailable"
-            )
+            key = "control_unavailable"
+            if err.reason == MotionFailure.BUSY:
+                key = "control_busy"
             raise ServiceValidationError(
                 translation_domain=DOMAIN, translation_key=key
             ) from err

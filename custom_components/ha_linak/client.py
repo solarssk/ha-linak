@@ -984,6 +984,40 @@ class DeskClient:
         ):
             raise DeskLinkLost()
 
+    async def _change_reminder_profile(
+        self,
+        request: bytes,
+        sample: PositionSample,
+        capabilities: Capabilities,
+        client: BleakClient,
+        generation: int,
+    ) -> ReminderSettings:
+        """Write and independently verify a changed profile under caller ownership."""
+        identity = await self._query(ReadCommand.USER_ID, 17)
+        # Validate the entire identity without using its activation payload.
+        activation_request(identity)
+        if identity[2] != 1:
+            raise ReminderClientInactive("Reminder writes require client status 1")
+        self._require_reminder_session(client, generation)
+        stationary = decode_position(
+            bytes(await self._io(client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT))
+        )
+        if stationary != sample:
+            raise ValueError("Desk position changed before reminder write")
+        self._require_reminder_session(client, generation)
+        self._set_stage("reminder_write")
+        await self._write_setting(request, expected_capabilities=capabilities)
+        self._require_reminder_session(client, generation)
+        # Do not mistake an unsolicited setter echo for independent readback.
+        barrier = decode_capabilities(await self._query(ReadCommand.CAPABILITIES, 2))
+        if barrier != capabilities:
+            raise ValueError("Capabilities changed during reminder write")
+        after = decode_reminders(await self._query(ReadCommand.REMINDERS, 11))
+        self._require_reminder_session(client, generation)
+        if reminder_profile_request(after, after.selected_profile) != request:
+            raise ValueError("Reminder readback mismatch; do not retry automatically")
+        return after
+
     async def set_reminder_profile(self, profile: int) -> DeskState:
         """One explicit profile assignment on the existing session, never replayed."""
         if type(profile) is not int or profile not in range(4):
@@ -1019,46 +1053,9 @@ class DeskClient:
                 request = reminder_profile_request(before, profile)
                 self._require_reminder_session(client, generation)
                 if before.selected_profile != profile:
-                    identity = await self._query(ReadCommand.USER_ID, 17)
-                    # Validate the entire identity without using its activation payload.
-                    activation_request(identity)
-                    if identity[2] != 1:
-                        raise ReminderClientInactive(
-                            "Reminder writes require client status 1"
-                        )
-                    self._require_reminder_session(client, generation)
-                    stationary = decode_position(
-                        bytes(
-                            await self._io(
-                                client.read_gatt_char(HEIGHT_UUID), IO_TIMEOUT
-                            )
-                        )
+                    after = await self._change_reminder_profile(
+                        request, sample, capabilities, client, generation
                     )
-                    if stationary != sample:
-                        raise ValueError("Desk position changed before reminder write")
-                    self._require_reminder_session(client, generation)
-                    self._set_stage("reminder_write")
-                    await self._write_setting(
-                        request, expected_capabilities=capabilities
-                    )
-                    self._require_reminder_session(client, generation)
-                    # Do not mistake an unsolicited setter echo for independent readback.
-                    barrier = decode_capabilities(
-                        await self._query(ReadCommand.CAPABILITIES, 2)
-                    )
-                    if barrier != capabilities:
-                        raise ValueError("Capabilities changed during reminder write")
-                    after = decode_reminders(
-                        await self._query(ReadCommand.REMINDERS, 11)
-                    )
-                    self._require_reminder_session(client, generation)
-                    if (
-                        reminder_profile_request(after, after.selected_profile)
-                        != request
-                    ):
-                        raise ValueError(
-                            "Reminder readback mismatch; do not retry automatically"
-                        )
                 else:
                     after = before
                 self.state.reminders = after

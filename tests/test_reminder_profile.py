@@ -60,7 +60,8 @@ class ReminderBleak(MotionBleak):
                 if self.bad_read:
                     reply = reply[:-1]
             else:
-                assert data[:3] == b"\x7f\x88\x80" and len(data) == 10
+                assert data[:3] == b"\x7f\x88\x80"
+                assert len(data) == 10
                 self.body = bytes(data[3:])
                 self.counter += 123  # Counter changes are deliberately not a mismatch.
                 self.written.set()
@@ -133,7 +134,8 @@ async def test_fresh_idempotent_assignment_and_independent_readback(profile):
         ]
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     assert desk.settings_health["reminders"].valid
-    assert desk.connected and not desk.control_busy
+    assert desk.connected
+    assert not desk.control_busy
     await desk.disconnect()
 
 
@@ -181,7 +183,8 @@ async def test_rejected_malformed_and_wrong_ack_never_report_success(ack):
         with pytest.raises((ValueError, TimeoutError)):
             await desk.set_reminder_profile(2)
     assert len(settings_writes(fake)) == 1
-    assert not desk.connected and not desk.settings_health["reminders"].valid
+    assert not desk.connected
+    assert not desk.settings_health["reminders"].valid
 
 
 @pytest.mark.parametrize("byte", range(7))
@@ -230,7 +233,8 @@ async def test_interruption_discards_generation_without_retry(phase, ending):
     assert len(settings_writes(fake)) == (1 if phase == "write" else 0)
     assert all(uuid == DPG_UUID for uuid, _ in fake.writes)
     assert desk._generation > before
-    assert not desk.connected and not desk.control_busy
+    assert not desk.connected
+    assert not desk.control_busy
     assert not desk.settings_health["reminders"].valid
     fake.hang_read = fake.hang = False
     with patch(
@@ -415,11 +419,13 @@ async def test_repeated_cancellation_waits_for_disconnect_cleanup():
     await started.wait()
     task.cancel()
     await asyncio.sleep(0)
-    assert not task.done() and desk.control_busy
+    assert not task.done()
+    assert desk.control_busy
     finish.set()
     with pytest.raises(asyncio.CancelledError):
         await task
-    assert not desk.control_busy and not fake.is_connected
+    assert not desk.control_busy
+    assert not fake.is_connected
     assert len(settings_writes(fake)) == 1
 
 
@@ -473,8 +479,9 @@ async def test_position_change_during_preflight_prevents_write():
 
 
 async def test_unknown_reminder_layout_is_not_encoded():
+    settings = ReminderSettings(0, ((1, 2),), 0)
     with pytest.raises(ValueError, match="three interval pairs"):
-        reminder_profile_request(ReminderSettings(0, ((1, 2),), 0), 1)
+        reminder_profile_request(settings, 1)
 
 
 async def test_coordinator_rejects_conflict_and_missing_connection(hass):

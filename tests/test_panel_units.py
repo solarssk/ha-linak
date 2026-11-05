@@ -69,8 +69,9 @@ async def test_invalid_preference_is_refused_before_io(value):
 
 @pytest.mark.parametrize("pairs", [(), ((1, 2),), ((1,), (2, 3), (4, 5, 6))])
 def test_unknown_layout_is_never_encoded(pairs):
+    settings = ReminderSettings(0, pairs, 0)
     with pytest.raises(ValueError, match="three interval pairs"):
-        reminder_unit_request(ReminderSettings(0, pairs, 0), True)
+        reminder_unit_request(settings, True)
 
 
 @pytest.mark.parametrize("flags", range(256))
@@ -394,22 +395,23 @@ async def test_service_and_coordinator_errors_never_publish_success(hass, kind, 
         entry.runtime_data._changed()
     elif kind == "readback":
         fake.mismatch = 0
+    if kind == "offline":
+        # HA filters unavailable entities before service dispatch.
+        change = entry.runtime_data.async_set_panel_unit_preference(False)
+    else:
+        change = hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": entity_id, "option": "metric"},
+            blocking=True,
+        )
     try:
         with patch(
             "custom_components.ha_linak.coordinator.has_idasen_conflict",
             return_value=kind == "conflict",
         ):
             with pytest.raises(HomeAssistantError) as exc:
-                if kind == "offline":
-                    # HA filters unavailable entities before service dispatch.
-                    await entry.runtime_data.async_set_panel_unit_preference(False)
-                else:
-                    await hass.services.async_call(
-                        "select",
-                        "select_option",
-                        {"entity_id": entity_id, "option": "metric"},
-                        blocking=True,
-                    )
+                await change
         assert exc.value.translation_key == key
         await hass.async_block_till_done()
         assert hass.states.get(entity_id).state == (

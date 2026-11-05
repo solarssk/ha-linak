@@ -236,7 +236,11 @@ The official plugin loads automatically and enables custom integrations by defau
 
 Lock freshness checks preserve existing transitive pins. To deliberately update them, remove only the relevant lock and regenerate it in a reviewed PR. Upgrade the resolver together with its lock and audit scope.
 
-Generated lock and component files are excluded from independent Dependabot changes. Locks target Python 3.14.2 and Linux glibc 2.39; don't use them as macOS or runtime HA dependency files.
+Dependabot's pip `allow` list names only independent tools from `requirements-tools.txt` and `requirements-build.txt`; update that list and its tooling group when adding a tool. HA-owned packages and the deliberately chosen `uv` resolver are not eligible for independent updates. Keep generated component, audit and resolver inputs fetchable: excluding a file referenced through `-r` or `-c` prevents Dependabot from parsing the graph before package filters run. Only `.github/locks/**` is path-excluded. Regenerate locks after an accepted tool update; the policy tests check input reachability and package ownership. See the [native allow/ignore semantics](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#allow--).
+
+Locks target Python 3.14.2 and Linux glibc 2.39; don't use them as macOS or runtime HA dependency files.
+
+🇵🇱 Lista pip `allow` Dependabota obejmuje tylko niezależne narzędzia z `requirements-tools.txt` i `requirements-build.txt`. Dodając narzędzie, zaktualizuj tę listę i grupę tooling. Pakiety zarządzane przez HA oraz świadomie wybrany resolver `uv` nie podlegają osobnym aktualizacjom. Pliki wskazane przez `-r` lub `-c` muszą pozostać dostępne do pobrania, także wygenerowane wejścia komponentów, audytu i resolvera. Wykluczenie ścieżki przerywa parsowanie przed filtrowaniem pakietów. Wykluczone pozostaje tylko `.github/locks/**`; po zaakceptowaniu aktualizacji narzędzi wygeneruj locki ponownie. Testy polityki sprawdzają dostępność wejść i podział odpowiedzialności za pakiety.
 
 </details>
 

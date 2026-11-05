@@ -63,10 +63,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         if coordinator.connection_wanted:
             await _async_first_refresh(coordinator)
-            _repair_title(hass, entry, coordinator)
         else:
             # A persisted release loads its entities without waiting for the desk.
             await coordinator.async_start_released()
+        _repair_title(hass, entry, coordinator)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     except BaseException:
         await coordinator.async_close()
@@ -93,17 +93,23 @@ def _repair_title(
     if CONF_NAME in entry.data:
         coordinator.name = entry.title
         return
-    if coordinator.desk is None:
-        return
     address = coordinator.address
-    name = desk_name(
-        address, coordinator.desk.device_name, coordinator.desk.device.name
-    )
     if entry.title.upper() == address.upper():
+        desk = coordinator.desk
+        name = (
+            desk_name(address, desk.device_name, desk.device.name)
+            if desk is not None
+            else DEFAULT_NAME
+        )
         hass.config_entries.async_update_entry(entry, title=name)
         coordinator.name = name
-    elif entry.title == DEFAULT_NAME and name != DEFAULT_NAME:
-        # Older LINAK titles might have been explicitly chosen. Preserve the
-        # config-entry title, but improve the device's integration-supplied name.
-        # HA's device name_by_user always takes precedence over this metadata.
-        coordinator.name = name
+    elif coordinator.desk is None:
+        return
+    else:
+        desk = coordinator.desk
+        name = desk_name(address, desk.device_name, desk.device.name)
+        if entry.title == DEFAULT_NAME and name != DEFAULT_NAME:
+            # Older LINAK titles might have been explicitly chosen. Preserve the
+            # config-entry title, but improve the device's integration-supplied name.
+            # HA's device name_by_user always takes precedence over this metadata.
+            coordinator.name = name

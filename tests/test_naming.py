@@ -5,11 +5,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
-from homeassistant.const import CONF_ADDRESS
-from homeassistant.helpers import device_registry as dr
+from homeassistant.const import CONF_ADDRESS, CONF_NAME
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.client import DEVICE_NAME_UUID
+from custom_components.ha_linak.connection_intent import CONF_KEEP_CONNECTED
 from custom_components.ha_linak.const import DOMAIN
 from custom_components.ha_linak.naming import desk_name, discovery_title
 from custom_components.ha_linak.protocol import SERVICE_UUID
@@ -229,7 +230,7 @@ async def test_gap_name_is_read_once_per_session_and_not_exported(hass):
     coordinator.async_set_updated_data(state)
     entry.runtime_data = coordinator
     result = await async_get_config_entry_diagnostics(hass, entry)
-    assert "Office desk" not in json.dumps(result)
+    assert json.dumps(result).count("Office desk") == 0
     await coordinator.async_close()
 
 
@@ -275,7 +276,7 @@ async def test_denied_gap_name_is_optional_and_its_error_is_private(caplog):
     ):
         await desk.refresh()
     assert desk.connected
-    assert "Private desk address" not in caplog.text
+    assert caplog.text.count("Private desk address") == 0
     await desk.disconnect()
 
 
@@ -355,7 +356,7 @@ def test_missing_runtime_desk_does_not_change_a_saved_title(hass):
     from custom_components.ha_linak import _repair_title
 
     entry = MockConfigEntry(domain=DOMAIN, title="LINAK", data={CONF_ADDRESS: ADDRESS})
-    coordinator = SimpleNamespace(desk=None)
+    coordinator = SimpleNamespace(address=ADDRESS, desk=None)
     _repair_title(hass, entry, coordinator)
     assert entry.title == "LINAK"
 
@@ -503,4 +504,193 @@ async def test_explicit_ha_name_survives_native_name_repair_on_reload(hass):
             (DOMAIN, ADDRESS), entry.entry_id
         )
         assert device.name == "LINAK"
+        assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    "title,entry_name,expected_title",
+    [
+        (ADDRESS, None, "LINAK"),
+        ("Office desk", "Office desk", "Office desk"),
+    ],
+)
+async def test_released_entry_registers_names_without_radio_and_preserves_registry(
+    hass, title, entry_name, expected_title
+):
+    data = {CONF_ADDRESS: ADDRESS, CONF_KEEP_CONNECTED: False}
+    if entry_name is not None:
+        data[CONF_NAME] = entry_name
+    entry = MockConfigEntry(domain=DOMAIN, title=title, unique_id=ADDRESS, data=data)
+    entry.add_to_hass(hass)
+
+    devices = dr.async_get(hass)
+    device = devices.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, ADDRESS)},
+        name="Old device name",
+    )
+    devices.async_update_device(device.id, name_by_user="My workspace")
+
+    registry = er.async_get(hass)
+    old_sensor = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{ADDRESS}_offset",
+        config_entry=entry,
+        suggested_object_id="saved_offset",
+    )
+    old_sensor = registry.async_update_entity(old_sensor.entity_id, name="My offset")
+    old_number = registry.async_get_or_create(
+        "number",
+        DOMAIN,
+        f"{ADDRESS}_target_height",
+        config_entry=entry,
+        suggested_object_id="my_target",
+        disabled_by=er.RegistryEntryDisabler.USER,
+    )
+    expected_registry = (
+        old_sensor.entity_id,
+        old_sensor.unique_id,
+        old_sensor.name,
+        old_number.entity_id,
+        old_number.unique_id,
+        old_number.disabled_by,
+    )
+
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address"
+        ) as lookup,
+        patch("homeassistant.components.bluetooth.async_request_active_scan") as scan,
+        patch("custom_components.ha_linak.client.establish_connection") as connect,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert entry.title == expected_title
+        assert entry.runtime_data.name == expected_title
+        lookup.assert_not_called()
+        scan.assert_not_called()
+        connect.assert_not_called()
+
+        height_id = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_height")
+        reminder_id = registry.async_get_entity_id(
+            "number", DOMAIN, f"{ADDRESS}_reminder_1_sitting_time"
+        )
+        assert height_id == "sensor.my_workspace_height"
+        assert reminder_id == "number.my_workspace_profile_1_sitting_time"
+        assert hass.states.get(height_id).state == "unavailable"
+        assert hass.states.get(reminder_id).state == "unavailable"
+
+        old_sensor = registry.async_get(old_sensor.entity_id)
+        old_number = registry.async_get(old_number.entity_id)
+        actual_registry = (
+            old_sensor.entity_id,
+            old_sensor.unique_id,
+            old_sensor.name,
+            old_number.entity_id,
+            old_number.unique_id,
+            old_number.disabled_by,
+        )
+        assert actual_registry == expected_registry
+        assert devices.async_get(device.id).name_by_user == "My workspace"
+        assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("existing_device", [False, True], ids=["fresh", "existing"])
+async def test_released_mac_title_uses_readable_default_entity_ids(
+    hass, existing_device
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=ADDRESS,
+        unique_id=ADDRESS,
+        data={CONF_ADDRESS: ADDRESS, CONF_KEEP_CONNECTED: False},
+    )
+    entry.add_to_hass(hass)
+
+    devices = dr.async_get(hass)
+    if existing_device:
+        device = devices.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, ADDRESS)},
+            name=ADDRESS,
+        )
+        assert device.name_by_user is None
+
+    registry = er.async_get(hass)
+    old_sensor = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{ADDRESS}_offset",
+        config_entry=entry,
+        suggested_object_id="legacy_offset",
+    )
+    old_sensor = registry.async_update_entity(
+        old_sensor.entity_id, new_entity_id="sensor.saved_offset", name="My offset"
+    )
+    old_number = registry.async_get_or_create(
+        "number",
+        DOMAIN,
+        f"{ADDRESS}_target_height",
+        config_entry=entry,
+        suggested_object_id="legacy_target",
+        disabled_by=er.RegistryEntryDisabler.USER,
+    )
+    expected_registry = (
+        old_sensor.entity_id,
+        old_sensor.unique_id,
+        old_sensor.name,
+        old_number.entity_id,
+        old_number.unique_id,
+        old_number.disabled_by,
+    )
+
+    with (
+        patch(
+            "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address"
+        ) as lookup,
+        patch("homeassistant.components.bluetooth.async_request_active_scan") as scan,
+        patch("custom_components.ha_linak.client.establish_connection") as connect,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        lookup.assert_not_called()
+        scan.assert_not_called()
+        connect.assert_not_called()
+        assert (
+            registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_height")
+            == "sensor.linak_height"
+        )
+        assert (
+            registry.async_get_entity_id(
+                "number", DOMAIN, f"{ADDRESS}_reminder_1_sitting_time"
+            )
+            == "number.linak_profile_1_sitting_time"
+        )
+        assert entry.title == "LINAK"
+        assert entry.runtime_data.name == "LINAK"
+        assert hass.states.get("sensor.linak_height").state == "unavailable"
+        assert (
+            hass.states.get("number.linak_profile_1_sitting_time").state
+            == "unavailable"
+        )
+
+        old_sensor = registry.async_get(old_sensor.entity_id)
+        old_number = registry.async_get(old_number.entity_id)
+        actual_registry = (
+            old_sensor.entity_id,
+            old_sensor.unique_id,
+            old_sensor.name,
+            old_number.entity_id,
+            old_number.unique_id,
+            old_number.disabled_by,
+        )
+        assert actual_registry == expected_registry
+        device = devices.async_get_device_by_identifier(
+            (DOMAIN, ADDRESS), entry.entry_id
+        )
+        assert device.name == "LINAK"
+        assert device.name_by_user is None
         assert await hass.config_entries.async_unload(entry.entry_id)

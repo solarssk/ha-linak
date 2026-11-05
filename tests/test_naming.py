@@ -7,7 +7,7 @@ import pytest
 from bleak.backends.device import BLEDevice
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers import device_registry as dr
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.client import DEVICE_NAME_UUID
 from custom_components.ha_linak.const import DOMAIN

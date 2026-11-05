@@ -166,7 +166,7 @@ async def test_ha_uses_reported_model_and_redacted_profile_diagnostics(hass):
     )
     from custom_components.ha_linak.sensor import LinakSensor
     from test_native_controls import OPTIONS
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
     from homeassistant.helpers import device_registry as dr
 
     fake = IdentityBleak()
@@ -226,7 +226,7 @@ async def test_ha_uses_reported_model_and_redacted_profile_diagnostics(hass):
 
 async def test_identity_registry_update_leaves_other_devices_and_owner_name_alone(hass):
     from homeassistant.helpers import device_registry as dr
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
     from custom_components.ha_linak.coordinator import LinakCoordinator
 
     entry = MockConfigEntry(domain="ha_linak", data={"address": DEVICE.address})

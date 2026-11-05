@@ -6,7 +6,7 @@ from unittest.mock import patch
 import probatio as vol
 import pytest
 from homeassistant.helpers import config_validation as cv
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.config_flow import (
     _range_schema,

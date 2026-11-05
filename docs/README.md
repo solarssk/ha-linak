@@ -8,7 +8,7 @@ Use these pages to install and operate the integration:
 
 | Guide | Language | Purpose |
 | --- | --- | --- |
-| [HACS product guide](../README.md) / [Polish guide](../README.pl.md) | English / Polish | Supported devices, entities, installation and settings |
+| [Marketplace product guide](../README.md) / [Polish guide](../README.pl.md) | English / Polish | Supported devices, entities, installation and settings |
 | [GitHub product guide](../.github/README.md) / [Polish guide](../.github/README.pl.md) | English / Polish | Product overview and complete entity tables |
 | [Control guide](controls.md) | English | Configuration, height calibration and a first supervised control test |
 | [Troubleshooting](diagnostics.md) | English | Follow an error and collect a report |
@@ -21,7 +21,7 @@ Use the references below to test another model, investigate communication or cha
 
 | Your goal | Start with | Expected result |
 | --- | --- | --- |
-| Install through HACS | [English user guide](../.github/README.md) or [Polish user guide](../.github/README.pl.md) | Install and discover the integration |
+| Install through Marketplace | [English user guide](../.github/README.md) or [Polish user guide](../.github/README.pl.md) | Install and discover the integration |
 | Test another panel or product family | [Device support and tester guide](device-support.md) | Understand matching, compatibility limits and evidence to report |
 | Configure height and controls | [Control guide](controls.md) | Correct the height reference, set bounds and test a native control |
 | Investigate a connection or movement failure | [Diagnostic manual](diagnostics.md) | Identify the failed layer and collect the evidence needed for the next test |
@@ -93,7 +93,7 @@ These references cover repository and presentation work rather than desk operati
 | [Roadmap](roadmap.md) | Assessed findings, delivery order, release gates and the path to HA Core |
 | [Governance](governance.md) | CI gates, dependencies, repository policy and release boundaries |
 | [Branding](branding.md) | Asset provenance, naming and artwork use |
-| [HACS presentation](hacs-presentation.md) | Separate GitHub/HACS renderers, supported Markdown and rendering checks |
+| [Marketplace and GitHub presentation](hacs-presentation.md) | Separate README/brand surfaces, local routes, catalog limits and rendering checks |
 | [Contributing](../CONTRIBUTING.md) | Report a bug, suggest an improvement or find development setup and contribution checks |
 | [Agent instructions](../AGENTS.md) | Repository workflow for coding agents |
 

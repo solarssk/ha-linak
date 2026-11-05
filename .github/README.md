@@ -18,8 +18,8 @@
 </p>
 
 <p align="center">
-  <a href="../hacs.json"><img src="https://img.shields.io/badge/Home%20Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Home Assistant 2026.10.4 or newer"></a>
-  <a href="https://www.hacs.xyz/docs/faq/custom_repositories/"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&amp;logoColor=white" alt="HACS custom repository"></a>
+  <a href="../hacs.json"><img src="https://img.shields.io/badge/Home%20Assistant-2026.11.0%2B-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Home Assistant 2026.11.0 or newer"></a>
+  <a href="https://www.home-assistant.io/blog/2026/11/04/release-202611/#custom-repositories"><img src="https://img.shields.io/badge/Marketplace-Custom-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Marketplace custom repository"></a>
 </p>
 
 <p align="center">
@@ -168,8 +168,8 @@ Enable optional entities under **Settings → Devices & services → Entities**,
 
 ## 📋 Requirements
 
-- **Home Assistant 2026.10.4+**.
-- **HACS** for installation, or a manual copy of the integration.
+- **Home Assistant 2026.11.0+**.
+- The built-in **Marketplace** for installation, or a manual copy of the integration.
 - A Bluetooth adapter within reach, or a compatible **active ESPHome Bluetooth proxy**.
 - A free Bluetooth connection on the panel.
 
@@ -177,16 +177,20 @@ Enable optional entities under **Settings → Devices & services → Entities**,
 
 ## 📦 Installation
 
-### With HACS
+### With Marketplace
 
-1. Open HACS → **Custom repositories**.
-2. Add `https://github.com/solarssk/ha-linak` and choose **Integration**.
-3. Download **LINAK** and restart Home Assistant.
+1. Open **Settings → Marketplace → Add from link** and connect your GitHub account when prompted.
+2. Enter `https://github.com/solarssk/ha-linak`.
+3. Install **LINAK**. A first installation with this config flow loads without a restart; updating an already loaded integration still requires one.
+
+HA 2026.11 migrates existing HACS repositories/installations into Marketplace. This project is available through a custom link, not a claimed default-catalog listing. Installed views use bundled brand images; a pre-installation catalog icon is not guaranteed. See [the branding contract](../docs/hacs-presentation.md#name-and-catalog-icon).
 
 <details>
 <summary>Prefer manual installation?</summary>
 
 Copy [`custom_components/ha_linak`](../custom_components/ha_linak) into the `custom_components` folder in your Home Assistant configuration, then restart HA.
+
+HA below 2026.11.0 is unsupported here too. The minimum in `hacs.json` is checked for repositories with releases, not enforced as a runtime guard for every manual/default-branch install.
 
 </details>
 

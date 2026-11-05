@@ -18,8 +18,8 @@
 </p>
 
 <p align="center">
-  <a href="../hacs.json"><img src="https://img.shields.io/badge/Home%20Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Home Assistant 2026.10.4 lub nowszy"></a>
-  <a href="https://www.hacs.xyz/docs/faq/custom_repositories/"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&amp;logoColor=white" alt="Własne repozytorium HACS"></a>
+  <a href="../hacs.json"><img src="https://img.shields.io/badge/Home%20Assistant-2026.11.0%2B-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Home Assistant 2026.11.0 lub nowszy"></a>
+  <a href="https://www.home-assistant.io/blog/2026/11/04/release-202611/#custom-repositories"><img src="https://img.shields.io/badge/Marketplace-Custom-41BDF5?logo=homeassistant&amp;logoColor=white" alt="Własne repozytorium Marketplace"></a>
 </p>
 
 <p align="center">
@@ -168,8 +168,8 @@ Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**
 
 ## 📋 Wymagania
 
-- **Home Assistant 2026.10.4+**.
-- **HACS** do instalacji lub ręczne skopiowanie integracji.
+- **Home Assistant 2026.11.0+**.
+- Wbudowany **Marketplace** do instalacji lub ręczne skopiowanie integracji.
 - Adapter Bluetooth w zasięgu biurka lub zgodne **aktywne proxy Bluetooth ESPHome**.
 - Wolne połączenie Bluetooth na panelu.
 
@@ -177,16 +177,20 @@ Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**
 
 ## 📦 Instalacja
 
-### Przez HACS
+### Przez Marketplace
 
-1. Otwórz HACS → **Własne repozytoria / Custom repositories**.
-2. Dodaj `https://github.com/solarssk/ha-linak` i wybierz **Integracja / Integration**.
-3. Pobierz **LINAK** i uruchom ponownie Home Assistant.
+1. Otwórz **Ustawienia → Marketplace → Dodaj z linku / Add from link** i połącz konto GitHub po wyświetleniu prośby.
+2. Wpisz `https://github.com/solarssk/ha-linak`.
+3. Zainstaluj **LINAK**. Pierwsza instalacja z konfiguracją przez interfejs ładuje się bez restartu; aktualizacja już załadowanej integracji nadal go wymaga.
+
+HA 2026.11 migruje dotychczasowe repozytoria i instalacje HACS do Marketplace. Ten projekt dodaje się z linku, bez deklaracji obecności w domyślnym katalogu. Po instalacji widoki używają dołączonych grafik; ikona w katalogu przed instalacją nie jest gwarantowana. Zobacz [kontrakt brandingu](../docs/hacs-presentation.md#name-and-catalog-icon).
 
 <details>
 <summary>Wolisz instalację ręczną?</summary>
 
 Skopiuj [`custom_components/ha_linak`](../custom_components/ha_linak) do folderu `custom_components` w konfiguracji Home Assistanta i uruchom ponownie HA.
+
+HA poniżej 2026.11.0 również tu nie jest wspierany. Minimum w `hacs.json` jest sprawdzane dla repozytoriów z wydaniami, a nie jako blokada podczas działania każdej instalacji ręcznej lub z domyślnej gałęzi.
 
 </details>
 

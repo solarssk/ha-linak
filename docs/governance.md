@@ -12,7 +12,7 @@ Codecov and Sonar receive the successful test job’s coverage/JUnit artifacts t
 
 ## Known boundaries
 
-HACS and hassfest wrappers are SHA-pinned, but their upstream container references are mutable. Hash locks cover Python distribution archives; the source-only mock-open and Linux pyric packages are explicit exceptions to wheels-only installation. Their archive hashes are checked, their build backend is installed from a separate hashed lock, and build isolation/downloads are disabled. All other package installation requires wheels. These controls improve artifact integrity and reproducibility without claiming hermetic builds.
+HACS and hassfest wrappers are SHA-pinned, but their upstream container references are mutable. Hash locks cover Python distribution archives; Linux pyric is the only explicit exception to wheels-only installation. Its archive hash is checked, its build backend is installed from a separate hashed lock, and build isolation/downloads are disabled. The retired plugin's mock-open exception is removed. All other package installation requires wheels. These controls improve artifact integrity and reproducibility without claiming hermetic builds.
 
 CodeQL, Scorecard and external GitHub App checks are advisory until deliberately made required. HACS validation is not a hardware test. No PR is merged automatically. Old Dependabot branches must be updated only after the CI foundation PR is merged, so they are checked with the new policy.
 
@@ -22,7 +22,9 @@ CodeRabbit automatic and incremental reviews are disabled by .coderabbit.yaml af
 
 To verify source/live protection consistency, the maintainer runs `python scripts/check_github_settings.py` using their existing administrative gh login. PR CI never receives an admin token.
 
-The minimum/tested HA version is 2026.10.4 because HA 2026.10.2 pinned vulnerable uv 0.12.23. The independent lock resolver and the HA-owned uv copy now both use 0.13.5, above the advisory’s first patched version 0.13.4 (GHSA-hq85-5cpj-mr62). Do not override an HA-owned pin independently; upgrade its compatible test plugin and regenerate all locks together.
+The minimum and simulated-test target is HA 2026.11.0, matching the built-in Marketplace and local integration/Marketplace brand routes. The official `pytest-homeassistant[bluetooth]==2026.11.0` owns HA, pytest and pytest-asyncio, replacing the retired custom-component plugin. The independent lock resolver and the HA-owned uv copy both use 0.13.6, above the advisory's first patched version 0.13.4 (GHSA-hq85-5cpj-mr62). Do not override an HA-owned pin independently; upgrade its compatible test plugin and regenerate all locks together. `hacs.json` declares the minimum for releases, not a universal runtime rejection of older manual/default-branch installs.
+
+Coverage reporting is no longer a transitive dependency of the official test plugin. `requirements-tools.txt` owns `pytest-cov` explicitly so the existing CI coverage/JUnit command and advisory uploads remain intact. The plugin still controls pytest itself; this reporting tool does not add a competing version pin.
 
 ## Tier 2 assessment
 
@@ -56,5 +58,7 @@ Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem l
 ## Startup and version compatibility gates
 
 The existing required `Tests` job includes the supported-version full-process cold-boot/restart smoke. No required check name or live protection setting changes. `HA preview smoke` runs the separately pinned preview as an advisory compatibility signal. These complement the hash-locked in-process HA/pytest suite rather than replacing it. Both use official images pinned by digest and isolated temporary configurations; see [local reproduction and boundaries](../CONTRIBUTING.md#isolated-ha-startup-smoke).
+
+Both targets currently pin stable 2026.11.0 at the official GHCR index digest `sha256:c6c1ca9931036bf3a2c4cc088d8db25dfea3b33935a5ecc83c40349462e2f69e`. There is no newer preview at this update; the advisory job deliberately repeats stable rather than presenting the older 2026.11 beta as forward validation. Upgrade that target when a newer preview is available. The required supported smoke remains unchanged in strength.
 
 A successful no-radio startup confirms loading, expected setup retry, real core startup, platform imports and shutdown. It does not confirm a connected desk, UI rendering, firmware permissions or physical Stop. An image version mismatch, dependency/setup failure, recovery mode, import exception or unexpected ERROR log fails the smoke. A preview failure is visible with saved logs but does not block a supported-version fix or claim preview support.

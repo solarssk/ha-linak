@@ -368,7 +368,7 @@ async def test_position_change_after_confirmation_preview_rejects_write(hass):
 async def test_options_calibration_refreshes_reference_without_storing_write_input(
     hass,
 ):
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
     from homeassistant.const import CONF_ADDRESS
     from custom_components.ha_linak.const import DOMAIN
 
@@ -503,7 +503,7 @@ async def test_display_rounding_does_not_require_a_pointless_write(hass):
 
 
 async def setup_calibration_entry(hass, fake):
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
     from homeassistant.const import CONF_ADDRESS
     from custom_components.ha_linak.const import DOMAIN
 

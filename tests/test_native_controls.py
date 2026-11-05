@@ -10,7 +10,7 @@ from bleak.backends.device import BLEDevice
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.client import DeskClient
 from custom_components.ha_linak.const import DOMAIN
@@ -542,7 +542,7 @@ async def test_slider_follows_only_settled_physical_height(hass):
     fake.callbacks[HEIGHT_UUID](None, bytearray(struct.pack("<HH", 1600, 0)))
     await hass.async_block_till_done()
     assert hass.states.get(target_id).state == "82"
-    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from pytest_homeassistant.common import async_fire_time_changed
     from homeassistant.util import dt as dt_util
     from datetime import timedelta
 
@@ -955,7 +955,7 @@ async def test_position_notification_and_read_do_not_publish_identical_samples()
 async def test_slider_history_omits_intermediate_heights_and_keeps_live_sensor(hass):
     from datetime import timedelta
     from homeassistant.util import dt as dt_util
-    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from pytest_homeassistant.common import async_fire_time_changed
 
     entry, fake = await setup_entry(hass, OPTIONS)
     target_id = hass.states.async_all("number")[0].entity_id
@@ -977,7 +977,7 @@ async def test_slider_history_omits_intermediate_heights_and_keeps_live_sensor(h
 async def test_slider_cancels_pending_settlement_when_state_changes(hass, interrupt):
     from datetime import timedelta
     from homeassistant.util import dt as dt_util
-    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from pytest_homeassistant.common import async_fire_time_changed
 
     entry, fake = await setup_entry(hass, OPTIONS)
     target_id = hass.states.async_all("number")[0].entity_id

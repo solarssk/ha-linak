@@ -19,7 +19,7 @@ from homeassistant.exceptions import (
     ServiceValidationError,
     Unauthorized,
 )
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.client import DeskClient, DeskLinkLost
 from custom_components.ha_linak.const import DOMAIN

@@ -4,7 +4,7 @@ import struct
 from datetime import timedelta
 
 from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from pytest_homeassistant.common import async_fire_time_changed
 
 from test_native_controls import OPTIONS, setup_entry
 

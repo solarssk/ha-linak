@@ -185,7 +185,7 @@ async def test_real_ha_startup_creates_unavailable_settings_and_live_height(
 ):
     from homeassistant.const import CONF_ADDRESS
     from homeassistant.exceptions import HomeAssistantError
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
     from custom_components.ha_linak.const import DOMAIN
     from test_integration import DEVICE, ADDRESS
     from test_native_controls import OPTIONS

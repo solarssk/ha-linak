@@ -8,7 +8,7 @@ import pytest
 from bleak.backends import BleakBackend
 from homeassistant.const import CONF_ADDRESS, EntityCategory
 from homeassistant.helpers import entity_registry as er, device_registry as dr
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.const import DOMAIN
 from custom_components.ha_linak.coordinator import LinakCoordinator
@@ -253,7 +253,7 @@ async def test_no_session_has_no_backend_and_connection_is_off(hass):
 async def test_rssi_expires_during_repeated_connection_failures_and_timer_unloads(hass):
     from datetime import timedelta
     from homeassistant.util import dt as dt_util
-    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from pytest_homeassistant.common import async_fire_time_changed
     from homeassistant.helpers.update_coordinator import UpdateFailed
 
     entry = MockConfigEntry(

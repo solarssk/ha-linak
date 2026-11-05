@@ -12,7 +12,7 @@ from homeassistant.const import CONF_ADDRESS, EVENT_STATE_CHANGED
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.client import DeskClient, DeskLinkLost
 from custom_components.ha_linak.const import DOMAIN

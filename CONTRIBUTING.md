@@ -35,6 +35,14 @@ The form also asks for a few details:
 
 Write “not sure” if you can't find a detail. You can add it later if the maintainer needs it.
 
+Prefer help writing? The optional [AI-assisted report instructions](docs/diagnostics.md#prepare-a-report-with-ai) turn your observations into a draft for review. Reporting does not require AI or log attachments.
+
+### Pomoc w zgłoszeniu po polsku
+
+Możesz skorzystać z [instrukcji przygotowania zgłoszenia z AI](docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai), a potem sprawdzić szkic i wkleić go do [polskiego formularza](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml). To opcja, nie wymóg. Brak logów nie blokuje zgłoszenia. Usuń prywatne dane przed przekazaniem ich modelowi.
+
+### Before sharing
+
 🔒 **Before sharing:** hide device names, Bluetooth addresses, room/location details and credentials in screenshots and logs. Report a suspected security vulnerability through [private vulnerability reporting](https://github.com/solarssk/ha-linak/security/advisories/new), not a public issue.
 
 ⚠️ **Keep the desk safe:** don't repeat an unexpected movement just to record it. Describe what you already observed.

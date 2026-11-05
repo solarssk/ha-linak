@@ -8,6 +8,8 @@ body:
         Skorzystaj z [instrukcji diagnostycznej](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#zgłoszenie-i-logi-po-polsku). Nie powtarzaj niebezpiecznego ruchu dla zebrania dowodów. Podatności zgłaszaj [prywatnie](https://github.com/solarssk/ha-linak/security/advisories/new).
 
         Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i tokeny z załączników. Jeśli czegoś nie wiesz, wpisz „nie wiem”.
+
+        Potrzebujesz pomocy w opisaniu problemu? Skorzystaj z opcjonalnej [instrukcji przygotowania zgłoszenia z AI](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai), sprawdź szkic i skopiuj go do formularza. Zgłoszenie nie wymaga logów ani konta w usłudze AI.
   - type: input
     id: versions
     attributes:

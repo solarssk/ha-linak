@@ -8,6 +8,8 @@ body:
         Follow the [diagnostic guide](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#prepare-a-bug-report). Do not repeat unsafe movement to collect evidence. Report vulnerabilities [privately](https://github.com/solarssk/ha-linak/security/advisories/new).
 
         Remove names, Bluetooth/IP addresses, locations, identifiers and tokens from attachments. Write “unknown” for missing details.
+
+        Prefer help writing? Use the optional [AI-assisted report instructions](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#prepare-a-report-with-ai), then review and copy the draft into this form. No logs or AI account are required to report a bug.
   - type: input
     id: versions
     attributes:

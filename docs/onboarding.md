@@ -80,7 +80,7 @@ The discovery card uses a desk name and short address suffix, such as `Office de
 
 On Linux, a two-second cached BlueZ metadata lookup can improve a fallback name without connecting or scanning. After authentication, an optional readable GAP Device Name characteristic can supply a name. Missing, denied or malformed names retain the fallback; transport failures still invalidate the attempt.
 
-The name entered in the wizard belongs to HA, not the Bluetooth panel. Explicit HA names take priority on reload. Older address-only titles can be repaired; an existing title exactly `LINAK` is not automatically assumed to be integration-owned. Device-registry user names remain intact.
+The name entered in the wizard belongs to HA, not the Bluetooth panel. Explicit HA names take priority on reload. Older address-only titles can be repaired; if the owner has released the connection, the fallback is `LINAK` and no Bluetooth lookup is made. An existing title exactly `LINAK` is not automatically assumed to be integration-owned. Device- and entity-registry IDs, manual names and enablement choices remain intact.
 
 ## Connection and authentication
 

@@ -15,6 +15,10 @@ Open **Settings → Devices & services → LINAK → Configure**. Choose the tas
 
 Setup guides you through the same information. To only watch the desk, choose **Monitoring only** on the name step. Nothing is written to the panel and no range is requested. Add the range in Configure when you want controls.
 
+Saved positions are shown from the first setup form and alongside the travel range. They are informational, not physical limits or confirmed tape measurements. Missing measured bounds stay blank, never inferred from favorites. Enter both measured ends before requesting a target or saved-position move. See [saved-position display states](onboarding.md#saved-positions-and-missing-bounds) for empty, unavailable and unsupported slots.
+
+🇵🇱 Pozycje pamięci są widoczne od pierwszego formularza oraz obok zakresu ruchu. To informacja, nie fizyczne limity ani potwierdzone pomiary. Puste pola wymagają wpisania obu zmierzonych granic. Ulubione pozycje nie wypełniają zakresu i nie odblokowują ruchu.
+
 Keep the desk stationary from its current-height measurement through correction confirmation. Physical panel movement while measuring the travel range happens before the final current-height check.
 
 ## Correct a wrong height reading

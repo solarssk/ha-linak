@@ -19,7 +19,7 @@
       },
       "finish": {
         "title": "2. Set the travel range",
-        "description": "Enter the lowest and highest desktop heights measured from the floor. If needed, use the physical panel to check both ends, then leave the desk still. These bounds limit commands from HA. Keep the measurement precision; do not round bounds outward.",
+        "description": "Enter the lowest and highest desktop heights measured from the floor. Blank fields mean no range has been configured, not 0 cm. These are HA command bounds, not firmware limits. Keep the measurement precision; do not round bounds outward. If needed, use the physical panel to check both ends, then leave the desk still.\n\nLast-read saved positions using the panel height reference:\n\n| Slot | Height |\n| --- | --- |\n| 1 | {memory_1} |\n| 2 | {memory_2} |\n| 3 | {memory_3} |\n| 4 | {memory_4} |\n\n`-` = empty, `?` = unavailable, `n/a` = unsupported slot. Saved positions are not travel limits. They never fill these fields or enable movement.",
         "data": {
           "minimum_height": "Lowest desktop height",
           "maximum_height": "Highest desktop height"
@@ -38,7 +38,7 @@
       },
       "name": {
         "title": "1. Name and connect your desk",
-        "description": "Choose the name shown in Home Assistant. Continuing prepares the panel for HA control and may save a connection setting in its memory. The desk will not move. No phone app is needed. To only watch the desk, turn on monitoring only: nothing is written to the panel and no height range is asked for.",
+        "description": "Current reading: {height} cm. Last-read saved positions using the panel height reference:\n\n| Slot | Height |\n| --- | --- |\n| 1 | {memory_1} |\n| 2 | {memory_2} |\n| 3 | {memory_3} |\n| 4 | {memory_4} |\n\n`-` = empty, `?` = unavailable, `n/a` = unsupported slot. These are saved positions, not travel limits or verified tape measurements. They never configure bounds or enable movement.\n\nChoose the name shown in Home Assistant. Continuing prepares the panel for HA control and may save a connection setting in its memory. The desk will not move. No phone app is needed. To only watch the desk, turn on monitoring only: nothing is written to the panel and no height range is asked for.",
         "data": {
           "name": "Name in Home Assistant",
           "monitoring_only": "Monitoring only"
@@ -318,7 +318,7 @@
       },
       "range": {
         "title": "Travel range",
-        "description": "Enter the lowest and highest desktop heights measured from the floor. If needed, use the physical panel to check both ends, then leave the desk still. These bounds limit commands from HA. Keep the measurement precision; do not round bounds outward.",
+        "description": "Enter the lowest and highest desktop heights measured from the floor. Blank fields mean no range has been configured, not 0 cm. These are HA command bounds, not firmware limits. Keep the measurement precision; do not round bounds outward. If needed, use the physical panel to check both ends, then leave the desk still.\n\nLast-read saved positions using the panel height reference:\n\n| Slot | Height |\n| --- | --- |\n| 1 | {memory_1} |\n| 2 | {memory_2} |\n| 3 | {memory_3} |\n| 4 | {memory_4} |\n\n`-` = empty, `?` = unavailable, `n/a` = unsupported slot. Saved positions are not travel limits. They never fill these fields or enable movement.",
         "data": {
           "minimum_height": "Lowest desktop height",
           "maximum_height": "Highest desktop height"

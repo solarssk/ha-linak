@@ -268,11 +268,17 @@ async def test_wizard_and_calibration_finish_with_silent_empty_slots(hass):
     ):
         result = await initial_form(hass, fake, guide=False)
         assert result["step_id"] == "name"
+        assert result["description_placeholders"]["height"] == "82"
+        assert all(
+            result["description_placeholders"][f"memory_{index}"] == "?"
+            for index in range(1, 5)
+        )
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"name": "Office"}
         )
         result = await complete_progress(hass, result)
         assert result["step_id"] == "finish"
+        assert result["description_placeholders"]["memory_1"] == "?"
         # Preparation performs the existing explicit activation, never motion.
         assert len(writes(fake)) <= 1
         assert all(uuid == DPG_UUID for uuid, _ in fake.writes)

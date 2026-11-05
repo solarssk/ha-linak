@@ -28,6 +28,16 @@ def validate(protection: dict, expected: set[str]) -> None:
     for name in ("allow_force_pushes", "allow_deletions"):
         if protection[name]["enabled"]:
             raise ValueError(f"Unsafe branch protection: {name}")
+    reviews = protection.get("required_pull_request_reviews")
+    if reviews is None:
+        raise ValueError("Classic protection must require pull requests")
+    if (
+        reviews["required_approving_review_count"] != 0
+        or not reviews["dismiss_stale_reviews"]
+        or reviews["require_code_owner_reviews"]
+        or reviews["require_last_push_approval"]
+    ):
+        raise ValueError("Classic pull request policy differs from repository policy")
 
 
 def validate_ruleset(

@@ -45,13 +45,17 @@ The edit changes only profile 1 sitting duration. Standing time and all other pr
 
 To explicitly set the manufacturer's standard sitting-reminder value, press **Profile 1: use standard 55 minutes**. This uses the same protected setter. It is not a factory reset, does not restore all reminder pairs or a saved backup, and never runs on reconnect or failure. Use the separate Off selection to disable reminders, not zero minutes. Only 50/55 in inactive profile 1 have hardware evidence; other values are synthetic-test coverage. See the [complete interval contract](settings-reference.md#edit-profile-1-sitting-time).
 
-## Choose the stored panel unit preference
+## Choose panel units
 
-On the LINAK device page, open Configuration and choose **Metric (CM/MM unspecified)** or **Inch** in **Stored panel unit preference**. Wait for a stationary desk and valid reminder readings. Travel bounds are not required. An unchanged selection performs no setting write. A changed selection requires an already active client; inactive/busy/conflicting requests are refused without activation or queuing. Explicit control preparation in Configure is separate.
+Choose your preferred units for the panel without changing units, height calibration or the height range in Home Assistant. You don't need to configure a height range for this setting.
 
-This is the stored inch flag, not a live OLED-unit detector. Physical CM and MM share the same known BLE state, so this control cannot select or distinguish the metric sub-unit. Successful readback does not promise immediate stationary display refresh. No wake, movement or forced reconnect is sent, and you must not move the desk just to refresh its display. HA's native centimeter heights, measured bounds, calibration and its own presentation-unit conversion are unchanged and are not synchronized to the panel.
+1. Leave the desk stationary and wait for Home Assistant to connect.
+2. On the LINAK device page, open **Configuration → Preferred panel units**.
+3. Choose **Metric** or **Inch**. Metric doesn't let you choose between centimeters and millimeters.
 
-If verification fails, the preference may already have changed. Wait for normal read recovery, then check the stored setting and physical display separately before trying again. There is no automatic retry or restoration. See the [stored-preference contract](settings-reference.md#stored-panel-unit-preference).
+The selection shows the saved preference, not necessarily what the panel displays right now. The panel may still display the previous unit after saving. This action doesn't move the desk; don't move it just to refresh its display.
+
+If Home Assistant says the desk isn't ready, open **Configure** and prepare it for control before trying again. If the desk is busy, wait for the current action to finish. If saving can't be confirmed, wait for the connection to return and check the setting before another attempt.
 
 ## Set measured command bounds
 

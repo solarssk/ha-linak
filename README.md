@@ -62,14 +62,16 @@ The slider uses 1 cm steps within your measured range. It updates after a move f
 ### Configuration
 
 - 🔔 **Reminder profile** (`select`): choose Off or Profile 1/2/3, preserving the intervals
-- 📏 **Stored panel unit preference** (`select`): Metric (CM/MM unspecified) or Inch, separate from HA units
+- 📏 **Preferred panel units** (`select`): choose Metric or Inch for the panel, independently of Home Assistant
 - ⏱️ **Profile 1 sitting time** (`number`): type 1–60 whole minutes for an inactive profile
 - ↩️ **Profile 1: use standard 55 minutes** (`button`): change only that duration, not a factory reset
 - 🔌 **Keep connected** (`switch`): release the Bluetooth connection on purpose, then reconnect when needed
 
 **Keep connected** is disabled by default. Enable it in the entity settings to show the switch. Turning the switch off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk first.
 
-**Stored panel unit preference** changes only the stored inch flag, preserving the profile, other flags and all durations. A stationary desk, valid reminder readings and an already active client are required, not a travel range. Physical CM and MM share the same known BLE state; this is not a CM/MM selector or proof of the unit currently rendered on the OLED. Immediate stationary redraw is unconfirmed. It never wakes, activates or moves the desk, forces a reconnect or retries/restores an uncertain write. HA's native centimeter heights, bounds, calibration and its own presentation-unit conversion remain unchanged and independent. After a verification error, check the stored preference and physical display separately after normal read recovery. [Unit contract](docs/settings-reference.md#stored-panel-unit-preference).
+Choose **Metric** or **Inch** in **Preferred panel units**. This doesn't change units in Home Assistant. The Metric option doesn't let you choose between centimeters and millimeters.
+
+The panel may still display the previous unit after saving. Don't move the desk just to refresh its display. [How to change panel units](docs/controls.md#choose-panel-units).
 
 ### Diagnostics
 

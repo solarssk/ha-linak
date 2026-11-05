@@ -132,11 +132,16 @@ Suwak wybiera wysokość co 1 cm, wewnątrz zmierzonego zakresu. Aktualizuje si�
 | Typ encji | Nazwa w HA | Domyślnie | Działanie |
 | --- | --- | --- | --- |
 | `select` | 🔔 **Profil przypomnień** | Włączona | Wybierz Wyłączone lub Profil 1/2/3, bez zmiany czasów i ruchu biurka |
+| `select` | 📏 **Preferowane jednostki panelu** | Włączona | Wybierz Metryczne lub Cale dla panelu, niezależnie od Home Assistanta |
 | `number` | ⏱️ **Profil 1: czas siedzenia** | Włączona | Wpisz 1–60 pełnych minut dla nieaktywnego profilu 1, zachowując pozostałe pola |
 | `button` | ↩️ **Profil 1: ustaw standardowe 55 minut** | Włączona | Ustaw tylko ten czas, bez resetu fabrycznego |
 | `switch` | 🔌 **Utrzymuj połączenie** | Encja wyłączona | Wyłącz przełącznik, aby zwolnić połączenie Bluetooth, lub włącz, aby połączyć się ponownie |
 
 Włącz encję **Utrzymuj połączenie** w jej ustawieniach, aby pokazać przełącznik. Gdy przełącznik jest wyłączony, integracja wstrzymuje odczyty i ponowne łączenie, również po restarcie. Wyłączenie podczas jazdy najpierw zatrzymuje biurko.
+
+W **Preferowane jednostki panelu** wybierz **Metryczne** lub **Cale**. Nie zmienia to jednostek w Home Assistant. Opcja Metryczne nie pozwala wybrać między centymetrami a milimetrami.
+
+Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](../docs/controls.md#choose-panel-units).
 
 Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Zmienisz tam nazwę w HA, zakres ruchu i kalibrację wysokości. W **Wysokość z miarki** wpisz aktualny pomiar od podłogi do góry blatu, a następnie sprawdź i potwierdź korektę. Zapis nie porusza biurkiem. [Instrukcja konfiguracji](../docs/controls.md).
 

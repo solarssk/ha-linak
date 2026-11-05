@@ -44,7 +44,7 @@ A read request is `7f <command> 00`. The DPG notification carries a response hea
 
 The capability flags expose a slot count in bits 0–2 and automatic-up, automatic-down, Bluetooth, display and light flags in successive bits. The implementation rejects unsupported slot counts above four. Capability flags are not setting values or proof that motion works on the current client.
 
-Reminder durations are configuration values in minutes under the current interpretation, not elapsed sitting/standing counters. Unknown flags and counters remain raw. Do not label them as occupancy, lifetime cycles, uptime or calories.
+Reminder durations are configuration values in minutes under the current interpretation, not elapsed sitting/standing counters. Flags bits `0x03` select the reminder profile; `0x04` stores the inch preference. Clear `0x04` is shared by physical CM and MM, not a unique centimeter state or a full display-unit enum. Unknown flags and counters remain raw. Do not label them as occupancy, lifetime cycles, uptime or calories.
 
 ## Correlate replies and reject ambiguity
 
@@ -125,13 +125,14 @@ A refresh that fails never replaces the previously published snapshot. A refresh
 
 ## Protected setting exchanges
 
-Client activation, height-reference correction, reminder profile selection and profile 1 sitting-duration editing have implemented protected setters. There is no generic arbitrary-write service.
+Client activation, height-reference correction, reminder profile selection, profile 1 sitting-duration editing and the stored panel inch/metric preference have implemented protected setters. There is no generic arbitrary-write service.
 
 | Operation | Allowlisted request | Preconditions | Required verification |
 | --- | --- | --- | --- |
 | Existing client activation | `7f 86 80 01 <same 16 identifier bytes>` | Valid `01 11` frame, recognized status, usable identifier; skip status `1` | Application acknowledgement, then status `1` and unchanged identifier |
 | Reminder profile | `7f 88 80 <flags> <sit1> <stand1> <sit2> <stand2> <sit3> <stand3>` | Existing ready DPG session, valid group, fresh reminders, stationary position and status 1; skip unchanged profile | Exact `01 00`, capabilities barrier, independent `88` readback matching masked flags and all six intervals; counter ignored |
 | Profile 1 sitting duration | Same `88` envelope; replace only `<sit1>` from fresh settings | Same shared transaction; integer minutes 1–60 by integration policy; changed field requires profile 1 inactive; skip unchanged value | Exact `01 00`, capabilities barrier and independent full-body readback; preserve flags and the other five durations, ignore counter changes |
+| Stored inch/metric preference | Same ten-byte `88` envelope; set/clear only flags `0x04` | Same shared transaction; fresh stationary baseline and existing client status 1 for a change; skip unchanged preference | Exact `01 00`, capabilities barrier and independent strict thirteen-byte `88` readback; preserve seven other flag bits and all six durations, omit/ignore counter |
 | Height-reference correction | `7f 81 80 01 <offset-low> <offset-high>` | Confirmed stationary calibration proposal and valid unsigned reference | Application acknowledgement, then capabilities, reference and position reads with matching reference and position |
 
 The observed exchanges treat status `0` as inactive and `1` as active. Their complete relationship to app Owner/Guest behavior and persistence is not established.

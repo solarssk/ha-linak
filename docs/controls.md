@@ -45,6 +45,18 @@ The edit changes only profile 1 sitting duration. Standing time and all other pr
 
 To explicitly set the manufacturer's standard sitting-reminder value, press **Profile 1: use standard 55 minutes**. This uses the same protected setter. It is not a factory reset, does not restore all reminder pairs or a saved backup, and never runs on reconnect or failure. Use the separate Off selection to disable reminders, not zero minutes. Only 50/55 in inactive profile 1 have hardware evidence; other values are synthetic-test coverage. See the [complete interval contract](settings-reference.md#edit-profile-1-sitting-time).
 
+## Choose panel units
+
+Choose your preferred units for the panel without changing units, height calibration or the height range in Home Assistant. You don't need to configure a height range for this setting.
+
+1. Leave the desk stationary and wait for Home Assistant to connect.
+2. On the LINAK device page, open **Configuration → Preferred panel units**.
+3. Choose **Metric** or **Inch**. Metric doesn't let you choose between centimeters and millimeters.
+
+The selection shows the saved preference, not necessarily what the panel displays right now. The panel may still display the previous unit after saving. This action doesn't move the desk; don't move it just to refresh its display.
+
+If Home Assistant says the desk isn't ready, open **Configure** and prepare it for control before trying again. If the desk is busy, wait for the current action to finish. If saving can't be confirmed, wait for the connection to return and check the setting before another attempt.
+
 ## Set measured command bounds
 
 Enter the actual lowest and highest desktop heights from measurements or verified product data for this desk. Do not infer them from favorite positions or let the integration probe mechanical extremes.

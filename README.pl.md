@@ -62,11 +62,16 @@ Suwak działa co 1 cm w zmierzonym zakresie. Aktualizuje się po zakończeniu ja
 ### Konfiguracja
 
 - 🔔 **Profil przypomnień** (`select`): wybierz Wyłączone lub Profil 1/2/3, zachowując czasy
+- 📏 **Preferowane jednostki panelu** (`select`): wybierz Metryczne lub Cale dla panelu, niezależnie od Home Assistanta
 - ⏱️ **Profil 1: czas siedzenia** (`number`): wpisz 1–60 pełnych minut dla nieaktywnego profilu
 - ↩️ **Profil 1: ustaw standardowe 55 minut** (`button`): zmień tylko ten czas, bez resetu fabrycznego
 - 🔌 **Utrzymuj połączenie** (`switch`): celowo zwolnij połączenie Bluetooth i połącz się ponownie, gdy będzie potrzebne
 
 **Utrzymuj połączenie** jest domyślnie wyłączone. Włącz tę encję w jej ustawieniach, aby pokazać przełącznik. Wyłączenie przełącznika wstrzymuje odczyty i ponowne łączenie, również po restarcie, do czasu jego włączenia. Podczas jazdy najpierw zatrzymuje biurko.
+
+W **Preferowane jednostki panelu** wybierz **Metryczne** lub **Cale**. Nie zmienia to jednostek w Home Assistant. Opcja Metryczne nie pozwala wybrać między centymetrami a milimetrami.
+
+Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](docs/controls.md#choose-panel-units).
 
 ### Diagnostyka
 

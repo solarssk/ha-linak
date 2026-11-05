@@ -94,7 +94,7 @@ These references cover repository and presentation work rather than desk operati
 | [Governance](governance.md) | CI gates, dependencies, repository policy and release boundaries |
 | [Branding](branding.md) | Asset provenance, naming and artwork use |
 | [HACS presentation](hacs-presentation.md) | Separate GitHub/HACS renderers, supported Markdown and rendering checks |
-| [Contributing](../CONTRIBUTING.md) | Development setup, required checks and documentation conventions |
+| [Contributing](../CONTRIBUTING.md) | Report a bug, suggest an improvement or find development setup and contribution checks |
 | [Agent instructions](../AGENTS.md) | Repository workflow for coding agents |
 
 Public references explain the maintained behavior. CHANGELOG.md records release changes. Private handoff notes and raw captures remain outside the public documentation; names, addresses and client identifiers do not belong in examples.

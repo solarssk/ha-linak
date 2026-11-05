@@ -145,6 +145,11 @@ class ReminderSettings:
     def selected_profile(self) -> int:
         return self.flags_raw & 3
 
+    @property
+    def inch_preference(self) -> bool:
+        """Stored preference only; clear does not distinguish physical CM/MM."""
+        return bool(self.flags_raw & 0x04)
+
 
 def decode_reminders(payload: bytes) -> ReminderSettings:
     _frame(payload, 11, 13)
@@ -182,6 +187,15 @@ def reminder_sitting_request(settings: ReminderSettings, minutes: int) -> bytes:
         raise ValueError("Reminder duration must fit one byte")
     request = bytearray(reminder_request(settings))
     request[4] = minutes
+    return bytes(request)
+
+
+def reminder_unit_request(settings: ReminderSettings, inch: bool) -> bytes:
+    """Change only the evidenced inch flag, preserving the complete other body."""
+    if type(inch) is not bool:
+        raise ValueError("Panel inch preference must be a boolean")
+    request = bytearray(reminder_request(settings))
+    request[3] = (request[3] & ~0x04) | (0x04 if inch else 0)
     return bytes(request)
 
 

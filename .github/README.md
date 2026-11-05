@@ -132,11 +132,16 @@ The slider selects heights in 1 cm steps within your measured range. It updates 
 | Entity type | Name in HA | Default | Action |
 | --- | --- | --- | --- |
 | `select` | 🔔 **Reminder profile** | Enabled | Choose Off or Profile 1/2/3, preserving intervals without moving the desk |
+| `select` | 📏 **Preferred panel units** | Enabled | Choose Metric or Inch for the panel, independently of Home Assistant |
 | `number` | ⏱️ **Profile 1 sitting time** | Enabled | Type 1–60 whole minutes for inactive profile 1; preserve other fields |
 | `button` | ↩️ **Profile 1: use standard 55 minutes** | Enabled | Set only that duration, not a factory reset |
 | `switch` | 🔌 **Keep connected** | Entity disabled | Turn off to release the Bluetooth connection, or on to reconnect |
 
 Enable **Keep connected** in its entity settings to show the switch. While the switch is off, polling and reconnecting stop, including after a restart. Turning it off during travel stops the desk first.
+
+Choose **Metric** or **Inch** in **Preferred panel units**. This doesn't change units in Home Assistant. The Metric option doesn't let you choose between centimeters and millimeters.
+
+The panel may still display the previous unit after saving. Don't move the desk just to refresh its display. [How to change panel units](../docs/controls.md#choose-panel-units).
 
 Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
 

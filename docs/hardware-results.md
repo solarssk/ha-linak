@@ -177,6 +177,20 @@ For owner acceptance, explicitly agree one supervised sequence covering Profile 
 
 **Limits:** the trial did not validate every value from 1 to 60, the source application's 1–255 bounds, zero, other fields, active-profile edits, actual countdown timing or persistence. The new HA input and standard-time button are software implementations tested with synthetic BLE, not deployed or hardware-accepted by this trial. Their 1–60 range is an integration input policy, not medical or firmware limits. Any further physical test needs its own approved scope and must stop on uncertain delivery without retry or blind restoration.
 
+## Stored unit preference and physical display
+
+**Question:** does the reminder unit flag select a persistent panel preference, and does it uniquely identify the displayed unit?
+
+**Method:** in one authorized stationary trial, the research owner wrote Inch and restored the original metric flag using fresh complete settings, exact application ACKs and independent `88` reads. A deliberately new connection checked the stored inch flag before restoration. A separate trial added the source-backed `FE 00` display activation. Finally the owner selected physical CM → MM → CM while a passive observer recorded normal native reads. Raw captures, screenshots and identifiers remain private.
+
+**Observation:** both writes in the first trial returned `01 00`, independent readbacks matched every requested body byte, and Inch remained stored on the new connection. Geometry, height reference, four favorites, durations and name were preserved; only the uninterpreted counter changed. Fresh client status was 1; there was no activation, wake or motion in that trial. No time-aligned physical Inch confirmation was obtained before restoration. In the separate wake trial the owner reported a stuck display, used height controls manually and then saw inches. The experiment stopped without automatic restoration; the owner confirmed the desk stopped and restored CM through the physical menu.
+
+**Metric sub-unit:** physical MM was subsequently confirmed by the owner. Newly received complete thirteen-byte `88` replies in MM and restored CM were byte-identical, including the counter. All known decoded state was identical too. This proves neither a unique MM getter nor a setter. Clear `0x04` is shared by physical CM and MM. No guessed `0x80`, other bit or vendor command was tried.
+
+**Conclusion:** bit `0x04` is a stored inch versus non-inch/metric preference with ACK/readback and one ordinary reconnect evidenced on this panel. That is the scope of the HA configuration select. Native centimeter geometry and HA unit conversion must remain separate.
+
+**Limits:** immediate stationary OLED redraw is unconfirmed. The manual height operation confounds the wake trial; `FE 00` alone is not shown to cause, be necessary for or be sufficient for the visual change. The implementation therefore sends no wake, movement or forced reconnect. Power-cycle persistence, exact CM/MM encoding, other variants and preservation of panel-local MM across unrelated whole-body `88` writes remain unverified. The select is covered by synthetic protocol/native-client/real-HA tests, not a deployment or new physical acceptance run. The owner's separate Core update during the metric observation does not expand the integration's supported-version claim.
+
 ## Hardware acceptance matrix
 
 This matrix is a test plan and evidence index, not eleven successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.

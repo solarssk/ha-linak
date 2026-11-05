@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a native configuration select for the stored panel Inch/Metric preference, preserving all other flags and durations through the protected reminder transaction. Metric does not distinguish physical CM/MM, and verified preference readback does not confirm immediate OLED redraw. HA centimeter geometry and unit conversion are unchanged; no wake, activation or movement is sent.
+- Make the shared refresh/recovery deadline regression deterministic by expiring real timeout contexts at observed protocol phases instead of racing a 30-millisecond wall-clock budget. Runtime deadlines and CI gates are unchanged.
+- Reorganize the contribution guide around bug reports, ideas and tester help, with a Polish welcome, shorter instructions and expandable developer/maintainer details.
 - Add a configuration input for profile 1 sitting time in whole minutes from 1 to 60 and an explicit standard-55-minute button. Reuse the serialized reminder transaction, preserve other fields and existing out-of-range readings, and refuse edits of the active profile. The range is integration policy, not medical or firmware limits; hardware evidence covers 50/55 in inactive profile 1 only.
 - Add a native reminder-profile select with fresh masked writes, strict acknowledgement and independent readback. Preserve intervals and unrelated flags; never activate, wake, move or replay. Hardware evidence covers Off/Profile 3 at client status 1 only.
 - Declare config-entry-only setup and report an unsupported `ha_linak:` YAML block through Repairs without changing action registration or starting Bluetooth work.

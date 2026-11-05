@@ -1,6 +1,93 @@
-# Contributing
+# 🤝 Help improve LINAK
 
-Use Python 3.14.2 or newer in an isolated environment. CI targets Ubuntu 24.04/Linux x86_64. Install the build backend with `python -m pip install --only-binary :all: --require-hashes -r .github/locks/build.txt`, then the exact environment with `python -m pip install --only-binary :all: --no-binary mock-open,pyric --no-build-isolation --require-hashes -r .github/locks/test.txt`. The two explicit source exceptions come from the HA test stack and Linux Bluetooth support; their builds cannot download unpinned build dependencies. On macOS, install `requirements-dev.txt` instead; Linux locks and installed-package checks are validated in CI. Run:
+You can help by reporting a problem, suggesting an improvement or pointing out confusing instructions. You don't need to write code.
+
+🇵🇱 Problemy i pomysły możesz opisać po polsku. Napisz, co chcesz zrobić i co się dzieje. Nie musisz znać technicznych szczegółów.
+
+## Where to start
+
+Choose the kind of help you'd like to give:
+
+| I want to… | Start here |
+| --- | --- |
+| 🐛 Report something that doesn't work | [Report a bug](#-report-a-bug) |
+| 💡 Suggest a feature or clearer instructions | [Share an idea](#-share-an-idea) |
+| 🧪 Help test a desk panel | [Test with your desk](#-test-with-your-desk) |
+| 🛠️ Change the code or documentation | [Prepare a contribution](#-prepare-a-contribution) |
+
+## 🐛 Report a bug
+
+Tell us what happened in your own words. A screenshot can help; you don't need to diagnose the cause.
+
+1. Check the [troubleshooting guide](docs/diagnostics.md) and [existing issues](https://github.com/solarssk/ha-linak/issues) for the same problem.
+2. Open a [bug report](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
+3. Describe what you expected, what happened instead and the steps that led to it.
+
+The form also asks for a few details:
+
+| Detail | What to include |
+| --- | --- |
+| Versions | Your Home Assistant and LINAK integration versions |
+| Desk | Panel model, if you know it |
+| Connection | A Bluetooth adapter or proxy, if you know which one |
+| Screenshot or log | The error message or behavior you want to show |
+
+Write “not sure” if you can't find a detail. You can add it later if the maintainer needs it.
+
+🔒 **Before sharing:** hide device names, Bluetooth addresses, room/location details and credentials in screenshots and logs. Report a suspected security vulnerability through [private vulnerability reporting](https://github.com/solarssk/ha-linak/security/advisories/new), not a public issue.
+
+⚠️ **Keep the desk safe:** don't repeat an unexpected movement just to record it. Describe what you already observed.
+
+## 💡 Share an idea
+
+Open an [issue](https://github.com/solarssk/ha-linak/issues/new) and describe the task you'd like to do. Explain what gets in the way today and what would help.
+
+Unclear wording, missing instructions and translation corrections are useful contributions too. You can suggest a sentence without setting up a development environment.
+
+## 🧪 Test with your desk
+
+Start with the [device support and tester guide](docs/device-support.md). It explains which panel details help and what compatibility is known.
+
+Agree on any hardware experiment with the maintainer before starting. Initial movement tests need someone at the desk and a way to stop it. Software tests passing is not proof that physical movement or stopping is safe.
+
+## 🛠️ Prepare a contribution
+
+Read [AGENTS.md](AGENTS.md) before changing files. It lists the relevant references for each kind of change.
+
+Keep your contribution focused:
+
+- Use a scoped branch and a [Conventional Commit](https://www.conventionalcommits.org/) title, such as `fix: explain a connection error`.
+- Update English and Polish documentation or translation keys together.
+- Describe the problem, resulting behavior and validation in the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
+- Keep user instructions about what to do and expect. Put protocol details and research evidence in the technical references.
+
+The expandable sections below are for developers and maintainers. You don't need them to report a bug or suggest an improvement.
+
+<details>
+<summary>🧰 Set up development and run checks</summary>
+
+## Development environment
+
+Use **Python 3.14.2 or newer** in an isolated environment. CI runs on Ubuntu 24.04/Linux x86_64.
+
+On Linux, install the pinned build backend and test environment:
+
+```sh
+python -m pip install --only-binary :all: --require-hashes -r .github/locks/build.txt
+python -m pip install --only-binary :all: --no-binary mock-open,pyric --no-build-isolation --require-hashes -r .github/locks/test.txt
+```
+
+The `mock-open` and `pyric` source exceptions come from the HA test stack and Linux Bluetooth support. Their builds cannot download unpinned build dependencies.
+
+On macOS, install the development requirements instead:
+
+```sh
+python -m pip install -r requirements-dev.txt
+```
+
+### Run the full validation block
+
+Run these checks after your final patch and before pushing:
 
 ```sh
 python -m pytest
@@ -13,15 +100,27 @@ python scripts/update_locks.py --check
 actionlint
 ```
 
-Tests run against real Home Assistant with simulated Bluetooth and no network sockets. Do not connect a real desk in CI. Captures shared in issues must remove names, addresses, location and identifiers.
+On macOS, replace only the dependency check with:
 
-Use Conventional Commit titles and scoped branches. Update English/Polish docs and translation keys together. In a pull request describe the behavior, verification and Documentation impact. The maintainer merges after required checks pass; reviews are not mandatory while there is one maintainer.
+```sh
+python scripts/check_dependencies.py --metadata-only
+```
 
-HACS validation and hassfest check packaging; they do not prove physical hardware behavior. Only HA 2026.10.4 is currently validated. Movement uses native slider/button controls with simulated tests and a bounded hardware observation; complete target arrival and physical Stop accuracy remain pending. Protected client activation and confirmed height-reference calibration writes are implemented. Activation/offset readback and one reconnect were observed on one DPG1C; this does not establish permanent client readiness or power-cycle persistence. Reminder profile selection preserves intervals and unrelated flags and requires an already active client. Hardware evidence covers Off/Profile 3 at status 1; profiles 1/2 and inactive-client acceptance remain unverified. Profile 1 sitting-duration editing shares that transaction, with a typed 1–60-minute product policy and an explicit standard-55-minute button. Hardware evidence covers only 50/55 in inactive profile 1, not the full input range, countdown timing or persistence. Other panel-setting writes are not implemented.
+That checks generated metadata, not installed Linux packages. Linux locks and installed-package validation still belong to CI; report this distinction in your PR.
+
+Tests use real Home Assistant with simulated Bluetooth and no network sockets. Never connect a real desk in automated tests.
 
 ## Isolated HA startup smoke
 
-CI also cold-boots and restarts a real HA Core process with minimal configuration in an official container image with this component copied into a fresh configuration. The supported-version smoke runs inside the required Tests job; the pinned preview job is advisory and does not expand the supported HA range. Images and expected versions are recorded in `.github/ha-smoke-targets.json`, with immutable digests. Update the supported target together with the HA test plugin, HACS minimum and generated component requirements; upgrade the preview deliberately.
+CI also cold-boots and restarts Home Assistant in an official container, without a desk. This checks startup and dependencies, not Bluetooth communication or hardware behavior.
+
+| Check | Role |
+| --- | --- |
+| Supported-version smoke | Part of the required Tests job |
+| Pinned preview smoke | Advisory; does not expand the supported HA range |
+| Target definitions | `.github/ha-smoke-targets.json`, including immutable image digests |
+
+Update the supported target together with the HA test plugin, HACS minimum and generated component requirements. Upgrade the preview deliberately.
 
 To reproduce with Docker:
 
@@ -30,55 +129,133 @@ python3 scripts/run_ha_smoke.py --target supported --output /tmp/ha-linak-smoke
 python3 scripts/run_ha_smoke.py --target preview --output /tmp/ha-linak-preview
 ```
 
-The helper creates and removes its own internal Docker network and temporary configuration. The container runs with the invoking user ID so persisted files remain removable on Linux. It does not mount host D-Bus, Bluetooth devices or production config, expose ports, use privileged mode or permit external network egress. The test uses real bootstrap, config-entry restoration and platform imports, without pytest fixtures or a fake BLE transport. It requires HA to reach running with exactly one synthetic LINAK entry in the expected unavailable-device setup-retry state, and rejects unexpected ERROR logs, recovery mode or broken imports. Both process runs shut down before their container is removed. Reports also record pre-bootstrap and shutdown failures; cleanup attempts network removal even if container removal stalls. The Tests and preview job deadlines allow image download, both phases and cleanup, with extra room for dependency installation in Tests.
+The helper's isolation and expected results are:
 
-This is a startup/dependency check without a desk, not a working BLE connection or hardware acceptance result. HA entity setup with simulated device feedback remains covered by pytest; pairing, proxy behavior, physical movement and stopping need the hardware acceptance matrix. Reports explicitly mark `readings_validated` false. CI retains only synthetic reports and logs for seven days; it never uploads the configuration directory.
+- Create and remove an internal Docker network and temporary configuration.
+- Run as the invoking user so persisted files remain removable on Linux.
+- Do not mount host D-Bus, Bluetooth devices or production configuration.
+- Do not expose ports, use privileged mode or permit external network egress.
+- Use real bootstrap, config-entry restoration and platform imports, without pytest fixtures or a fake BLE transport.
+- Require HA to reach running with exactly one synthetic LINAK entry in the expected unavailable-device setup-retry state.
+- Reject unexpected ERROR logs, recovery mode and broken imports.
+- Shut down both HA runs before removing their containers.
+
+Reports include pre-bootstrap and shutdown failures. Cleanup attempts network removal even if container removal stalls. Job deadlines allow image download, both phases and cleanup, plus dependency installation in Tests.
+
+CI retains only synthetic reports and logs for seven days, never the configuration directory. Reports mark `readings_validated` false. Entity behavior with simulated feedback remains covered by pytest; pairing, proxies, movement and stopping need the [hardware acceptance matrix](docs/hardware-results.md#hardware-acceptance-matrix).
+
+### State validation limits honestly
+
+HACS validation and hassfest check packaging, not physical behavior. Only HA 2026.10.4 is currently validated.
+
+| Feature | Evidence | Still unverified |
+| --- | --- | --- |
+| Movement and Stop | Simulated tests and a bounded hardware observation | Complete target arrival and physical Stop accuracy |
+| Client activation and height calibration | Protected setters; activation/reference readback and one reconnect on one DPG1C | Permanent readiness and power-cycle persistence |
+| Reminder profile | Preserved intervals/flags; Off/Profile 3 at client status 1 | Profiles 1/2 and inactive-client acceptance |
+| Profile 1 sitting time | Protected 1–60-minute input and standard-55-minute button; hardware observation at 50/55 in inactive profile 1 | Full input range, countdown and persistence; input bounds are product policy, not firmware or medical limits |
+| Stored Inch/Metric preference | Protected transaction without wake/movement; readback and one reconnect | Physical CM/MM share the known BLE state; immediate stationary OLED redraw is unconfirmed |
+| Other panel-setting writes | Not implemented | A verified command contract is required |
+
+Use the [hardware evidence register](docs/hardware-results.md) for the full methods and limits.
+
+</details>
+
+<details>
+<summary>📝 Write and organize documentation</summary>
 
 ## Markdown source format
 
-Do not use em dashes. Use periods, commas or colons. Write each prose paragraph on one source line and let the editor, GitHub or HACS wrap it visually. Keep a list item's prose on one line too; nested lists and multi-paragraph items retain their Markdown structure. Do not wrap prose to a fixed column width. Preserve paragraph separators, headings, tables, code fences, HTML layouts, image/badge blocks, GitHub alert marker lines and intentional hard line breaks. Keep consecutive CHANGELOG.md bullets compact, without blank lines between them.
+Keep Markdown readable in both source and rendered form:
+
+- Write each prose paragraph on one source line. Let the reader's editor or browser wrap it.
+- Keep each list item's prose on one source line too. Preserve nested-list and multi-paragraph structure where needed.
+- Use periods, commas or colons instead of em dashes.
+- Preserve paragraph separators, headings, tables, code fences, HTML layouts, image/badge blocks, GitHub alerts and intentional hard line breaks.
+- Keep consecutive `CHANGELOG.md` bullets together, without blank lines between them.
 
 ## Technical documentation structure
 
-Organize public documentation around a reader's task, following the separation of procedures, reference and explanation described by [Diátaxis](https://diataxis.fr/). Use the [document responsibility map](docs/README.md#document-responsibilities) as the content plan: it identifies each page's audience, purpose and information owner. Do not introduce another page without a distinct reader need.
+Write for the reader's task. Follow [Diátaxis](https://diataxis.fr/) and the [document responsibility map](docs/README.md#document-responsibilities); add a page only for a distinct reader need.
 
-| Content | Structure | Home |
+| Content | Include | Home |
 | --- | --- | --- |
-| Procedure | Prerequisites, ordered actions, expected results and recovery | Control guide, diagnostic manual or standalone experiment |
-| Reference | Defined terms, tables of formats/states/constraints and precise limits | Protocol, settings, movement and connection references |
-| Explanation | Component/lifecycle diagram, rationale, alternatives and consequences | Architecture and library comparison |
-| Investigation/evidence | Question, method, observation, conclusion, uncertainty and next discriminating test | Investigation guide and hardware evidence register |
-| Work chronology | Private attempts, temporary access details and next-agent instructions | Ignored local handoff; public release history belongs in CHANGELOG.md |
+| Procedure | Prerequisites, actions, expected results and recovery | Control guide, diagnostic manual or standalone experiment |
+| Reference | Terms, formats, states, constraints and precise limits | Protocol, settings, movement and connection references |
+| Explanation | Boundaries, rationale, alternatives and consequences | Architecture and library comparison |
+| Investigation/evidence | Question, method, observation, conclusion, uncertainty and next test | Investigation guide and hardware evidence register |
+| Work chronology | Private attempts, temporary access details and next-agent instructions | Ignored local handoff; public release history goes in `CHANGELOG.md` |
 
-Integrate a finding into the section that owns the behavior. Rewrite obsolete conclusions and link to evidence instead of appending dated follow-ups. Preserve source revisions and environment metadata where they support reproducibility, but do not use dates or alpha versions as the manual's navigation. Separate implemented behavior, candidate semantics, simulated validation and physical observations.
+When updating a document:
 
-Use Markdown tables for comparisons and fields, numbered lists for procedures and fenced Mermaid diagrams for meaningful control flow, sequence or ownership. Use charts only for measured quantitative comparisons; do not invent data to fill a visualization. Add a short explanation and outcome/limit beside each visual. Keep diagrams to one question and preserve equivalent technical details in text/tables for readers whose renderer lacks Mermaid. Product HACS Markdown has separate constraints in docs/hacs-presentation.md.
+- Update the section that owns the behavior instead of appending dated discoveries or version follow-ups.
+- Replace obsolete conclusions while preserving uncertainty, source revisions and environment details needed for reproduction.
+- Keep implemented behavior, protocol candidates, simulated validation and physical observations distinct.
+- Use tables for comparisons and fields, numbered lists for procedures and Mermaid for state, sequence or ownership.
+- Use charts only for measured quantities. Don't invent data for a visualization.
+- Give each diagram one purpose, explain its outcome/limit and keep equivalent technical details in text or tables.
+- Keep dates and alpha versions out of the manual's navigation.
+- Follow [HACS presentation constraints](docs/hacs-presentation.md) for product READMEs.
 
-Before handing off documentation, follow one reader path from the index, check internal links/anchors, verify code/command names against the implementation and remove contradictory status claims. Keep one source of truth per fact. The [writing review checklist](https://github.com/vercel-labs/writing-guidelines/blob/main/command.md) helps with voice and readability; repository Markdown conventions take precedence over framework-specific front matter, MDX or frontend requirements.
+Before handing off, follow one reader path from the [index](docs/README.md), check links/anchors, verify names and commands against the implementation, and remove contradictory claims. Keep one source of truth per fact.
+
+The [writing review checklist](https://github.com/vercel-labs/writing-guidelines/blob/main/command.md) can help with clarity. Repository Markdown conventions take precedence over framework-specific front matter, MDX and frontend requirements.
+
+</details>
+
+<details>
+<summary>📦 Update dependencies</summary>
 
 ## Updating dependencies
 
-`requirements-tools.txt` is the source for independent tools. `pytest-homeassistant-custom-component` in `requirements-dev.txt` owns the HA/pytest stack. Never add separate pytest or pytest-asyncio pins. `.github/ha-requirements.txt` is generated from the installed HA Bluetooth/USB manifests, not independently upgraded.
+Use the existing dependency owners rather than adding competing pins:
 
-After a tools update, install uv from `.github/locks/uv.txt` with `--require-hashes` and run `python scripts/update_locks.py`. Commit regenerated locks in the same PR. To intentionally update transitive pins, remove only the relevant lock and regenerate it in a reviewed PR; freshness checking itself does not upgrade existing pins.
+| File or package | Owns |
+| --- | --- |
+| `requirements-tools.txt` | Independent tools |
+| `pytest-homeassistant-custom-component` in `requirements-dev.txt` | HA, pytest and pytest-asyncio; do not pin these separately |
+| `.github/ha-requirements.txt` | Generated requirements from installed HA Bluetooth/USB manifests |
+| `.github/requirements-locker.txt` | The deliberately chosen resolver version |
 
-After a HA test-plugin upgrade, install the new plugin and its component requirements, update `hacs.json`, regenerate with `python scripts/check_dependencies.py --update`, and regenerate all locks. Installed checks must pass on Linux. On macOS use `--metadata-only` to regenerate files; that skips installed-platform validation and is not a substitute for Linux CI.
+For an independent tool update:
 
-The locker version is owned by `.github/requirements-locker.txt` and is upgraded deliberately together with its lock and audit scope. Generated lock and component files are excluded from independent Dependabot changes. All locks target Python 3.14.2 and Linux glibc 2.39; do not use them as macOS or runtime HA dependency files.
+1. Install uv from `.github/locks/uv.txt` with `--require-hashes`.
+2. Run `python scripts/update_locks.py`.
+3. Commit regenerated locks in the same PR.
 
-## Coverage signals
+For a HA test-plugin upgrade:
 
-Tests produce coverage.xml and junit.xml; a separate job uploads them to Codecov/Sonar only on trusted runs with the corresponding repository secrets. Keep Sonar Automatic Analysis disabled. The properties file classifies integration code and tests separately and matches the verified recmedia organization. CI helpers remain covered by CodeQL and regression tests. These external signals are advisory during the alpha.
+1. Install the new plugin and its component requirements.
+2. Update `hacs.json`.
+3. Run `python scripts/check_dependencies.py --update`.
+4. Regenerate all locks and pass installed-package checks on Linux.
 
-## Review and repository settings
+On macOS, add `--metadata-only` when generating dependency files. It skips installed-platform validation and is not a substitute for Linux CI.
 
-CodeRabbit reviews run on explicit maintainer request; automatic and incremental reviews are disabled. Run `python scripts/check_github_settings.py` with an existing administrative gh login to compare live main protection with .github/required-checks.json. This is a maintainer check, not a reason to expose admin credentials to CI.
+Lock freshness checks preserve existing transitive pins. To deliberately update them, remove only the relevant lock and regenerate it in a reviewed PR. Upgrade the resolver together with its lock and audit scope.
+
+Generated lock and component files are excluded from independent Dependabot changes. Locks target Python 3.14.2 and Linux glibc 2.39; don't use them as macOS or runtime HA dependency files.
+
+</details>
+
+<details>
+<summary>📬 Open a PR and check the handoff</summary>
 
 ## PR metadata and handoff
 
-Before opening a PR, read [AGENTS.md](AGENTS.md), use the PR template and inspect GitHub's open release milestones. Every PR needs exactly one supported `type:` label (`bug`, `feature`, `chore` or `docs`), its open target release milestone and a responsible maintainer assignee. Currently the maintainer is @solarssk. Keep priority/area labels optional for this small project. These are real GitHub fields, not substitutes in a PR checklist. Dependabot PRs follow the same policy. `.github/dependabot.yml` sets labels, assignee and the numeric target milestone for both ecosystems using [native Dependabot options](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference). Before closing a release milestone, create or select the next open release milestone and update `milestone` in every ecosystem entry. Use its GitHub number, not its version title. Existing PRs still need their live fields checked; configuration changes do not repair previously opened PRs.
+Use [AGENTS.md](AGENTS.md) and the [PR template](.github/PULL_REQUEST_TEMPLATE.md). Fill in **Documentation impact** with the files you changed or a concrete reason no update is needed.
 
-Open PRs with those fields supplied together, for example after choosing the actual target version from `gh api repos/solarssk/ha-linak/milestones`:
+Every PR, including Dependabot PRs, needs these actual GitHub fields:
+
+| Field | Set it to |
+| --- | --- |
+| Type label | Exactly one of `type: bug`, `type: feature`, `type: chore`, `type: docs` |
+| Milestone | The open release receiving the change; check GitHub rather than guessing |
+| Assignee | The responsible maintainer, currently @solarssk |
+
+Priority and area labels aren't required for this small project. Checking a box in the description doesn't set GitHub metadata.
+
+For example, after checking `gh api repos/solarssk/ha-linak/milestones`:
 
 ```sh
 gh pr create --base main --title 'chore: describe the change' --body-file /tmp/pr-body.md --label 'type: chore' --milestone '<target-version>' --assignee solarssk
@@ -86,6 +263,41 @@ python scripts/check_pr_metadata.py --pr <number>
 gh pr checks <number>
 ```
 
-The required Documentation impact check also validates the type, open milestone and assignee. It reruns when these fields change and reads their current values through the GitHub API rather than a potentially stale event payload. It has read-only permissions, executes on pull_request and never modifies PR metadata. Missing or closed release milestones must be resolved by the maintainer rather than fabricated by an agent.
+Before opening the PR, run `scripts.check_pr_docs.validate` against its final body and actual changed-file list. The `## Documentation impact` section is required.
 
-Run `scripts.check_pr_docs.validate` against the final body and actual changed-file list before opening a PR; the required `## Documentation impact` section must be present. Read back the current head checks after publishing. Report pending checks as pending; handoff does not mean merge-ready. Follow failures through their fixed head, and verify main after a maintainer merge. See AGENTS.md for the complete start-to-handoff sequence.
+Before handing it off:
+
+1. Read back the live metadata and current head's checks.
+2. Inspect review comments and unresolved findings.
+3. Fix failures, then follow the checks on the new head.
+4. Report passed, pending, skipped and failed checks accurately. Keep local tests, Linux CI and hardware observations separate.
+
+The maintainer merges after required checks pass. Reviews aren't mandatory while there is one maintainer. Don't merge, release or tag on their behalf. After a reported merge, verify main's checks before claiming integration is complete.
+
+The Documentation impact job also validates type, open milestone and assignee. It reruns on metadata edits, reads live GitHub values with read-only permissions and never repairs metadata itself. Ask the maintainer to resolve a missing or closed release milestone; don't create one to satisfy a gate.
+
+### Keep Dependabot metadata current
+
+`.github/dependabot.yml` supplies labels, assignee and numeric target milestone for each ecosystem through [native Dependabot options](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference).
+
+Before closing a release milestone, select or create the next open one and update `milestone` in every ecosystem entry. Use its GitHub number, not its title. Check existing PRs separately; configuration changes don't repair their fields.
+
+## Coverage signals
+
+Tests produce `coverage.xml` and `junit.xml`. A separate trusted-run job uploads them to Codecov/Sonar using the corresponding repository secrets. These signals are advisory during the alpha.
+
+Keep Sonar Automatic Analysis disabled. The properties file separates integration code from tests and matches the verified recmedia organization. CI helpers remain covered by CodeQL and regression tests.
+
+## Review and repository settings
+
+CodeRabbit automatic and incremental reviews stay disabled. Request a review only when the maintainer explicitly asks.
+
+Maintainers can compare live main protection with `.github/required-checks.json` using:
+
+```sh
+python scripts/check_github_settings.py
+```
+
+Use an existing administrative gh login locally. Never expose admin credentials to PR CI.
+
+</details>

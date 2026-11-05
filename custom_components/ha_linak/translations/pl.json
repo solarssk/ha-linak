@@ -251,6 +251,13 @@
       }
     },
     "select": {
+      "panel_unit_preference": {
+        "name": "Preferowane jednostki panelu",
+        "state": {
+          "metric": "Metryczne",
+          "inch": "Cale"
+        }
+      },
       "reminder_profile": {
         "name": "Profil przypomnień",
         "state": {
@@ -398,10 +405,10 @@
       "message": "Biurko się nie połączyło. Utrzymuj połączenie pozostaje włączone, a Home Assistant ponowi próbę. Sprawdź, czy biurko jest wybudzone i w zasięgu adaptera Bluetooth lub proxy."
     },
     "reminder_client_inactive": {
-      "message": "Klient panelu jest nieaktywny. Zmiana przypomnień wymaga statusu 1; ta czynność nie aktywuje klienta. Użyj jawnego przygotowania sterowania w Konfiguruj, a następnie odczytaj bieżący profil przed kolejną próbą."
+      "message": "Biurko nie jest gotowe na zmianę tych ustawień. Otwórz Konfiguruj i przygotuj je do sterowania, a następnie spróbuj ponownie. Ta czynność nie zmieniła żadnych ustawień."
     },
     "reminder_failed": {
-      "message": "Nie udało się potwierdzić zmiany przypomnień. Ustawienie mogło się zmienić. Po ponownym połączeniu sprawdź bieżący profil i czasy panelu przed kolejną próbą. Zapis ani przywrócenie nie są ponawiane automatycznie."
+      "message": "Nie udało się potwierdzić zapisu. Ustawienie mogło się już zmienić. Poczekaj na przywrócenie połączenia i sprawdź ustawienia przed kolejną próbą."
     },
     "reminder_interval_invalid": {
       "message": "Wpisz pełną liczbę minut od 1 do 60. To ograniczenie edycji w integracji, nie limit sterownika ani zalecenie medyczne. Istniejące wartości poza tym zakresem pozostają bez zmian. Aby wyłączyć przypomnienia, wybierz Wyłączone."

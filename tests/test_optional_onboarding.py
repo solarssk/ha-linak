@@ -6,13 +6,18 @@ from unittest.mock import patch
 
 import pytest
 
-from custom_components.ha_linak.client import DeskLinkLost
+from custom_components.ha_linak.client import (
+    DeskLinkLost,
+    QUERY_TIMEOUT,
+    REFRESH_TIMEOUT,
+)
 from custom_components.ha_linak.protocol import DPG_UUID, HEIGHT_UUID
 from replay_transport import (
     Position,
     ReplayBleak,
     connections,
     default_replies,
+    expect_failure,
     memory_frame,
     new_desk,
     sent_commands,
@@ -337,13 +342,44 @@ async def test_recovery_shares_the_original_refresh_deadline():
     first.script(failures={Position.SLOT3: "silent"})
     recovery.script(failures={Position.CAPABILITIES: "silent"})
     desk = new_desk()
+    real_timeout = asyncio.timeout
+    refresh_timeouts: list[asyncio.Timeout] = []
+    query_timeouts: list[asyncio.Timeout] = []
+
+    def controlled_timeout(budget):
+        # Expire real timeout contexts at protocol events, not wall-clock races.
+        if budget in (REFRESH_TIMEOUT, QUERY_TIMEOUT):
+            context = real_timeout(None)
+            contexts = refresh_timeouts if budget == REFRESH_TIMEOUT else query_timeouts
+            contexts.append(context)
+            return context
+        return real_timeout(budget)
+
     with (
         connections(first, recovery),
-        patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.02),
-        patch("custom_components.ha_linak.client.REFRESH_TIMEOUT", 0.03),
+        patch(
+            "custom_components.ha_linak.client.asyncio.timeout",
+            side_effect=controlled_timeout,
+        ),
     ):
-        with pytest.raises(TimeoutError):
-            await desk.refresh(allow_partial_settings=True)
+        task = asyncio.create_task(desk.refresh(allow_partial_settings=True))
+        try:
+            await asyncio.wait_for(first.stalled.wait(), 2)
+            original_query = query_timeouts[-1]
+            original_query.reschedule(asyncio.get_running_loop().time())
+            await asyncio.wait_for(recovery.stalled.wait(), 2)
+            assert original_query.expired()
+            assert first.disconnected.is_set()
+            assert len(refresh_timeouts) == 1
+            original_refresh = refresh_timeouts[0]
+            assert not original_refresh.expired()
+            original_refresh.reschedule(asyncio.get_running_loop().time())
+            await expect_failure(task, TimeoutError)
+            assert original_refresh.expired()
+            assert not query_timeouts[-1].expired()
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
     assert recovery.stalled.is_set()
     assert recovery.disconnected.is_set()
     assert not desk.connected

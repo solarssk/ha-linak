@@ -90,7 +90,7 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          release_tag="$(gh release view "$RELEASE_TAG" --json tagName --jq .tagName)"
+          release_tag="$(gh release view "$RELEASE_TAG" --repo solarssk/ha-linak --json tagName --jq .tagName)"
           if [[ "$release_tag" != "$RELEASE_TAG" ]]; then
             echo "The existing release does not point to the selected tag." >&2
             exit 1
@@ -103,7 +103,7 @@ jobs:
           gh attestation download ha_linak.zip --repo solarssk/ha-linak
           digest="$(cut -d ' ' -f1 ha_linak.zip.sha256)"
           mv "sha256:${digest}.jsonl" ha_linak.intoto.jsonl
-          gh release upload "$RELEASE_TAG" \
+          gh release upload "$RELEASE_TAG" --repo solarssk/ha-linak \
             ha_linak.zip \
             ha_linak.zip.sha256 \
             ha_linak.intoto.jsonl

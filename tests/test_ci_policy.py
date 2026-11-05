@@ -211,6 +211,29 @@ def test_each_python_install_uses_a_hash_locked_input():
     assert any("check_dependencies.py" in command for command in commands)
 
 
+@pytest.mark.parametrize("command", ["view", "upload"])
+def test_release_commands_have_explicit_repository_context(command):
+    workflow = yaml.safe_load(
+        (ROOT / ".github/workflows/release-artifact.yml").read_text()
+    )
+    commands = [
+        step["run"].replace("\\\n", " ")
+        for step in workflow["jobs"]["publish"]["steps"]
+        if "run" in step
+    ]
+    release_commands = [
+        line
+        for script in commands
+        for line in script.splitlines()
+        if f"gh release {command} " in line
+    ]
+    assert release_commands, f"Missing gh release {command} command"
+    assert all(
+        f'gh release {command} "$RELEASE_TAG" --repo solarssk/ha-linak' in line
+        for line in release_commands
+    )
+
+
 def test_official_plugin_bootstrap_and_coverage_are_preserved():
     from importlib import metadata
     import tomllib

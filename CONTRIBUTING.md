@@ -86,6 +86,6 @@ python scripts/check_pr_metadata.py --pr <number>
 gh pr checks <number>
 ```
 
-The required Documentation impact check also validates the type, open milestone and assignee. It reruns when these fields change. It has read-only permissions, executes on pull_request and never modifies PR metadata. Missing or closed release milestones must be resolved by the maintainer rather than fabricated by an agent.
+The required Documentation impact check also validates the type, open milestone and assignee. It reruns when these fields change and reads their current values through the GitHub API rather than a potentially stale event payload. It has read-only permissions, executes on pull_request and never modifies PR metadata. Missing or closed release milestones must be resolved by the maintainer rather than fabricated by an agent.
 
 Run `scripts.check_pr_docs.validate` against the final body and actual changed-file list before opening a PR; the required `## Documentation impact` section must be present. Read back the current head checks after publishing. Report pending checks as pending; handoff does not mean merge-ready. Follow failures through their fixed head, and verify main after a maintainer merge. See AGENTS.md for the complete start-to-handoff sequence.

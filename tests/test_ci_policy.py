@@ -376,11 +376,17 @@ def test_metadata_gate_reruns_when_handoff_fields_change():
         "assigned",
         "unassigned",
     } <= set(triggers["pull_request"]["types"])
-    assert workflow["permissions"] == {"contents": "read"}
-    assert any(
-        step.get("run") == "python3 scripts/check_pr_metadata.py"
+    assert workflow["permissions"] == {"contents": "read", "pull-requests": "read"}
+    step = next(
+        step
         for step in workflow["jobs"]["docs"]["steps"]
+        if step.get("name") == "Validate current PR metadata"
     )
+    assert step["run"] == 'python3 scripts/check_pr_metadata.py --pr "$PR_NUMBER"'
+    assert step["env"] == {
+        "GH_TOKEN": "${{ github.token }}",
+        "PR_NUMBER": "${{ github.event.pull_request.number }}",
+    }
 
 
 def test_documentation_gate_skips_pull_requests_that_are_no_longer_open():

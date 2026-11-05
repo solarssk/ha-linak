@@ -35,6 +35,8 @@ Procedury programistyczne są osobnym materiałem po angielsku:
 - [Aktualizacje zależności](CONTRIBUTING.md#updating-dependencies)
 - [Metadane i przekazanie PR](CONTRIBUTING.md#pr-metadata-and-handoff)
 
+W systemie Linux x86_64 uruchom ograniczony fuzzing dekoderów protokołu poleceniem `python fuzz/fuzz_protocol.py --duration-seconds 30`. Atheris testuje czyste dekodery z syntetycznymi ramkami, bez Home Assistanta, Bluetooth, sieci i ruchu. Atheris 3.1.0 udostępnia obecnie koło dla Pythona 3.14 tylko dla Linux x86_64, więc standardowe środowisko programistyczne macOS pomija to opcjonalne narzędzie. Pełne zasady podpisywania oraz weryfikacji paczki opisuje [instrukcja integralności artefaktu wydania](docs/release-integrity.pl.md).
+
 Lista pip `allow` Dependabota obejmuje tylko niezależne narzędzia z `requirements-tools.txt` i `requirements-build.txt`. Dodając narzędzie, zaktualizuj tę listę i grupę tooling. Pakiety zarządzane przez HA oraz świadomie wybrany resolver `uv` nie podlegają osobnym aktualizacjom.
 
 Pliki wskazane przez `-r` lub `-c` muszą pozostać dostępne do pobrania, także wygenerowane wejścia komponentów, audytu i resolvera. Wykluczenie ścieżki przerywa parsowanie przed filtrowaniem pakietów. Wykluczone pozostaje tylko `.github/locks/**`; po zaakceptowaniu aktualizacji narzędzi wygeneruj locki ponownie. Testy polityki sprawdzają dostępność wejść i podział odpowiedzialności za pakiety.

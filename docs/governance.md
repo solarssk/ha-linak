@@ -22,9 +22,13 @@ CodeRabbit automatic and incremental reviews are disabled by .coderabbit.yaml af
 
 To verify source/live protection consistency, the maintainer runs `python scripts/check_github_settings.py` using their existing administrative gh login. PR CI never receives an admin token.
 
+Scorecard's Branch-Protection check cannot currently inspect this repository's classic rules without a fine-grained token that has Administration: Read. Keep the live classic protections and required review policy unchanged rather than adding that credential to repository-wide Actions secrets. No repository ruleset is configured. A ruleset alternative needs a reviewed, additive migration that preserves every existing required check and restriction; the read-only settings script remains the source/live comparison.
+
 The minimum and simulated-test target is HA 2026.11.0, matching the built-in Marketplace and local integration/Marketplace brand routes. The official `pytest-homeassistant[bluetooth]==2026.11.0` owns HA, pytest and pytest-asyncio, replacing the retired custom-component plugin. The independent lock resolver and the HA-owned uv copy both use 0.13.6, above the advisory's first patched version 0.13.4 (GHSA-hq85-5cpj-mr62). Do not override an HA-owned pin independently; upgrade its compatible test plugin and regenerate all locks together. `hacs.json` declares the minimum for releases, not a universal runtime rejection of older manual/default-branch installs.
 
 Coverage reporting is no longer a transitive dependency of the official test plugin. `requirements-tools.txt` owns `pytest-cov` explicitly so the existing CI coverage/JUnit command and advisory uploads remain intact. The plugin still controls pytest itself; this reporting tool does not add a competing version pin.
+
+The pure protocol decoders have a bounded Atheris fuzz target in `fuzz/fuzz_protocol.py`, run by the required Tests job. Scorecard recognizes the Atheris integration, but this does not enroll the repository in OSS-Fuzz or guarantee a particular Scorecard result.
 
 ## Tier 2 assessment
 
@@ -43,11 +47,14 @@ The prepared first public version is 0.1.0. Preparation sets the component manif
 | `hacs.json` and the four product READMEs | Minimum HA version, installation/upgrade actions and product limitations, not a second integration-version field |
 | GitHub milestone | Live release planning, not publication evidence |
 | Git tag and GitHub Release | Published source/version only after a separate maintainer action |
+| `.github/workflows/release-artifact.yml` | Builds and attests the integration ZIP; uploads assets only to an existing Release when explicitly dispatched with publication enabled |
 | HA test inputs, component pins, smoke targets and locks | Independently owned dependency/compatibility versions, not integration release numbers |
 
-This repository has validation workflows but no release-publishing workflow. Follow the [changelog standard](../CONTRIBUTING.md#changelog-and-release-notes) when preparing the body. Do not copy the development commit history into it, add a speculative release date or relabel historical alpha evidence as 0.1.0 testing.
+Follow the [changelog standard](../CONTRIBUTING.md#changelog-and-release-notes) when preparing the body. Do not copy the development commit history into it, add a speculative release date or relabel historical alpha evidence as 0.1.0 testing.
 
-Publication remains a separate maintainer decision. Before it, inspect the final revision's existing checks, installation/upgrade instructions, known limitations and remaining roadmap gates. Local macOS metadata checks do not replace Linux installed-package/container validation, and no-radio CI does not replace physical acceptance. Verify the installed released artifact separately before claiming that delivery is validated. Do not close the target milestone until Dependabot's next target has been selected and updated as described in CONTRIBUTING.md.
+Publication remains a separate maintainer decision. Dispatch the release artifact workflow on the exact tag with publication disabled to build and attest without changing a GitHub Release. To attach assets, first create the release and then explicitly dispatch the workflow on that tag with publication enabled. It verifies the tag, existing release, signer workflow and provenance before uploading the integration ZIP, checksum and `.intoto.jsonl` bundle. It never creates or pushes a tag or creates a Release. Use the [release integrity guide](release-integrity.md) to verify the downloaded archive. GitHub-generated source archives are not covered by this attestation.
+
+Before publication, inspect the final revision's existing checks, installation/upgrade instructions, known limitations and remaining roadmap gates. Local macOS metadata checks do not replace Linux installed-package/container validation, and no-radio CI does not replace physical acceptance. Verify the installed released artifact separately before claiming that delivery is validated. Do not close the target milestone until Dependabot's next target has been selected and updated as described in CONTRIBUTING.md.
 
 ## Agent workflow and PR metadata
 

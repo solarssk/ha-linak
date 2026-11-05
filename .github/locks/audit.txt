@@ -59,6 +59,11 @@ ast-serialize==0.13.1 \
     --hash=sha256:f8b17e2921e56621bcb46792bd3e0b82ca3b85de78d5936e7b8174ba1758b0aa \
     --hash=sha256:fb8021f4dc3296de18737e3b8b34994411da725374d74a0b9eb32a738f2a23d0
     # via mypy
+atheris==3.1.0 \
+    --hash=sha256:315a0b5c819852b1ffe1ca72efc389c7724881f2c33e4aacb8c6bcec49bd5011 \
+    --hash=sha256:ec5e11f21a4c197fe91f7aea2b2de88e623c73a21fc07b105ac6329a1588457b \
+    --hash=sha256:f8a9f51ce8369026e8eb7b7174835e8c4c85a1a6db5d9add36c15100779d2a39
+    # via -r requirements-tools.txt
 boolean-py==5.0 \
     --hash=sha256:60cbc4bad079753721d32649545505362c754e121570ada4658b852a3a318d95 \
     --hash=sha256:ef28a70bd43115208441b53a045d1549e2f0ec6e3d08a9d142cbc41c1938e8d9

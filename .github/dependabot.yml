@@ -15,6 +15,7 @@ updates:
     exclude-paths:
       - ".github/locks/**"
     allow:
+      - dependency-name: atheris
       - dependency-name: ruff
       - dependency-name: mypy
       - dependency-name: pip-audit
@@ -23,7 +24,7 @@ updates:
       - dependency-name: wheel
     groups:
       tooling:
-        patterns: ["ruff", "mypy", "pip-audit", "pytest-cov", "setuptools", "wheel"]
+        patterns: ["atheris", "ruff", "mypy", "pip-audit", "pytest-cov", "setuptools", "wheel"]
     ignore:
       - dependency-name: homeassistant
       - dependency-name: pytest-homeassistant

@@ -1,0 +1,109 @@
+name: Release artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release_assets:
+        description: Upload signed assets to an existing GitHub Release for this tag
+        required: true
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build integration archive
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+      - name: Build and validate the integration archive
+        env:
+          PUBLISH_RELEASE_ASSETS: ${{ inputs.publish_release_assets }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+          if [[ "$PUBLISH_RELEASE_ASSETS" == "true" && "$RELEASE_REF_TYPE" != "tag" ]]; then
+            echo "Publishing requires dispatching this workflow on the release tag." >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_REF_TYPE" == "tag" ]]; then
+            python scripts/build_release_artifact.py --output-dir dist --tag "$RELEASE_TAG"
+          else
+            python scripts/build_release_artifact.py --output-dir dist
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ha-linak-release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  attest:
+    name: Attest integration archive
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ha-linak-release
+          path: dist
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/ha_linak.zip
+
+  publish:
+    name: Attach verified assets
+    if: ${{ inputs.publish_release_assets && github.ref_type == 'tag' }}
+    needs: attest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      attestations: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ha-linak-release
+          path: dist
+      - name: Verify the attestation and attach assets to the existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          release_tag="$(gh release view "$RELEASE_TAG" --json tagName --jq .tagName)"
+          if [[ "$release_tag" != "$RELEASE_TAG" ]]; then
+            echo "The existing release does not point to the selected tag." >&2
+            exit 1
+          fi
+          gh attestation verify dist/ha_linak.zip \
+            --repo solarssk/ha-linak \
+            --signer-workflow solarssk/ha-linak/.github/workflows/release-artifact.yml \
+            --source-ref "refs/tags/$RELEASE_TAG"
+          cd dist
+          gh attestation download ha_linak.zip --repo solarssk/ha-linak
+          digest="$(cut -d ' ' -f1 ha_linak.zip.sha256)"
+          mv "sha256:${digest}.jsonl" ha_linak.intoto.jsonl
+          gh release upload "$RELEASE_TAG" \
+            ha_linak.zip \
+            ha_linak.zip.sha256 \
+            ha_linak.intoto.jsonl

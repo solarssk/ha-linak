@@ -25,6 +25,10 @@ LINAK brings DPG1C desk readings, centimeter controls and selected panel setting
 - Optionally enable **Keep connected** to deliberately release the link and suspend polling until connection is requested again. Connection intent survives restart; reconnection uses fresh reads and never replays a movement.
 - Use English or Polish setup and entity labels. Administrators can explicitly request a read-only protocol inventory on an existing ready connection; review raw research responses privately before sharing.
 
+### 🔒 Security
+
+- The integration ZIP attached to a GitHub Release includes a SHA-256 checksum and a Sigstore-backed build attestation. Verify both before installing; GitHub-generated source archives are not covered. See the [release artifact verification guide](docs/release-integrity.md).
+
 ### 📌 Known limitations
 
 - Hardware evidence covers one DPG1C, not every function or firmware. Other panel variants, fresh unbonded onboarding and proxy-only/mixed-backend control acceptance remain unverified. Default-catalog acceptance is not claimed.

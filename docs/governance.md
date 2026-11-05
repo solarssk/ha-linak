@@ -36,7 +36,7 @@ AGENTS.md is the single instruction source and CLAUDE.md imports it. It provides
 
 Every PR requires one supported type label, an open target release milestone and a maintainer assignee. This is the repository's explicit policy, using playbook label conventions; it is not a universal Tier 2 requirement. Area/priority labels remain optional. Query the active milestone on GitHub instead of keeping a version in agent instructions.
 
-The existing required Documentation impact job runs check_pr_metadata.py in addition to check_pr_docs.py, with unchanged read-only permissions and check name. Metadata edits trigger a new run. The job is skipped once the pull request is no longer open, because a rerun after a squash merge cannot diff the deleted head and would only report a false failure; every open pull request still runs it. No admin token, automatic metadata mutation or pull_request_target checkout is introduced. The metadata validator accepts an event payload in CI and can read a live PR through --pr for maintainer handoff verification. Its passing result is a snapshot; agents must still verify live fields/current head before handoff. The maintainer remains the only merger.
+The existing required Documentation impact job runs check_pr_metadata.py in addition to check_pr_docs.py, with read-only contents/pull-request permissions and the same check name. It reads current metadata through the GitHub API so out-of-order label, milestone and assignee events cannot validate an older event snapshot. Metadata edits trigger a new run. The job is skipped once the pull request is no longer open, because a rerun after a squash merge cannot diff the deleted head and would only report a false failure; every open pull request still runs it. No admin token, automatic metadata mutation or pull_request_target checkout is introduced. The metadata validator accepts an event payload in CI and can read a live PR through --pr for maintainer handoff verification. Its passing result is a snapshot; agents must still verify live fields/current head before handoff. The maintainer remains the only merger.
 
 ## Label taxonomy
 
@@ -51,7 +51,7 @@ Keep one compact taxonomy, with exactly one type per PR:
 | `dependencies` | Supplement the type for dependency updates |
 | `security` | Supplement the type for security corrections |
 
-Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem labels or one-off blocking labels. Dependabot already supplies type: chore and dependencies explicitly. Before retiring a label, inspect all its issue/PR associations and migrate any useful classification first. Removing an obsolete status label also removes it from historical items; that must be deliberate.
+Do not keep parallel bug/documentation/enhancement aliases, language/ecosystem labels or one-off blocking labels. Dependabot supplies type: chore, dependencies, the maintainer assignee and the numeric target milestone explicitly for both ecosystems. The metadata gate remains read-only and enforces the same policy for bot and human PRs. Update all configured milestone numbers before closing the current release milestone; existing PRs need a separate live-field check. Before retiring a label, inspect all its issue/PR associations and migrate any useful classification first. Removing an obsolete status label also removes it from historical items; that must be deliberate.
 
 ## Startup and version compatibility gates
 

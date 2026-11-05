@@ -31,6 +31,32 @@ def test_plugin_owns_pytest_stack_and_generated_pins_are_excluded():
     )
 
 
+@pytest.mark.parametrize("ecosystem", ["pip", "github-actions"])
+def test_dependabot_supplies_required_pr_metadata(ecosystem):
+    from scripts.check_pr_metadata import validate as validate_metadata
+
+    policy = yaml.safe_load((ROOT / ".github/dependabot.yml").read_text())
+    updates = [
+        update
+        for update in policy["updates"]
+        if update["package-ecosystem"] == ecosystem
+    ]
+    assert updates, f"Missing Dependabot configuration for {ecosystem}"
+    for update in updates:
+        # The number selects a real GitHub milestone; CI cannot prove its live state.
+        assert type(update.get("milestone")) is int
+        assert update["milestone"] > 0
+        assert "dependencies" in update["labels"]
+        assert "solarssk" in update["assignees"]
+        validate_metadata(
+            {
+                "labels": [{"name": name} for name in update["labels"]],
+                "milestone": {"number": update["milestone"], "state": "open"},
+                "assignees": [{"login": name} for name in update["assignees"]],
+            }
+        )
+
+
 def test_required_checks_are_real_jobs_and_workflows_are_least_privileged():
     names = set()
     for file in (ROOT / ".github/workflows").glob("*.yml"):
@@ -350,11 +376,17 @@ def test_metadata_gate_reruns_when_handoff_fields_change():
         "assigned",
         "unassigned",
     } <= set(triggers["pull_request"]["types"])
-    assert workflow["permissions"] == {"contents": "read"}
-    assert any(
-        step.get("run") == "python3 scripts/check_pr_metadata.py"
+    assert workflow["permissions"] == {"contents": "read", "pull-requests": "read"}
+    step = next(
+        step
         for step in workflow["jobs"]["docs"]["steps"]
+        if step.get("name") == "Validate current PR metadata"
     )
+    assert step["run"] == 'python3 scripts/check_pr_metadata.py --pr "$PR_NUMBER"'
+    assert step["env"] == {
+        "GH_TOKEN": "${{ github.token }}",
+        "PR_NUMBER": "${{ github.event.pull_request.number }}",
+    }
 
 
 def test_documentation_gate_skips_pull_requests_that_are_no_longer_open():

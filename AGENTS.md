@@ -56,7 +56,7 @@ Set these actual GitHub fields when opening the PR, not just checkboxes in its b
 - The open milestone for the release receiving the change. Reuse the existing target; do not invent or close a milestone to satisfy a check. If release intent is ambiguous, resolve it before handing off.
 - A responsible maintainer assignee, currently @solarssk.
 
-This small repository deliberately does not require area or priority labels. The mandatory type/milestone/assignee policy is a local project decision, using playbook conventions. Do not claim that every playbook tier mandates all fields. Dependabot PRs need the same metadata before handoff; add their milestone manually.
+This small repository deliberately does not require area or priority labels. The mandatory type/milestone/assignee policy is a local project decision, using playbook conventions. Do not claim that every playbook tier mandates all fields. Dependabot PRs need the same metadata before handoff; `.github/dependabot.yml` supplies their labels, maintainer and target milestone. When advancing the release, update every ecosystem's milestone number before closing the previous milestone, and verify it against the live open milestone.
 
 Read back the live fields with `python scripts/check_pr_metadata.py --pr NUMBER`. The required Documentation impact job checks metadata as well as documentation, and reruns on label, milestone and assignee edits. Local metadata checks are read-only; they never silently assign or change anything.
 

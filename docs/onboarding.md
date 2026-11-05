@@ -89,8 +89,6 @@ Equal heights remain separate slots. Optional timeouts and malformed replies nev
 
 The verified read protocol does not supply mechanical travel limits. Saved/favorite positions are not those limits and never populate bounds, define their minimum/maximum or authorize movement. Both measured bounds remain required for target and memory travel. New bounds serialize with explicit null defaults so HA leaves them blank: required number selectors without defaults otherwise initialize to zero in the frontend. Existing saved bounds and rejected submitted values stay visible without rounding or replacement.
 
-🇵🇱 Kreator pokazuje odczytane pozycje pamięci już przy wyborze nazwy, a także w formularzu zakresu ruchu. `-` oznacza pustą pamięć, `?` brak dostępnego odczytu, a `n/a` nieobsługiwany numer pamięci. Zapisane pozycje nie są fizycznymi limitami ani pomiarami miarką. Nie wyliczamy z nich zakresu i nie odblokowujemy ruchu. Brak zmierzonych granic jest pokazywany jako puste pola, nie 0 cm; istniejące pomiary pozostają bez zmian.
-
 ## Monitoring only
 
 On the name step of setup, **Monitoring only** is an optional choice. It is off by default, so the normal path with controls stays the default.

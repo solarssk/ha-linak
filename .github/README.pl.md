@@ -149,15 +149,15 @@ Włącz encję **Utrzymuj połączenie** w jej ustawieniach, aby pokazać przeł
 
 W **Preferowane jednostki panelu** wybierz **Metryczne** lub **Cale**. Nie zmienia to jednostek w Home Assistant. Opcja Metryczne nie pozwala wybrać między centymetrami a milimetrami.
 
-Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](../docs/controls.md#choose-panel-units).
+Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](../docs/controls.pl.md#jednostki-panelu).
 
 Dla pozostałych ustawień wybierz procedurę odpowiadającą zadaniu:
 
 | Zadanie | Od czego zacząć | Przed zapisem |
 | --- | --- | --- |
-| Nazwa, zmierzony zakres lub korekta wysokości | [Konfiguracja biurka](../docs/controls.md#configure-the-desk-after-installation) | Przy korekcie wpisz pomiar od podłogi do blatu, sprawdź i potwierdź; bez ruchu |
-| Profil przypomnień | [Wyłączone lub Profil 1/2/3](../docs/controls.md#choose-a-reminder-profile) | Aktywny klient, poprawne odczyty i nieruchome biurko; czasy pozostają bez zmian |
-| Czas przypomnień | [Edycja jednego czasu](../docs/controls.md#edit-one-reminder-duration) | Włącz pole, wybierz Wyłączone lub inny profil, wpisz 1–60 pełnych minut |
+| Nazwa, zmierzony zakres lub korekta wysokości | [Konfiguracja biurka](../docs/controls.pl.md#zakres-i-korekta-wysokości) | Przy korekcie wpisz pomiar od podłogi do blatu, sprawdź i potwierdź; bez ruchu |
+| Profil przypomnień | [Wyłączone lub Profil 1/2/3](../docs/controls.pl.md#przypomnienia) | Aktywny klient, poprawne odczyty i nieruchome biurko; czasy pozostają bez zmian |
+| Czas przypomnień | [Edycja jednego czasu](../docs/controls.pl.md#przypomnienia) | Włącz pole, wybierz Wyłączone lub inny profil, wpisz 1–60 pełnych minut |
 
 Edycja zachowuje pozostałe czasy i flagi. Istniejące nazwy i wybory włączenia pozostają bez zmian; czujniki tylko do odczytu nadal są włączone. Wartości poza zakresem pozostają widoczne bez automatycznego nadpisywania. Przycisk standardowego czasu ustawia tylko 55 minut siedzenia profilu 1, bez resetu i przywracania kopii. Edycja zapisanych pozycji jest niedostępna.
 
@@ -246,17 +246,18 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 Wybierz instrukcję dla swojego zadania:
 
-- **Konfiguracja:** [Ustawienia i pierwszy test sterowania](../docs/controls.md).
+- **Konfiguracja:** [Ustawienia i sterowanie po polsku](../docs/controls.pl.md).
 - **Problemy z połączeniem lub sterowaniem:** [Rozwiązywanie problemów po angielsku](../docs/diagnostics.md#choose-the-symptom).
-- **Zgłoszenie błędu:** [Zbierz dane po polsku](../docs/diagnostics.md#zgłoszenie-i-logi-po-polsku), następnie wypełnij [formularz](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml).
-- **Pomoc w opisaniu problemu:** [Opcjonalna instrukcja dla AI](../docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai), bez dostępu do HA i automatycznego wysyłania.
+- **Zgłoszenie błędu:** [Zbierz dane po polsku](../docs/diagnostics.pl.md), następnie wypełnij [formularz](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml).
+- **Pomoc w opisaniu problemu:** [Opcjonalna instrukcja dla AI](../docs/diagnostics.pl.md#przygotuj-zgłoszenie-z-pomocą-ai), bez dostępu do HA i automatycznego wysyłania.
 
 ### Dla testerów i programistów
 
 - [Spis dokumentacji technicznej](../docs/README.md)
 - [Rodziny urządzeń i testowanie kolejnego modelu](../docs/device-support.md)
 - [Zakres testów sprzętowych i znane ograniczenia](../docs/hardware-results.md)
-- [Lista zmian](../CHANGELOG.md) · [Plan rozwoju](../docs/roadmap.md) · [Współpraca](../CONTRIBUTING.md)
+- [Lista zmian](../CHANGELOG.md) · [Plan rozwoju](../docs/roadmap.md)
+- [Współpraca po polsku](../CONTRIBUTING.pl.md)
 - [Prywatne zgłaszanie podatności](../SECURITY.md)
 
 <a id="license"></a>

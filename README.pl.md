@@ -79,7 +79,7 @@ Suwak działa co 1 cm w zmierzonym zakresie. Aktualizuje się po zakończeniu ja
 
 W **Preferowane jednostki panelu** wybierz **Metryczne** lub **Cale**. Nie zmienia to jednostek w Home Assistant. Opcja Metryczne nie pozwala wybrać między centymetrami a milimetrami.
 
-Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](docs/controls.md#choose-panel-units).
+Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](docs/controls.pl.md#jednostki-panelu).
 
 ### Diagnostyka
 
@@ -133,7 +133,7 @@ Przypomnienia zmienisz w sekcji **Konfiguracja** na stronie urządzenia:
 
 Wszystkie sześć pól i przycisk standardowego czasu są domyślnie wyłączone dla nowych encji. Istniejące nazwy i wybory włączenia pozostają bez zmian, a czujniki czasów nadal są włączone. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia na **55 minut**, bez resetu fabrycznego.
 
-Zapis przypomnień wymaga aktywnego klienta, poprawnych odczytów i nieruchomego biurka; nie aktywuje go ani nie porusza. Wybór profili 1/2 wymaga jeszcze akceptacji sprzętowej. Na sprzęcie sprawdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1; pozostałe pola mają testy symulowane. Zakres pola jest zasadą integracji, nie zaleceniem medycznym ani limitem firmware. [Procedura przypomnień](docs/controls.md#edit-one-reminder-duration) opisuje odzyskanie po błędzie i odczyty poza zakresem.
+Zapis przypomnień wymaga aktywnego klienta, poprawnych odczytów i nieruchomego biurka; nie aktywuje go ani nie porusza. Wybór profili 1/2 wymaga jeszcze akceptacji sprzętowej. Na sprzęcie sprawdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1; pozostałe pola mają testy symulowane. Zakres pola jest zasadą integracji, nie zaleceniem medycznym ani limitem firmware. [Procedura przypomnień](docs/controls.pl.md#przypomnienia) opisuje odzyskanie po błędzie i odczyty poza zakresem.
 
 Puste pamięci nie blokują konfiguracji. Niedostępna grupa pamięci lub przypomnień nie musi blokować wysokości. Po przekroczeniu czasu odczytu grupa czeka pięć minut na ponowienie; przyciski Pozycja wymagają poprawnego odczytu całej pamięci.
 
@@ -141,9 +141,9 @@ Puste pamięci nie blokują konfiguracji. Niedostępna grupa pamięci lub przypo
 
 Zacznij od **Połączenia** i komunikatu Home Assistanta. Instrukcja zgłoszeń opisuje zbieranie i anonimizację diagnostyki:
 
-- [Konfiguracja i pierwszy test sterowania](docs/controls.md)
-- [Zgłoszenie i logi po polsku](docs/diagnostics.md#zgłoszenie-i-logi-po-polsku)
-- [Opcjonalna pomoc AI w opisaniu problemu](docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai)
+- [Konfiguracja i sterowanie](docs/controls.pl.md)
+- [Zgłoszenie i logi po polsku](docs/diagnostics.pl.md)
+- [Opcjonalna pomoc AI w opisaniu problemu](docs/diagnostics.pl.md#przygotuj-zgłoszenie-z-pomocą-ai)
 - [Zgłoś błąd](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml)
 
 ## 📚 Dokumentacja techniczna
@@ -153,6 +153,7 @@ Materiały dla osób testujących kolejne modele i rozwijających integrację, p
 - [Spis dokumentacji](docs/README.md)
 - [Rodziny urządzeń i instrukcja dla testerów](docs/device-support.md)
 - [Zakres testów sprzętowych i znane ograniczenia](docs/hardware-results.md)
-- [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md) · [Współpraca](CONTRIBUTING.md)
+- [Lista zmian](CHANGELOG.md) · [Plan rozwoju](docs/roadmap.md)
+- [Współpraca po polsku](CONTRIBUTING.pl.md)
 
 Niezależny projekt społecznościowy, niezwiązany z LINAK ani IKEA. Kod jest na licencji MIT; grafiki LINAK należą do ich właściciela. [Pochodzenie grafik](docs/branding.md).

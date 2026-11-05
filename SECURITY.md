@@ -79,7 +79,7 @@ Opiekun projektu ocenia zgłoszenia oraz uzgadnia poprawkę i ujawnienie w prywa
 
 **Jeśli dane wrażliwe trafiły do publicznego wpisu, usuń je i unieważnij ujawnione dane dostępowe**, zanim przejdziesz do rozmowy prywatnej.
 
-Zwykłe błędy połączenia, konfiguracji i interfejsu zgłaszaj przez [polski formularz błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml). [Instrukcja diagnostyczna po polsku](docs/diagnostics.md#zgłoszenie-i-logi-po-polsku) opisuje bezpieczne zebranie danych.
+Zwykłe błędy połączenia, konfiguracji i interfejsu zgłaszaj przez [polski formularz błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml). [Instrukcja diagnostyczna po polsku](docs/diagnostics.pl.md) opisuje bezpieczne zebranie danych.
 
 ### Granice bezpieczeństwa
 

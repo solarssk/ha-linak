@@ -1,8 +1,8 @@
 # 🤝 Help improve LINAK
 
-You can help by reporting a problem, suggesting an improvement or pointing out confusing instructions. You don't need to write code.
+**English** · [Polski](CONTRIBUTING.pl.md)
 
-🇵🇱 Problemy i pomysły możesz opisać po polsku. Napisz, co chcesz zrobić i co się dzieje. Nie musisz znać technicznych szczegółów.
+You can help by reporting a problem, suggesting an improvement or pointing out confusing instructions. You don't need to write code.
 
 ## Where to start
 
@@ -36,10 +36,6 @@ The form also asks for a few details:
 Write “not sure” if you can't find a detail. You can add it later if the maintainer needs it.
 
 Prefer help writing? The optional [AI-assisted report instructions](docs/diagnostics.md#prepare-a-report-with-ai) turn your observations into a draft for review. Reporting does not require AI or log attachments.
-
-### Pomoc w zgłoszeniu po polsku
-
-Możesz skorzystać z [instrukcji przygotowania zgłoszenia z AI](docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai), a potem sprawdzić szkic i wkleić go do [polskiego formularza](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml). To opcja, nie wymóg. Brak logów nie blokuje zgłoszenia. Usuń prywatne dane przed przekazaniem ich modelowi.
 
 ### Before sharing
 
@@ -208,6 +204,8 @@ When updating a document:
 
 Before handing off, follow one reader path from the [index](docs/README.md), check links/anchors, verify names and commands against the implementation, and remove contradictory claims. Keep one source of truth per fact.
 
+Keep each owner guide in one language. Put Polish guidance in a separate `.pl.md` file with reciprocal language links at the top. Do not insert Polish paragraphs into English procedures or switch back to English after a Polish subsection. Label links to English-only technical references explicitly in the Polish guide. Repository-wide policies such as SECURITY.md may keep complete English and Polish sections under separate level-two language headings, without alternating between them.
+
 The [writing review checklist](https://github.com/vercel-labs/writing-guidelines/blob/main/command.md) can help with clarity. Repository Markdown conventions take precedence over framework-specific front matter, MDX and frontend requirements.
 
 ### Changelog and release notes
@@ -269,8 +267,6 @@ Lock freshness checks preserve existing transitive pins. To deliberately update 
 Dependabot's pip `allow` list names only independent tools from `requirements-tools.txt` and `requirements-build.txt`; update that list and its tooling group when adding a tool. HA-owned packages and the deliberately chosen `uv` resolver are not eligible for independent updates. Keep generated component, audit and resolver inputs fetchable: excluding a file referenced through `-r` or `-c` prevents Dependabot from parsing the graph before package filters run. Only `.github/locks/**` is path-excluded. Regenerate locks after an accepted tool update; the policy tests check input reachability and package ownership. See the [native allow/ignore semantics](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#allow--).
 
 Locks target Python 3.14.2 and Linux glibc 2.39; don't use them as macOS or runtime HA dependency files.
-
-🇵🇱 Lista pip `allow` Dependabota obejmuje tylko niezależne narzędzia z `requirements-tools.txt` i `requirements-build.txt`. Dodając narzędzie, zaktualizuj tę listę i grupę tooling. Pakiety zarządzane przez HA oraz świadomie wybrany resolver `uv` nie podlegają osobnym aktualizacjom. Pliki wskazane przez `-r` lub `-c` muszą pozostać dostępne do pobrania, także wygenerowane wejścia komponentów, audytu i resolvera. Wykluczenie ścieżki przerywa parsowanie przed filtrowaniem pakietów. Wykluczone pozostaje tylko `.github/locks/**`; po zaakceptowaniu aktualizacji narzędzi wygeneruj locki ponownie. Testy polityki sprawdzają dostępność wejść i podział odpowiedzialności za pakiety.
 
 </details>
 

@@ -1,5 +1,7 @@
 # Configure and test desk controls
 
+**English** · [Polski](controls.pl.md)
+
 Use this guide to configure height, reminders and native controls. **Position 1–4** buttons request movement; **Stored height 1–4** sensors only display saved heights.
 
 **Initial tests require someone at the desk with physical stopping available.** Complete travel and physical Stop accuracy are not yet validated across supported environments.
@@ -15,8 +17,6 @@ Choose your task:
 | Slider, Position buttons or Stop | [Set measured bounds](#set-measured-command-bounds), then [use controls](#use-the-native-controls) |
 | Release or reconnect Bluetooth | [Keep connected](#keep-connected-switch) |
 | Agreed hardware test | [Test at the panel](#test-native-controls-at-the-panel) |
-
-Polish guidance is grouped in [Ustawienia i sterowanie po polsku](#ustawienia-i-sterowanie-po-polsku).
 
 ## Configure the desk after installation
 
@@ -207,38 +207,6 @@ Clear the travel path, have physical stopping available and disable any other in
 The native slider has no standalone runner's 2 cm experiment cap. Choose the test target deliberately from the fresh actual height, not a rounded value copied from another desk. Do not continue after unexpected direction, failure to stop, a reference disagreement or repeated action errors.
 
 </details>
-
-## Ustawienia i sterowanie po polsku
-
-Przyciski **Pozycja 1–4** zlecają ruch. Czujniki **Zapisana wysokość 1–4** tylko pokazują zapisane wartości. Pierwsze testy wymagają obecności przy biurku i możliwości fizycznego zatrzymania; pełny dojazd i dokładność Stop pozostają niezweryfikowane.
-
-Przed ruchem skonfiguruj zakres:
-
-1. Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**.
-2. Wpisz obie zmierzone granice wysokości. Pozycje pamięci widoczne w kreatorze nie są limitami i nie wypełniają pustych pól.
-3. Przy korekcie wysokości pozostaw biurko nieruchome, wpisz pomiar od podłogi do blatu i sprawdź propozycję przed potwierdzeniem.
-
-**Tylko monitorowanie** pozwala skonfigurować odczyty bez zapisu na panelu i bez zakresu. Zakres dodasz później przez **Konfiguruj**.
-
-Przypomnienia zmienisz na stronie urządzenia w sekcji **Konfiguracja**:
-
-1. Poczekaj na poprawne odczyty i pozostaw biurko nieruchome. Zapis wymaga aktywnego klienta.
-2. Wybierz **Wyłączone** lub inny profil przed zmianą czasu. Wybór profilu zachowuje czasy; nie porusza biurkiem i nie aktywuje klienta.
-3. Włącz potrzebne pole czasu w ustawieniach encji i wpisz **1–60 pełnych minut**.
-4. Po błędzie sprawdź rzeczywiste ustawienie po odzyskaniu połączenia, zanim ponowisz zapis. Nie ma automatycznego ponowienia ani cofnięcia.
-
-Ważne zasady przypomnień:
-
-- Wszystkie sześć pól i przycisk standardowego czasu są domyślnie wyłączone dla nowych encji. Istniejące nazwy i wybory włączenia pozostają bez zmian.
-- Czujniki czasów nadal są włączone. Ukrycie pola nie wyłącza przypomnień panelu i nie zmienia odczytów Bluetooth.
-- Edycja zmienia tylko wybrany czas. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia profilu 1 na **55 minut**, bez resetu.
-- Wartości poza zakresem pozostają widoczne bez automatycznego nadpisywania. Zakres pola nie jest limitem firmware ani zaleceniem medycznym.
-- Na sprzęcie sprawdzono tylko 50/55 minut w nieaktywnym profilu 1. Wybór profili 1/2 wymaga jeszcze akceptacji sprzętowej.
-- Zmiany na panelu mogą pojawić się po około 5–6 minutach. Zapis z HA aktualizuje stan po potwierdzonym odczycie.
-
-Wybór jednostek panelu nie zmienia jednostek HA. Nie poruszaj biurkiem tylko po to, aby odświeżyć wyświetlacz. Przed kolejnym celem poczekaj na koniec ruchu albo naciśnij **Stop**; polecenia nie trafiają do kolejki.
-
-Encja **Utrzymuj połączenie** jest domyślnie wyłączona w rejestrze. Po jej włączeniu możesz użyć przełącznika do zwolnienia połączenia. Wyłączenie wstrzymuje odczyty i ponowne łączenie także po restarcie; podczas jazdy najpierw próbuje zatrzymać biurko. Jeśli zatrzymanie się nie potwierdzi, sprawdź biurko i użyj panelu fizycznego.
 
 ## Interpret and report the result
 

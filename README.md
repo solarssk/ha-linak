@@ -25,7 +25,12 @@ Control a height-adjustable desk with a LINAK **DPG1C** panel from Home Assistan
 
 \* DPG1C was checked on one panel within the [documented test scope](docs/hardware-results.md). This does not mean every function and device version has been fully validated.
 
-**0.1.0 scope:** native controls and settings for supervised use on DPG1C, not a claim of completed hardware acceptance. Full-range arrival, physical stopping accuracy, repeatable panel handback and long-term Bluetooth reliability remain unverified. Startup and recovery can be slow or fail, including after enabling Keep connected. See the [release notes](CHANGELOG.md) and [evidence and remaining tests](docs/hardware-results.md#hardware-acceptance-matrix) before using automations.
+**0.1.0 is for supervised use on DPG1C.** Hardware acceptance is not complete:
+
+- Full-range arrival, physical stopping accuracy and repeatable panel handback remain unverified.
+- Long-term Bluetooth reliability remains unverified. Startup and recovery can be slow or fail, including after enabling Keep connected.
+
+Before using automations, read the [release notes](CHANGELOG.md) and [remaining hardware tests](docs/hardware-results.md#hardware-acceptance-matrix).
 
 Check the model on the panel label. [Testing another model](docs/device-support.md#test-another-panel) has its own guide.
 
@@ -108,9 +113,9 @@ Choose **Monitoring only** in setup if you want readings without preparing movem
 
 Allow up to **60 seconds** for connection and another **10 seconds** to release a failed attempt. If setup fails, follow the displayed message and retry. [Manual installation](.github/README.md#installation).
 
-Marketplace is built into HA 2026.11 and migrates existing HACS repositories/installations. This project is added from a link; default-catalog acceptance is not claimed. Installed HA and Marketplace views can use the bundled icon/logo, including dark-theme fallbacks. An icon before installation depends on catalog/release branding and is not guaranteed for this custom link. [Branding details](docs/hacs-presentation.md#name-and-catalog-icon).
+Marketplace replaces HACS in HA 2026.11 and migrates existing installations. Add this project from its link; default-catalog acceptance and a pre-installation icon are not guaranteed. Installed views can use the bundled images. See [branding details](docs/hacs-presentation.md#name-and-catalog-icon).
 
-HA versions below 2026.11.0 are unsupported, including manual installations. The minimum in `hacs.json` is checked for repositories with releases; it is not a runtime guard for every manual or default-branch installation.
+**HA below 2026.11.0 is unsupported**, including manual installations. A manual or default-branch install may not enforce that minimum.
 
 ## ⚙️ Adjust the desk settings
 
@@ -118,18 +123,27 @@ Open **Settings → Devices & services → LINAK → Configure** to change the n
 
 If the panel shows the wrong height, measure from the floor to the top of the desktop. Enter that value in **Height measured with a tape**, then review and confirm the correction. Saving the correction doesn't move the desk.
 
-Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
+Height displays use whole centimeters; calibration keeps your measurement precision. Saved-position editing is unavailable.
 
-On the device page under **Configuration**, type **1–60 whole minutes** into a sitting or standing input for Profile 1/2/3. All six inputs and the standard-time button are disabled by default for new entities; enable only those you need in their entity settings. Existing names and enabled/disabled choices are preserved, and the read-only duration sensors stay enabled by default. Select Off or another profile first; changing an active profile's duration is refused. Only the chosen duration changes, without adjusting its pair or switching profiles. **Profile 1: use standard time** assigns only its sitting time to **55 minutes**, not a factory reset or automatic restore. Existing out-of-range values stay visible without automatic overwrite. The range is integration policy, not medical or firmware limits. All six fields have simulated coverage; hardware evidence covers only 50/55 sitting minutes in inactive profile 1. [Interval details](docs/settings-reference.md#edit-reminder-durations).
+For reminders, use the device page's **Configuration** section:
 
-Unused memory slots do not need to be filled before setup. If saved positions or reminders cannot be read, height can remain available while the affected settings are unavailable. A timed-out group is retried after five minutes; stored-position buttons require a complete valid memory read.
+1. Select **Off** or another profile before editing a profile's duration.
+2. Enable the sitting/standing input you need in its entity settings.
+3. Enter **1–60 whole minutes**. Only that duration changes; the other durations and settings are preserved.
+
+All six inputs and the standard-time button are disabled by default for new entities. Existing names and enablement choices are preserved; read-only duration sensors stay enabled. **Profile 1: use standard time** sets only its sitting time to **55 minutes**, not a factory reset.
+
+Reminder writes need an active client, valid readings and a stationary desk; they do not activate or move it. Profile 1/2 selection still needs hardware acceptance. Duration hardware evidence covers only 50/55 sitting minutes in inactive profile 1; other fields have simulated coverage. The input range is integration policy, not medical guidance or a firmware limit. See the [reminder procedure](docs/controls.md#edit-one-reminder-duration) for recovery and out-of-range readings.
+
+Empty memory slots do not block setup. Unreadable memory/reminder groups can be unavailable while height still works. A timed-out group waits five minutes before retry; Position buttons need a complete valid memory read.
 
 ## 🛠️ Get help
 
-If readings become unavailable, check **Connection** and the error shown by Home Assistant. Open the LINAK device page to download diagnostics. For a bug report, include the panel model, HA/integration versions and whether you use a local adapter or proxy. Remove private names and Bluetooth addresses from any logs you attach.
+Start with **Connection** and the error shown by Home Assistant. The reporting guide explains how to collect and redact diagnostics.
 
 - [Configuration and first control test](docs/controls.md)
-- [Troubleshooting](docs/diagnostics.md)
+- [Troubleshooting and reporting](docs/diagnostics.md#prepare-a-bug-report)
+- [Optional help drafting a report with AI](docs/diagnostics.md#prepare-a-report-with-ai)
 - [Report a bug](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml)
 
 ## 📚 Technical documentation

@@ -2,6 +2,17 @@
 
 This reference explains the configuration flow and connection lifecycle. Use the [control guide](controls.md) for owner-facing configuration steps and the [diagnostic manual](diagnostics.md) when a step fails. Discovery, Bluetooth authentication and DPG client activation are separate stages.
 
+For the first connection, follow [installation](../README.md#-install-and-connect), then [configure the desk](controls.md#configure-the-desk-after-installation). Use this reference for lifecycle details:
+
+| Question | Section |
+| --- | --- |
+| Another integration owns the desk | [One integration per desk](#one-integration-per-desk) |
+| What the wizard checks | [Setup sequence](#setup-sequence) |
+| Readings without movement setup | [Monitoring only](#monitoring-only) |
+| Pairing and backend behavior | [Connection and authentication](#connection-and-authentication) |
+| Connection deadlines and retries | [Session lifetime](#session-lifetime-and-deadlines) |
+| Change an existing entry | [After installation](#changes-after-installation) |
+
 LINAK is configured through Home Assistant config entries in **Settings → Devices & services**, not an `ha_linak:` YAML block. An unsupported YAML block is reported through Repairs and does not create a desk entry. Component setup only registers the explicit research action; Bluetooth work belongs to the entry lifecycle below.
 
 ## Product family check
@@ -10,11 +21,26 @@ Discovery finds a candidate by service UUID, not a model by MAC address. Availab
 
 ## One integration per desk
 
-Before connecting, preparing the client, confirming calibration or handing a completed wizard session to runtime, LINAK checks for an enabled `idasen_desk` entry with the same normalized Bluetooth address. The official HA 2026.10.4 integration stores that address in `data.address`; a missing/invalid data address falls back to the entry's unique ID. Colons, hyphens, compact hexadecimal and dotted MAC forms compare consistently. Disabled or ignored entries and other desks do not block setup. An enabled entry still counts if its own setup failed, because it can retry.
+LINAK checks for an enabled `idasen_desk` entry with the same Bluetooth address before connecting, preparation, calibration confirmation and setup handoff. An enabled entry still counts if its setup failed, because it can retry. Disabled/ignored entries and other desks do not block setup.
 
-If the conflict message appears, open **Settings → Devices & services → IKEA Idasen Desk**, disable the entry for this desk, then retry LINAK. Disabling keeps the IKEA configuration. LINAK never disables, deletes, renames or changes that entry. Keeping IKEA enabled instead is also possible: leave the LINAK entry disabled.
+If a conflict appears:
 
-Loaded LINAK entries recheck ownership on each scheduled idle refresh and before a new movement or calibration. An idle refresh detecting conflict releases LINAK's own connection and reports unavailable; normal refresh/retry can recover after IKEA is disabled. Stop remains available for an already owned connection, and an operation already in progress keeps its cleanup ownership. This is a check of configured entries, not a Bluetooth-wide lock: it cannot arbitrate an unfinished IKEA wizard, external apps or an IKEA enable that races an operation already underway. It does not interrupt an ongoing move automatically or introduce a registry watcher.
+1. Open **Settings → Devices & services → IKEA Idasen Desk**.
+2. Disable its entry for this desk. This preserves the IKEA configuration.
+3. Retry LINAK. To keep using IKEA instead, leave LINAK disabled.
+
+LINAK never disables, deletes, renames or changes the other entry.
+
+The ownership check has these boundaries:
+
+| Situation | Behavior |
+| --- | --- |
+| Idle refresh detects a conflict | Release LINAK's link and report unavailable; normal retry can recover once IKEA is disabled |
+| New movement or calibration | Recheck ownership before starting |
+| Operation already running | Keep cleanup ownership; Stop remains available on the owned link; no automatic interruption |
+| External app, unfinished IKEA wizard or concurrent enable | No Bluetooth-wide lock or registry watcher; the configured-entry check cannot arbitrate these races |
+
+The official HA 2026.10.4 integration stores the address in `data.address`; a missing/invalid address falls back to the unique ID. Colon, hyphen, compact hexadecimal and dotted forms compare consistently.
 
 ## Setup sequence
 
@@ -116,7 +142,9 @@ Connection establishment does not activate the DPG application client. Setup pre
 
 ## Session lifetime and deadlines
 
-The connector receives a device callback so retries can use current HA adapter metadata. HA reevaluates connection paths on each retry, including their previous failures and available slots. LINAK uses the installed connector's retry policy rather than stopping after two failures: a stronger local path can fail twice before HA prefers a working proxy. All retries and subsequent validation still share one 60-second refresh deadline. The deadline can interrupt the connector before its default retry count is reached; it does not grant each retry a new budget. One progress task owns each attempt; revisiting a progress step does not start a second connection.
+All connection retries and validation share **one 60-second refresh deadline**, not a new budget per retry. The deadline can interrupt the connector before its default retry count.
+
+HA reevaluates paths using current adapter metadata, previous failures and available slots. LINAK keeps the installed connector's retry policy: a stronger local path can fail twice before HA prefers a working proxy. One progress task owns the attempt; revisiting a step does not start a second connection.
 
 | Boundary | Budget or behavior |
 | --- | --- |
@@ -131,7 +159,13 @@ The connector receives a device callback so retries can use current HA adapter m
 | Unconsumed setup-to-runtime transfer | Release after 60 seconds or HA shutdown |
 | Abort | Cancel the progress task and drain owned cleanup |
 
-Before HA is running, entry setup raises `ConfigEntryNotReady` without creating a client. HA schedules another setup attempt on `HOMEASSISTANT_STARTED`; unloading the waiting entry removes that retry. After startup, connection and reads share the 60-second refresh budget, with up to 10 seconds of cleanup. This permits the connector's own 20-second attempts and subsequent validation without blocking HA bootstrap. A failed attempt then uses HA's normal retry policy. Entities are forwarded only after a successful read; a transferred setup session is validated without forcing a reconnect. An entry whose Keep connected intent is off skips this first read entirely: it loads without waiting for the desk or for discovery, releases a session still held by the wizard and connects only when the owner turns the switch on (see [deliberate connection ownership](architecture.md#deliberate-connection-ownership)).
+Startup follows this sequence:
+
+1. Before HA is running, raise `ConfigEntryNotReady` without creating a client. Retry on `HOMEASSISTANT_STARTED`; unloading the waiting entry removes that retry.
+2. After startup, allow the connector's 20-second attempts and validation within the shared budget, plus up to 10 seconds of cleanup.
+3. Forward entities only after a successful read. Validate a transferred wizard session without forcing a reconnect; failed attempts use HA's normal retry policy.
+
+If Keep connected intent is off, skip the first read and load without waiting for discovery or the desk. Release any wizard session and connect only when the owner turns the switch on. See [deliberate connection ownership](architecture.md#deliberate-connection-ownership).
 
 An expired idle session can be reopened when the wizard continues. Each new operation must validate fresh state. A failed preparation connection does not immediately launch another automatic read-only connection attempt. After a calibration failure beyond connection establishment, one read-only recovery may refresh the form without replaying the uncertain setting write.
 

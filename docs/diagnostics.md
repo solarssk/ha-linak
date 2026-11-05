@@ -1,16 +1,44 @@
 # Diagnose connection and movement failures
 
-Use this manual to locate the failing layer before changing pairing, bounds or panel settings. A visible desk, a connected BLE client and a desk ready to move are different conditions. Start with the symptom table, then collect the evidence required for that branch.
+Use this guide to report a problem or identify the failing connection/control stage. A visible desk, a connected Bluetooth client and a desk ready to move are different conditions.
+
+Choose a starting point:
+
+| What you need | Start here |
+| --- | --- |
+| Report an observed problem | [Prepare a bug report](#prepare-a-bug-report) |
+| Help writing the report | [Optional AI instructions](#prepare-a-report-with-ai) |
+| Zgłoszenie po polsku | [Dane i logi](#zgłoszenie-i-logi-po-polsku) lub [pomoc AI](#przygotuj-zgłoszenie-z-pomocą-ai) |
+| Understand unavailable entities | [Choose the symptom](#choose-the-symptom) |
+| Interpret a recorded error | [Failed stage](#interpret-the-failed-stage) or [movement failure](#interpret-a-movement-failure) |
+| Inspect downloaded fields | [Diagnostic fields](#diagnostic-entities-and-download-fields) |
 
 ## Prepare a bug report
 
 Start here when opening an [issue](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). You do not need to identify the root cause. Write “unknown” for missing details and report what you already observed; never repeat unexpected movement, induce a disconnect during travel or reset pairing just to obtain a log.
 
-1. Record the exact LINAK version (or commit for a development copy), HA Core version, HA installation type, panel model/known firmware and whether Bluetooth uses a local adapter, a proxy or both. The diagnostic download does not include the integration/HA versions, so supply them separately.
-2. Describe the expected and actual result, exact error text, time with timezone and sequence of actions. Include physical-panel use, recent updates/restarts and whether the desk was stationary. State whether it recovered by itself, how long you waited and what you changed afterward.
-3. Record **Connection**, **Operation** and its `reason`/`last_result` when available. For unavailable entities, include Keep connected intent (`connection_wanted` in diagnostics); an absent/disabled switch does not establish that the intent is on.
-4. On the LINAK device page under **Settings → Devices & services**, open its menu and download diagnostics. If safely available, retain before/after downloads. They contain cached readings, connection intent, stages, settings validity/ages and operation results, not a radio trace or a new connection attempt. First-time setup failures may have no device/download: include the setup error and stage instead.
-5. If more timing detail is needed, collect the narrow debug log described below. Attach only the reviewed LINAK diagnostic JSON and relevant log interval, not a full HA backup, configuration, `.storage`, raw protocol inventory or Bluetooth capture.
+Start with what you already know:
+
+| Detail | Include |
+| --- | --- |
+| Versions | Exact LINAK version or development commit, HA Core version and HA installation type; the diagnostic JSON does not contain these versions |
+| Hardware | Panel model/known firmware, local adapter, proxy or both |
+| Timeline | Expected/actual result, exact error, time with timezone, action order and whether the desk was stationary |
+| Context and recovery | Panel use, updates/restarts, whether it recovered by itself, waiting time and changes afterward |
+| State | **Connection**, **Operation**, `reason`/`last_result` and `connection_wanted` if available |
+
+An absent/disabled Keep connected switch does not establish that its intent is on.
+
+If you can safely collect more evidence:
+
+1. Open the LINAK device page under **Settings → Devices & services**.
+2. Use its menu to download diagnostics, ideally before and after the problem.
+3. If timing detail is needed, collect a [narrow debug log](#collect-a-narrow-debug-log).
+4. Review and redact the files, then attach only the diagnostic JSON and relevant log interval.
+
+Diagnostics read cached state; they do not start a connection or record radio traffic. If first-time setup never finished, report its error/stage instead of a download.
+
+**Do not attach full HA backups, configuration, `.storage`, raw protocol inventory or Bluetooth captures.**
 
 ### Prepare a report with AI
 
@@ -19,6 +47,9 @@ This is optional. You can always submit the form yourself, even without logs. Us
 1. **Before opening the chat**, remove private details from any text, screenshots or files you plan to share. Review your provider's data policy. Do not upload full logs, HA configuration, backups, `.storage` or raw protocol captures. If unsure, start with a short description and no attachments.
 2. Copy the instruction below into your chat, then describe what happened. Optionally add an already reviewed LINAK diagnostic JSON or a short redacted log interval. No HA access, API key or GitHub permission is needed.
 3. Answer only what you know. Ask for the draft whenever you want; missing details may remain “unknown”. Check every statement and attachment, then copy each section into the matching field of the [English bug form](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). Attach reviewed files there separately. Nothing is submitted automatically.
+
+<details>
+<summary>Copy the English instruction into your chat</summary>
 
 ```text
 Help me prepare a LINAK Home Assistant bug report in English.
@@ -58,6 +89,8 @@ Finish with a reminder to verify facts and remove private information
 before submitting. Do not submit the report.
 ```
 
+</details>
+
 ### Collect a narrow debug log
 
 On the LINAK integration card, use **Enable debug logging**, observe one safe occurrence, then **Disable debug logging** to finish and download the log. If the menu is unavailable, the HA `logger.set_level` action can enable the integration logger without restarting HA:
@@ -68,9 +101,19 @@ data:
   custom_components.ha_linak: debug
 ```
 
-After the observation, run the same action with the logger's previous level, or `info` if that was its ordinary level. This action changes logging, not the desk, and does not download a file; retrieve the relevant interval from **Settings → System → Logs**. Do not leave debug logging on indefinitely. A startup-only problem can be reported with existing startup logs first; do not restart or move the desk solely for this procedure.
+After the observation, restore the previous logger level, or `info` if that was its ordinary level. Retrieve the interval from **Settings → System → Logs**; this action does not download a file or control the desk.
 
-Include the first error and preceding setup/query stages, not just the final unavailable message. Keep timestamps, stage names, exception classes, reason codes, durations and timeout command names. Remove device/user names, Bluetooth/IP addresses, adapter/proxy/client identifiers, locations and credentials. Use consistent placeholders such as `DESK_A` and `PROXY_A` so the sequence remains understandable. Review screenshots and attachments too. The diagnostic export deliberately omits entry names/addresses, but **debug logs are not automatically anonymized**. Do not enable global debug logging or lower-level Bleak/connector traces unless the maintainer agrees a specific private scope.
+**Do not restart or move the desk solely for a log.** Use existing startup logs for a startup-only problem. Do not leave debug logging on.
+
+Before sharing, review logs, screenshots and attachments:
+
+| Keep | Remove or replace consistently |
+| --- | --- |
+| First error and preceding setup/query stages | Device/user names and locations |
+| Timestamps, durations and event order | Bluetooth/IP addresses and adapter/proxy/client identifiers |
+| Exception classes, reason codes and timeout command names | Credentials and tokens |
+
+Use placeholders such as `DESK_A` and `PROXY_A`. The diagnostic export omits entry names/addresses, but **debug logs are not automatically anonymized**. Do not enable global debug or lower-level Bluetooth traces without an agreed private scope.
 
 Suspected vulnerabilities or sensitive raw evidence belong in [private reporting](../SECURITY.md), not public issues. A log proves only the recorded software events; an Operation result or successful Stop write does not independently prove the physical result.
 
@@ -78,11 +121,30 @@ Suspected vulnerabilities or sensitive raw evidence belong in [private reporting
 
 Nie musisz ustalać przyczyny. Wypełnij [polski formularz błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml), a brakujące informacje oznacz „nie wiem”. Nie powtarzaj nieoczekiwanego ruchu, nie zrywaj połączenia podczas jazdy i nie resetuj parowania dla zebrania logów.
 
-1. Podaj dokładne wersje LINAK i HA Core, sposób instalacji HA/integracji, model i znany firmware panelu oraz adapter lokalny/proxy lub oba. Wersje podaj osobno: plik diagnostyczny ich nie zawiera.
-2. Opisz oczekiwany i rzeczywisty wynik, dokładny błąd, czas ze strefą i kolejność działań, także użycie panelu lub restart/aktualizację. Podaj stan Połączenie, Operacja i jej przyczynę, zamiar Utrzymuj połączenie oraz czy i po jakim czasie nastąpił samoczynny powrót.
-3. Pobierz diagnostykę z menu urządzenia LINAK w **Ustawienia → Urządzenia i usługi**, jeśli to możliwe przed i po błędzie. To odczyt danych z pamięci integracji, nie nowa próba Bluetooth. Jeśli pierwsza konfiguracja się nie zakończyła, podaj jej błąd i etap zamiast pliku.
-4. Na karcie integracji wybierz **Włącz rejestrowanie debugowania**, zaobserwuj jedno bezpieczne zdarzenie, następnie **Wyłącz rejestrowanie debugowania** i pobierz log. Gdy menu jest niedostępne, powyższa akcja `logger.set_level` włącza wyłącznie logger integracji bez restartu. Potem przywróć poprzedni poziom, np. `info`; log pobierz z **Ustawienia → System → Dzienniki**. Nie restartuj ani nie poruszaj biurkiem tylko dla tego zgłoszenia.
-5. Zachowaj pierwszy błąd i poprzedzające etapy, czasy, kody i nazwy poleceń. Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i dane dostępowe; używaj stałych zastępników `DESK_A`/`PROXY_A`. **Logi debugowania nie są automatycznie anonimizowane.** Nie dołączaj kopii HA, konfiguracji, `.storage`, surowego inwentarza protokołu ani przechwyconych ramek. Nie włączaj globalnego debugowania ani dodatkowych loggerów bez uzgodnienia.
+Zacznij od dostępnych informacji:
+
+| Informacja | Co podać |
+| --- | --- |
+| Wersje | Dokładne wersje LINAK i HA Core oraz sposób instalacji; plik diagnostyczny nie zawiera tych wersji |
+| Sprzęt | Model i znany firmware panelu, adapter lokalny, proxy lub oba |
+| Przebieg | Oczekiwany i rzeczywisty wynik, dokładny błąd, czas ze strefą, kolejność działań i postój/ruch |
+| Kontekst i powrót | Użycie panelu, restart/aktualizacja, samoczynny powrót, czas oczekiwania i późniejsze zmiany |
+| Stan | Połączenie, Operacja i przyczyna oraz zamiar Utrzymuj połączenie, jeśli są dostępne |
+
+Aby zebrać pliki:
+
+1. Pobierz diagnostykę z menu urządzenia LINAK w **Ustawienia → Urządzenia i usługi**, jeśli to możliwe przed i po błędzie.
+2. Jeśli potrzeba logów, na karcie integracji wybierz **Włącz rejestrowanie debugowania** i zaobserwuj jedno bezpieczne zdarzenie.
+3. Wybierz **Wyłącz rejestrowanie debugowania** i pobierz log.
+4. Usuń dane prywatne przed dołączeniem plików do zgłoszenia.
+
+Diagnostyka odczytuje pamięć integracji, nie uruchamia połączenia. Jeśli pierwsza konfiguracja się nie zakończyła, podaj jej błąd i etap zamiast pliku.
+
+Gdy menu debugowania jest niedostępne, użyj pokazanej wyżej akcji `logger.set_level`. Potem przywróć poprzedni poziom, np. `info`, i pobierz log z **Ustawienia → System → Dzienniki**. Akcja nie pobiera pliku. **Nie restartuj ani nie poruszaj biurkiem tylko dla zgłoszenia.**
+
+Zachowaj pierwszy błąd, poprzedzające etapy, czasy, kody i nazwy poleceń. Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i dane dostępowe; stosuj stałe zastępniki `DESK_A`/`PROXY_A`.
+
+**Logi debugowania nie są automatycznie anonimizowane.** Nie dołączaj kopii HA, konfiguracji, `.storage`, surowego inwentarza protokołu ani przechwyconych ramek. Nie włączaj globalnego debugowania ani dodatkowych loggerów bez uzgodnienia.
 
 Podatności i wrażliwe dowody zgłaszaj [prywatnie](../SECURITY.md). Wynik Operacji lub udany zapis Stop nie jest niezależnym dowodem fizycznego zatrzymania.
 
@@ -93,6 +155,9 @@ To opcja, nie wymóg. Formularz możesz wypełnić samodzielnie, także bez log�
 1. **Przed otwarciem czatu** usuń prywatne dane z tekstu, zrzutów i plików. Sprawdź zasady przetwarzania danych dostawcy. Nie wysyłaj pełnych logów, konfiguracji HA, kopii zapasowych, `.storage` ani surowych ramek protokołu. Jeśli masz wątpliwości, zacznij od krótkiego opisu bez załączników.
 2. Skopiuj poniższą instrukcję do czatu i opisz zdarzenie. Opcjonalnie dodaj sprawdzony plik JSON diagnostyki LINAK lub krótki, zanonimizowany fragment logu. Nie potrzeba dostępu do HA, klucza API ani uprawnień do GitHuba.
 3. Odpowiadaj tylko na podstawie tego, co wiesz. W dowolnym momencie poproś o szkic, a braki pozostaw jako „nie wiem”. Sprawdź każde stwierdzenie i załącznik, następnie skopiuj sekcje do odpowiednich pól [polskiego formularza](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml). Sprawdzone pliki dołącz tam osobno. Nic nie jest publikowane automatycznie.
+
+<details>
+<summary>Skopiuj polską instrukcję do swojego czatu</summary>
 
 ```text
 Pomóż mi przygotować po polsku zgłoszenie błędu integracji LINAK
@@ -131,11 +196,29 @@ Na końcu przypomnij o sprawdzeniu faktów i usunięciu prywatnych danych
 przed wysłaniem. Nie wysyłaj zgłoszenia.
 ```
 
+</details>
+
 ## Optional settings validity
 
-Downloaded diagnostics include `settings.memories` and `settings.reminders`, each with `valid`, `age_seconds` and `error`. Age measures time since the last successful group read in this process, not BLE latency or a persisted timestamp. `null` age means no successful read. The stable `invalid_response` reason means a completed matching reply could not be decoded. `timeout` means an optional query expired, not that the slot is empty; no backend payload or identifier is exposed.
+Diagnostics describe memory and reminder groups separately in `settings.memories` and `settings.reminders`:
 
-During setup and runtime refresh, a malformed memory/reminder response makes only that group unavailable while valid height/other groups remain available. An optional-query timeout discards the connection and attempts fresh required reads on a new session with the failed group excluded. The group waits five minutes before another scheduled attempt, also across reconnects. Each group can cause one recovery per refresh within the original deadline. Required-read and barrier timeouts, authentication failures, link loss and failed recovery still fail the attempt. A later complete validated group read restores availability; cached settings never authorize memory movement.
+| Field or reason | Meaning |
+| --- | --- |
+| `valid` | Whether the complete group has a valid read |
+| `age_seconds` | Time since the last successful group read in this process, not Bluetooth latency or a persisted timestamp |
+| `null` age | No successful read |
+| `invalid_response` | A completed matching reply could not be decoded |
+| `timeout` | An optional query expired, not an empty slot; no backend payload or identifier is exposed |
+
+Failure handling depends on the read:
+
+| Failure | Result |
+| --- | --- |
+| Malformed memory/reminder reply | Only that group becomes unavailable; valid height and other groups remain available |
+| Optional-query timeout | Discard the connection; attempt fresh required reads without that group; wait five minutes before retrying it, even across reconnects |
+| Required read/barrier timeout, authentication failure, link loss or failed recovery | Fail the attempt |
+
+Each optional group can cause one recovery per refresh within the original deadline. A complete validated read restores availability; cached settings never authorize memory movement.
 
 Reference/position checks run every 60 seconds; healthy memories and reminders are each due five minutes after their last successful read. Malformed groups retry at the next check. Reconnect and changed references force reads outside timeout cooldown. Calibration verifies only required reads and invalidates optional groups after a reference/capability change. Notifications do not refresh a settings age or postpone scheduled checks. These intervals are read policy, not a measured claim about firmware load or OLED sleep.
 
@@ -144,6 +227,11 @@ If height works but memory entities are unavailable, check `settings.memories.er
 ## Explicit protocol research reads
 
 The administrator-only action `ha_linak.read_protocol_inventory` uses the entry's existing client and query lock, including an ESPHome proxy. It is not run during setup, polling or reconnect, and it does not change Keep connected, pairing, panel settings or motion readiness. Ordinary downloaded diagnostics still read cached data only.
+
+**This is scoped protocol research, not a bug-report requirement. Keep raw responses private.**
+
+<details>
+<summary>Administrator procedure and protocol-read limits</summary>
 
 1. Wait until the entry is connected and the desk is stationary. Do not start a movement or configuration flow during the read.
 2. In **Developer tools → Actions**, select **LINAK: Read protocol inventory**, choose the LINAK entry and select one section below. The action requires a response and administrator access.
@@ -160,6 +248,8 @@ Busy actions are refused without queueing or extra packets. The client owns the 
 Unavailable memories or reminders do not block research on a ready height/reference session. The research action neither rereads those optional groups nor promotes them to valid settings.
 
 An awakened reader waiting for the lock also counts as busy; a research action does not wait behind it outside its deadline. Malformed position notifications invalidate research already in progress, even if an individual read or product reply would otherwise complete. Optional-read denials do not hide that invalidation or a disconnected session.
+
+</details>
 
 The [protocol reference](protocol.md#explicit-research-reads) defines the research boundary. Reading a candidate response does not establish a writable setting; memory, reminder and unit setters are not exposed by this action.
 

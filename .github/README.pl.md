@@ -60,7 +60,12 @@
 
 \* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](../docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
 
-**Zakres 0.1.0:** natywne sterowanie i ustawienia DPG1C do użycia pod nadzorem, bez deklaracji zakończonej akceptacji sprzętowej. Dojazd w pełnym zakresie, dokładność zatrzymania, powtarzalny powrót do obsługi panelu i długotrwała niezawodność Bluetooth pozostają niezweryfikowane. Uruchomienie i odzyskanie połączenia mogą trwać długo albo się nie udać, także po włączeniu Utrzymuj połączenie. Przed użyciem automatyzacji przeczytaj [opis wydania](../CHANGELOG.md) i [dowody oraz pozostałe testy](../docs/hardware-results.md#hardware-acceptance-matrix).
+**0.1.0 jest do użycia pod nadzorem na DPG1C.** Akceptacja sprzętowa nie jest zakończona:
+
+- Dojazd w pełnym zakresie, dokładność zatrzymania i powtarzalny powrót do obsługi panelu pozostają niezweryfikowane.
+- Długotrwała niezawodność Bluetooth pozostaje niezweryfikowana. Uruchomienie i odzyskanie połączenia mogą trwać długo albo się nie udać, także po włączeniu Utrzymuj połączenie.
+
+Przed użyciem automatyzacji przeczytaj [opis wydania](../CHANGELOG.md) i [pozostałe testy sprzętowe](../docs/hardware-results.md#hardware-acceptance-matrix).
 
 Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](../docs/device-support.md#test-another-panel) jest po angielsku.
 
@@ -146,11 +151,17 @@ W **Preferowane jednostki panelu** wybierz **Metryczne** lub **Cale**. Nie zmien
 
 Po zapisaniu panel może nadal pokazywać poprzednią jednostkę. Nie poruszaj biurkiem tylko po to, żeby odświeżyć wyświetlacz. [Jak zmienić jednostki panelu](../docs/controls.md#choose-panel-units).
 
-Ustawienia znajdziesz w **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**. Zmienisz tam nazwę w HA, zakres ruchu i kalibrację wysokości. W **Wysokość z miarki** wpisz aktualny pomiar od podłogi do góry blatu, a następnie sprawdź i potwierdź korektę. Zapis nie porusza biurkiem. [Instrukcja konfiguracji](../docs/controls.md).
+Dla pozostałych ustawień wybierz procedurę odpowiadającą zadaniu:
 
-Profil przypomnień można zmienić na Wyłączone lub Profil 1/2/3. Wybór zachowuje czasy i pozostałe ustawienia panelu, nie porusza biurkiem i nie aktywuje klienta. Zapis wymaga aktywnego klienta i poprawnego odczytu przypomnień. Profile 1/2 wymagają jeszcze akceptacji sprzętowej. Edycja zapisanych pozycji nadal nie jest dostępna.
+| Zadanie | Od czego zacząć | Przed zapisem |
+| --- | --- | --- |
+| Nazwa, zmierzony zakres lub korekta wysokości | [Konfiguracja biurka](../docs/controls.md#configure-the-desk-after-installation) | Przy korekcie wpisz pomiar od podłogi do blatu, sprawdź i potwierdź; bez ruchu |
+| Profil przypomnień | [Wyłączone lub Profil 1/2/3](../docs/controls.md#choose-a-reminder-profile) | Aktywny klient, poprawne odczyty i nieruchome biurko; czasy pozostają bez zmian |
+| Czas przypomnień | [Edycja jednego czasu](../docs/controls.md#edit-one-reminder-duration) | Włącz pole, wybierz Wyłączone lub inny profil, wpisz 1–60 pełnych minut |
 
-W sekcji Konfiguracja na stronie urządzenia są pola czasu siedzenia i stania wszystkich trzech profili, w **1–60 pełnych minutach**. Wszystkie sześć pól i przycisk standardowego czasu są domyślnie wyłączone dla nowych encji; włącz tylko potrzebne. Istniejące nazwy i wybory włączenia lub wyłączenia pozostają bez zmian. Czujniki czasów tylko do odczytu nadal są domyślnie włączone. Przed zmianą czasu wybranego profilu wybierz Wyłączone lub inny profil. Każda edycja zachowuje pozostałe pięć czasów i wszystkie flagi, bez przeliczania par; istniejące wartości poza zakresem pozostają widoczne. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia na **55 minut**, bez resetu fabrycznego i przywracania kopii. Zakres jest zasadą integracji, nie limitem sterownika ani zaleceniem medycznym. Wszystkie sześć pól sprawdzono w symulacji; na sprzęcie potwierdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1. [Kontrakt edycji](../docs/settings-reference.md#edit-reminder-durations).
+Edycja zachowuje pozostałe czasy i flagi. Istniejące nazwy i wybory włączenia pozostają bez zmian; czujniki tylko do odczytu nadal są włączone. Wartości poza zakresem pozostają widoczne bez automatycznego nadpisywania. Przycisk standardowego czasu ustawia tylko 55 minut siedzenia profilu 1, bez resetu i przywracania kopii. Edycja zapisanych pozycji jest niedostępna.
+
+Wybór profili 1/2 wymaga jeszcze akceptacji sprzętowej. Na sprzęcie sprawdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1; pozostałe pola mają testy symulowane. Zakres pola jest zasadą integracji, nie zaleceniem medycznym ani limitem firmware.
 
 ### Diagnostyka
 
@@ -181,7 +192,7 @@ Opcjonalne encje znajdziesz w **Ustawienia → Urządzenia i usługi → Encje**
 
 ### Przez Marketplace
 
-1. Otwórz **Ustawienia → Marketplace → Dodaj z linku / Add from link** i połącz konto GitHub po wyświetleniu prośby.
+1. Otwórz **Ustawienia → Marketplace → Dodaj z linku** i połącz konto GitHub po wyświetleniu prośby.
 2. Wpisz `https://github.com/solarssk/ha-linak`.
 3. Zainstaluj **LINAK**. Pierwsza instalacja z konfiguracją przez interfejs ładuje się bez restartu; aktualizacja już załadowanej integracji nadal go wymaga.
 
@@ -233,11 +244,12 @@ Usuń jej wpis w Home Assistant, usuń folder `custom_components/ha_linak` i uru
 
 ## 📚 Pomoc i dokumentacja
 
-Instrukcje szczegółowe są po angielsku:
+Wybierz instrukcję dla swojego zadania:
 
 - **Konfiguracja:** [Ustawienia i pierwszy test sterowania](../docs/controls.md).
-- **Problemy z połączeniem lub sterowaniem:** [Rozwiązywanie problemów](../docs/diagnostics.md).
-- **Zgłoszenie błędu:** [Formularz zgłoszenia](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). Podaj model panelu, wersję HA i sposób połączenia. Pobierz diagnostykę ze strony urządzenia; z dodatkowych logów usuń nazwy i adresy Bluetooth.
+- **Problemy z połączeniem lub sterowaniem:** [Rozwiązywanie problemów po angielsku](../docs/diagnostics.md#choose-the-symptom).
+- **Zgłoszenie błędu:** [Zbierz dane po polsku](../docs/diagnostics.md#zgłoszenie-i-logi-po-polsku), następnie wypełnij [formularz](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml).
+- **Pomoc w opisaniu problemu:** [Opcjonalna instrukcja dla AI](../docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai), bez dostępu do HA i automatycznego wysyłania.
 
 ### Dla testerów i programistów
 

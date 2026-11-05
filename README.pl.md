@@ -25,7 +25,12 @@ Steruj biurkiem z regulacją wysokości i panelem LINAK **DPG1C** z Home Assista
 
 \* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
 
-**Zakres 0.1.0:** natywne sterowanie i ustawienia DPG1C do użycia pod nadzorem, bez deklaracji zakończonej akceptacji sprzętowej. Dojazd w pełnym zakresie, dokładność zatrzymania, powtarzalny powrót do obsługi panelu i długotrwała niezawodność Bluetooth pozostają niezweryfikowane. Uruchomienie i odzyskanie połączenia mogą trwać długo albo się nie udać, także po włączeniu Utrzymuj połączenie. Przed użyciem automatyzacji przeczytaj [opis wydania](CHANGELOG.md) i [dowody oraz pozostałe testy](docs/hardware-results.md#hardware-acceptance-matrix).
+**0.1.0 jest do użycia pod nadzorem na DPG1C.** Akceptacja sprzętowa nie jest zakończona:
+
+- Dojazd w pełnym zakresie, dokładność zatrzymania i powtarzalny powrót do obsługi panelu pozostają niezweryfikowane.
+- Długotrwała niezawodność Bluetooth pozostaje niezweryfikowana. Uruchomienie i odzyskanie połączenia mogą trwać długo albo się nie udać, także po włączeniu Utrzymuj połączenie.
+
+Przed użyciem automatyzacji przeczytaj [opis wydania](CHANGELOG.md) i [pozostałe testy sprzętowe](docs/hardware-results.md#hardware-acceptance-matrix).
 
 Sprawdź model na etykiecie panelu. [Instrukcja testowania kolejnego modelu](docs/device-support.md#test-another-panel) jest po angielsku.
 
@@ -97,7 +102,7 @@ Przed instalacją przygotuj:
 
 ## 🚀 Instalacja i połączenie
 
-1. Otwórz **Ustawienia → Marketplace → Dodaj z linku / Add from link**, połącz konto GitHub po wyświetleniu prośby i wpisz `https://github.com/solarssk/ha-linak`.
+1. Otwórz **Ustawienia → Marketplace → Dodaj z linku**, połącz konto GitHub po wyświetleniu prośby i wpisz `https://github.com/solarssk/ha-linak`.
 2. Zainstaluj **LINAK**. Pierwsza instalacja tej integracji z konfiguracją przez interfejs nie wymaga restartu. Aktualizacja już załadowanej integracji nadal go wymaga.
 3. Wyłącz integrację IKEA Idasen Desk korzystającą z tego samego biurka. Jeśli jest połączona inna aplikacja biurka, rozłącz ją.
 4. Włącz **parowanie Bluetooth** na panelu.
@@ -108,9 +113,9 @@ Wybierz **Tylko monitorowanie**, jeśli chcesz korzystać z czujników bez przyg
 
 Poczekaj do **60 sekund** na połączenie, a po nieudanej próbie do kolejnych **10 sekund** na jego zwolnienie. W razie błędu wykonaj wskazówki z komunikatu i spróbuj ponownie. [Instalacja ręczna](.github/README.pl.md#installation).
 
-Marketplace jest wbudowany w HA 2026.11 i migruje dotychczasowe repozytoria oraz instalacje HACS. Ten projekt dodaje się z linku; nie deklarujemy akceptacji w domyślnym katalogu. Po instalacji widoki HA i Marketplace mogą korzystać z dołączonej ikony i logo, także przez warianty zastępcze dla ciemnego motywu. Ikona przed instalacją zależy od brandingu katalogu i wydania, więc nie jest gwarantowana dla tego linku. [Szczegóły brandingu](docs/hacs-presentation.md#name-and-catalog-icon).
+Marketplace zastępuje HACS w HA 2026.11 i migruje istniejące instalacje. Dodaj ten projekt z linku; obecność w domyślnym katalogu i ikona przed instalacją nie są gwarantowane. Po instalacji widoki mogą używać dołączonych grafik. Zobacz [szczegóły brandingu](docs/hacs-presentation.md#name-and-catalog-icon).
 
-HA poniżej 2026.11.0 nie jest wspierany, także przy instalacji ręcznej. Minimum w `hacs.json` jest sprawdzane dla repozytoriów z wydaniami; nie blokuje podczas działania każdej instalacji ręcznej ani z domyślnej gałęzi.
+**HA poniżej 2026.11.0 nie jest wspierany**, także przy instalacji ręcznej. Instalacja ręczna lub z domyślnej gałęzi może nie wymuszać tego minimum.
 
 ## ⚙️ Zmień ustawienia biurka
 
@@ -118,21 +123,28 @@ Otwórz **Ustawienia → Urządzenia i usługi → LINAK → Konfiguruj**, aby z
 
 Jeśli panel pokazuje błędną wysokość, zmierz odległość od podłogi do góry blatu. Wpisz ją w **Wysokość z miarki**, a następnie sprawdź i potwierdź korektę. Zapis korekty nie porusza biurkiem.
 
-Wysokość wyświetla się w pełnych centymetrach. Pomiary wpisuj z dokładnością miarki; kalibracja zachowuje tę dokładność. Profil przypomnień można zmienić na Wyłączone lub Profil 1/2/3. Wybór zachowuje czasy i pozostałe ustawienia panelu, nie porusza biurkiem i nie aktywuje klienta. Zapis wymaga aktywnego klienta i poprawnego odczytu przypomnień. Profile 1/2 wymagają jeszcze akceptacji sprzętowej. Edycja zapisanych pozycji nadal nie jest dostępna.
+Wysokość wyświetla się w pełnych centymetrach; kalibracja zachowuje dokładność pomiaru. Edycja zapisanych pozycji nie jest dostępna.
 
-Na stronie urządzenia w sekcji **Konfiguracja** wpisz **1–60 pełnych minut** w pole czasu siedzenia lub stania profilu 1/2/3. Wszystkie sześć pól i przycisk standardowego czasu są domyślnie wyłączone dla nowych encji; włącz tylko potrzebne w ich ustawieniach. Istniejące nazwy i wybory włączenia lub wyłączenia pozostają bez zmian, a czujniki czasów tylko do odczytu nadal są domyślnie włączone. Najpierw wybierz Wyłączone lub inny profil; zmiana czasu aktywnego profilu jest odrzucana. Zmienia się tylko wybrany czas, bez przeliczania pary i zmiany profilu. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia na **55 minut**, bez resetu fabrycznego i automatycznego przywracania. Istniejące wartości poza zakresem pozostają widoczne bez automatycznego nadpisywania. Zakres jest zasadą integracji, nie limitem sterownika ani zaleceniem medycznym. Wszystkie sześć pól sprawdzono w symulacji; na sprzęcie potwierdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1. [Szczegóły edycji](docs/settings-reference.md#edit-reminder-durations).
+Przypomnienia zmienisz w sekcji **Konfiguracja** na stronie urządzenia:
 
-Nie musisz zapełniać pustych pozycji pamięci przed konfiguracją. Jeśli nie uda się odczytać zapisanych pozycji lub przypomnień, wysokość może pozostać dostępna, a niedostępna będzie tylko dana grupa ustawień. Po przekroczeniu czasu odczytu integracja ponowi próbę po pięciu minutach. Przyciski zapisanych pozycji wymagają poprawnego odczytu całej grupy pamięci.
+1. Przed edycją czasu wybierz **Wyłączone** lub inny profil.
+2. W ustawieniach encji włącz potrzebne pole czasu siedzenia lub stania.
+3. Wpisz **1–60 pełnych minut**. Zmieni się tylko ten czas; pozostałe czasy i ustawienia pozostaną bez zmian.
+
+Wszystkie sześć pól i przycisk standardowego czasu są domyślnie wyłączone dla nowych encji. Istniejące nazwy i wybory włączenia pozostają bez zmian, a czujniki czasów nadal są włączone. **Profil 1: ustaw standardowy czas** ustawia tylko czas siedzenia na **55 minut**, bez resetu fabrycznego.
+
+Zapis przypomnień wymaga aktywnego klienta, poprawnych odczytów i nieruchomego biurka; nie aktywuje go ani nie porusza. Wybór profili 1/2 wymaga jeszcze akceptacji sprzętowej. Na sprzęcie sprawdzono tylko 50/55 minut siedzenia w nieaktywnym profilu 1; pozostałe pola mają testy symulowane. Zakres pola jest zasadą integracji, nie zaleceniem medycznym ani limitem firmware. [Procedura przypomnień](docs/controls.md#edit-one-reminder-duration) opisuje odzyskanie po błędzie i odczyty poza zakresem.
+
+Puste pamięci nie blokują konfiguracji. Niedostępna grupa pamięci lub przypomnień nie musi blokować wysokości. Po przekroczeniu czasu odczytu grupa czeka pięć minut na ponowienie; przyciski Pozycja wymagają poprawnego odczytu całej pamięci.
 
 ## 🛠️ Pomoc
 
-Jeśli odczyty staną się niedostępne, sprawdź **Połączenie** i komunikat Home Assistanta. Na stronie urządzenia LINAK pobierzesz diagnostykę. W zgłoszeniu błędu podaj model panelu, wersje HA i integracji oraz informację, czy używasz lokalnego adaptera, czy proxy. Z dołączanych logów usuń prywatne nazwy i adresy Bluetooth.
-
-Instrukcje szczegółowe są po angielsku:
+Zacznij od **Połączenia** i komunikatu Home Assistanta. Instrukcja zgłoszeń opisuje zbieranie i anonimizację diagnostyki:
 
 - [Konfiguracja i pierwszy test sterowania](docs/controls.md)
-- [Rozwiązywanie problemów](docs/diagnostics.md)
-- [Zgłoś błąd](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml)
+- [Zgłoszenie i logi po polsku](docs/diagnostics.md#zgłoszenie-i-logi-po-polsku)
+- [Opcjonalna pomoc AI w opisaniu problemu](docs/diagnostics.md#przygotuj-zgłoszenie-z-pomocą-ai)
+- [Zgłoś błąd](https://github.com/solarssk/ha-linak/issues/new?template=bug.pl.yml)
 
 ## 📚 Dokumentacja techniczna
 

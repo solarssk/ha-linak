@@ -60,7 +60,12 @@
 
 \* DPG1C was checked on one panel within the [documented test scope](../docs/hardware-results.md). This does not mean every function and device version has been fully validated.
 
-**0.1.0 scope:** native controls and settings for supervised use on DPG1C, not a claim of completed hardware acceptance. Full-range arrival, physical stopping accuracy, repeatable panel handback and long-term Bluetooth reliability remain unverified. Startup and recovery can be slow or fail, including after enabling Keep connected. See the [release notes](../CHANGELOG.md) and [evidence and remaining tests](../docs/hardware-results.md#hardware-acceptance-matrix) before using automations.
+**0.1.0 is for supervised use on DPG1C.** Hardware acceptance is not complete:
+
+- Full-range arrival, physical stopping accuracy and repeatable panel handback remain unverified.
+- Long-term Bluetooth reliability remains unverified. Startup and recovery can be slow or fail, including after enabling Keep connected.
+
+Before using automations, read the [release notes](../CHANGELOG.md) and [remaining hardware tests](../docs/hardware-results.md#hardware-acceptance-matrix).
 
 Check the model on the panel label. [Testing another model](../docs/device-support.md#test-another-panel) has its own guide.
 
@@ -146,11 +151,17 @@ Choose **Metric** or **Inch** in **Preferred panel units**. This doesn't change 
 
 The panel may still display the previous unit after saving. Don't move the desk just to refresh its display. [How to change panel units](../docs/controls.md#choose-panel-units).
 
-Open **Settings → Devices & services → LINAK → Configure** to change the name shown in HA, travel range or height calibration. For calibration, enter the current floor-to-desktop measurement in **Height measured with a tape**, then review and confirm the correction. Saving doesn't move the desk. [Configuration guide](../docs/controls.md).
+For settings beyond the table, follow the procedure for your task:
 
-Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
+| Task | Where to start | Before saving |
+| --- | --- | --- |
+| Name, measured range or height correction | [Configure the desk](../docs/controls.md#configure-the-desk-after-installation) | For correction, enter the floor-to-desktop measurement, then review and confirm; no motion |
+| Reminder profile | [Select Off or Profile 1/2/3](../docs/controls.md#choose-a-reminder-profile) | Active client, valid readings and stationary desk; intervals stay unchanged |
+| Reminder duration | [Edit one duration](../docs/controls.md#edit-one-reminder-duration) | Enable the input, select Off or another profile, then enter 1–60 whole minutes |
 
-The device page's Configuration section provides sitting and standing inputs for all three profiles, in **1–60 whole minutes**. All six inputs and the standard-time button are disabled by default for new entities; enable only those needed. Existing names and enabled/disabled registry choices are preserved. Read-only duration sensors stay enabled by default. Select Off or another profile before changing a duration of the selected profile. Each edit preserves the other five durations and all flags, without normalizing pairs; existing out-of-range readings remain visible. **Profile 1: use standard time** assigns only its sitting time to **55 minutes**, not a factory reset or saved-backup restore. The range is integration policy, not medical or firmware limits. All six fields have simulated coverage; hardware evidence covers only 50/55 sitting minutes in inactive profile 1. [Interval contract](../docs/settings-reference.md#edit-reminder-durations).
+Reminder edits preserve other durations and flags. Existing names and enablement choices are preserved; read-only sensors stay enabled. Out-of-range readings remain visible without automatic overwrite. The standard-time button sets only profile 1 sitting time to 55 minutes, not a reset or backup restore. Saved-position editing is unavailable.
+
+Profile 1/2 selection still needs hardware acceptance. Duration hardware evidence covers only 50/55 sitting minutes in inactive profile 1; other fields have simulated coverage. The input range is integration policy, not medical guidance or a firmware limit.
 
 ### Diagnostics
 
@@ -236,8 +247,9 @@ Delete its entry in Home Assistant, remove `custom_components/ha_linak`, then re
 Choose the guide for your task:
 
 - **Configuration:** [Settings and first control test](../docs/controls.md).
-- **Connection or control problems:** [Troubleshooting](../docs/diagnostics.md).
-- **Bug report:** [Issue form](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). Include the panel model, HA version and connection type. Download diagnostics from the device page; remove names and Bluetooth addresses from additional logs.
+- **Connection or control problems:** [Troubleshooting](../docs/diagnostics.md#choose-the-symptom).
+- **Bug report:** [Collect safe evidence](../docs/diagnostics.md#prepare-a-bug-report), then use the [issue form](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
+- **Help writing a report:** [Optional AI instructions](../docs/diagnostics.md#prepare-a-report-with-ai), without HA access or automatic submission.
 
 ### For testers and developers
 

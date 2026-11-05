@@ -76,7 +76,7 @@ CodeRabbit reviews run on explicit maintainer request; automatic and incremental
 
 ## PR metadata and handoff
 
-Before opening a PR, read [AGENTS.md](AGENTS.md), use the PR template and inspect GitHub's open release milestones. Every PR needs exactly one supported `type:` label (`bug`, `feature`, `chore` or `docs`), its open target release milestone and a responsible maintainer assignee. Currently the maintainer is @solarssk. Keep priority/area labels optional for this small project. These are real GitHub fields, not substitutes in a PR checklist. Dependabot PRs follow the same policy.
+Before opening a PR, read [AGENTS.md](AGENTS.md), use the PR template and inspect GitHub's open release milestones. Every PR needs exactly one supported `type:` label (`bug`, `feature`, `chore` or `docs`), its open target release milestone and a responsible maintainer assignee. Currently the maintainer is @solarssk. Keep priority/area labels optional for this small project. These are real GitHub fields, not substitutes in a PR checklist. Dependabot PRs follow the same policy. `.github/dependabot.yml` sets labels, assignee and the numeric target milestone for both ecosystems using [native Dependabot options](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference). Before closing a release milestone, create or select the next open release milestone and update `milestone` in every ecosystem entry. Use its GitHub number, not its version title. Existing PRs still need their live fields checked; configuration changes do not repair previously opened PRs.
 
 Open PRs with those fields supplied together, for example after choosing the actual target version from `gh api repos/solarssk/ha-linak/milestones`:
 

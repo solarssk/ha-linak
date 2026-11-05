@@ -8,6 +8,9 @@ updates:
       default-days: 7
     open-pull-requests-limit: 2
     labels: ["type: chore", "dependencies"]
+    assignees: ["solarssk"]
+    # GitHub milestone number, not the version. Update before closing the release.
+    milestone: 1
     # Generated pins/locks belong to an intentional HA/test-stack upgrade, not separate bumps.
     exclude-paths:
       - ".github/locks/**"
@@ -28,3 +31,6 @@ updates:
       default-days: 7
     open-pull-requests-limit: 2
     labels: ["type: chore", "dependencies"]
+    assignees: ["solarssk"]
+    # GitHub milestone number, not the version. Update before closing the release.
+    milestone: 1

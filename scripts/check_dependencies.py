@@ -55,7 +55,7 @@ def require_installed(requirements: list[str], scope: str) -> None:
 def validate_installed() -> None:
     plugin_requirements = [
         value
-        for value in metadata.requires("pytest-homeassistant-custom-component") or []
+        for value in metadata.requires("pytest-homeassistant") or []
         if Requirement(value).name in {"homeassistant", "pytest", "pytest-asyncio"}
     ]
     require_installed(plugin_requirements, "the HA test plugin")

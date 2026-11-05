@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_plugin_owns_pytest_stack_and_generated_pins_are_excluded():
     source = (ROOT / "requirements-dev.txt").read_text()
-    assert "pytest-homeassistant-custom-component==" in source
+    assert "pytest-homeassistant[bluetooth]==" in source
     assert not re.search(
         r"^(homeassistant|pytest|pytest-asyncio|serialx|bleak-retry-connector)==",
         source,
@@ -26,8 +26,7 @@ def test_plugin_owns_pytest_stack_and_generated_pins_are_excluded():
     assert ".github/ha-requirements.txt" in pip["exclude-paths"]
     assert pip["cooldown"]["default-days"] >= 7
     assert any(
-        item["dependency-name"] == "pytest-homeassistant-custom-component"
-        for item in pip["ignore"]
+        item["dependency-name"] == "pytest-homeassistant" for item in pip["ignore"]
     )
 
 
@@ -104,11 +103,31 @@ def test_each_python_install_uses_a_hash_locked_input():
     exceptions = [command for command in installs if "--no-binary" in command]
     assert len(exceptions) == 2
     assert all(
-        "--no-binary mock-open,pyric --no-build-isolation" in command
-        for command in exceptions
+        "--no-binary pyric --no-build-isolation" in command for command in exceptions
     )
     assert any("update_locks.py --check" in command for command in commands)
     assert any("check_dependencies.py" in command for command in commands)
+
+
+def test_official_plugin_bootstrap_and_coverage_are_preserved():
+    from importlib import metadata
+    import tomllib
+
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert "-p no:respx" in config["tool"]["pytest"]["ini_options"]["addopts"]
+    conftest = (ROOT / "tests/conftest.py").read_text()
+    assert "pytest_plugins" not in conftest
+    assert "enable_custom_integrations" not in conftest
+    assert (
+        metadata.version("pytest-homeassistant")
+        == json.loads((ROOT / "hacs.json").read_text())["homeassistant"]
+    )
+    assert metadata.version("pytest-cov")
+    locked = (ROOT / ".github/locks/test.txt").read_text()
+    assert "pytest-cov==" in locked
+    assert "pytest-homeassistant==" in locked
+    assert "pytest-homeassistant-custom-component==" not in locked
+    assert "mock-open==" not in locked
 
 
 @pytest.mark.parametrize(

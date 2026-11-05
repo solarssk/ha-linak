@@ -1,10 +1,10 @@
 {
   "supported": {
-    "version": "2026.10.4",
-    "image": "ghcr.io/home-assistant/home-assistant:2026.10.4@sha256:23f4dfbb69ce76315dbc4de7915504f1c2dcecd7ca2648113a493a385972e133"
+    "version": "2026.11.0",
+    "image": "ghcr.io/home-assistant/home-assistant:2026.11.0@sha256:c6c1ca9931036bf3a2c4cc088d8db25dfea3b33935a5ecc83c40349462e2f69e"
   },
   "preview": {
-    "version": "2026.11.0b3",
-    "image": "ghcr.io/home-assistant/home-assistant:2026.11.0b3@sha256:bae27da70db7cfcab0980c6d82f106ef1d4946cd4860d95c14525aef5d101577"
+    "version": "2026.11.0",
+    "image": "ghcr.io/home-assistant/home-assistant:2026.11.0@sha256:c6c1ca9931036bf3a2c4cc088d8db25dfea3b33935a5ecc83c40349462e2f69e"
   }
 }

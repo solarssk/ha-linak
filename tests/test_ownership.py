@@ -12,7 +12,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.exceptions import HomeAssistantError
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.config_flow import LinakConfigFlow, LinakOptionsFlow
 from custom_components.ha_linak.const import DOMAIN

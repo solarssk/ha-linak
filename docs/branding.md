@@ -4,7 +4,18 @@ The maintainer supplied the LINAK icon and horizontal logo used in `custom_compo
 
 The supplied icon is 256 × 256 pixels. `icon@2x.png` is a 512 × 512 resampling, not an additional high-resolution original. The horizontal WebP source was converted to PNG, trimmed and resized proportionally to heights of 256 and 512 pixels. Its white background is preserved so the black lettering remains readable in dark themes. No altered-color brand variant is invented.
 
-Home Assistant supports local `brand/` assets since 2026.3. The dimensions and filenames follow its [integration image requirements](https://contributors.home-assistant.io/core/integrations/brands/). These images improve identification; they do not confer HACS default-catalog acceptance or a Home Assistant quality-scale award.
+The supported baseline is HA 2026.11.0. The dimensions and filenames follow its [integration image requirements](https://contributors.home-assistant.io/core/integrations/brands/). Both the integration and Marketplace brand handlers try `custom_components/ha_linak/brand/` before cache/CDN. They discover the integration files without connecting to a desk. These images improve identification; they do not confer Marketplace default-catalog acceptance or a Home Assistant quality-scale award.
+
+| Shipped file | Pixels | Dark request fallback |
+| --- | --- | --- |
+| `icon.png` | 256 × 256 | `dark_icon.png` uses this file |
+| `icon@2x.png` | 512 × 512 | `dark_icon@2x.png` uses this file |
+| `logo.png` | 1204 × 256 | `dark_logo.png` uses this file |
+| `logo@2x.png` | 2408 × 512 | `dark_logo@2x.png` uses this file |
+
+No separate `dark_*` assets are shipped. HA's fallback chain uses the matching light image, preserving the white logo background. Missing high-resolution images fall back to standard resolution; missing logos can fall back to icons. Tests verify PNG dimensions, chunk checksums and compressed image data, then compare actual response bytes with these files through both real HA 2026.11 handlers. They also exercise missing-file fallbacks in temporary directories, without modifying the supplied assets. No CDN/cache or placeholder response can satisfy the local-handler assertions. This is backend contract evidence, not a visual test of the maintainer's running HA.
+
+Before installation, the [Marketplace guide](https://contributors.home-assistant.io/marketplace/guides/integrations/#brand-images) describes brands-site ingestion from the latest release of integrations in the catalog. This repository has no published release or confirmed catalog acceptance at this update. Adding its custom link and raising the HA minimum cannot create a missing CDN image. See [the route and pre-installation boundaries](hacs-presentation.md#name-and-catalog-icon).
 
 ## README vector logos
 
@@ -12,12 +23,12 @@ The maintainer additionally supplied `LINAK logo A_2colour.ai` and `LINAK logo A
 
 The GitHub-facing READMEs retain the theme-aware SVG pair. The local HA PNG assets retain the provenance documented above. GitHub theme selection follows its [supported picture markup](https://github.blog/changelog/2022-08-15-specify-theme-context-for-images-in-markdown-ga/).
 
-## HACS header
+## Marketplace and legacy HACS header
 
-The root HACS READMEs use a Markdown image pointing to linak-logo.svg. It reuses the light SVG's original paths with a white rounded background and padding, at a 320-pixel intrinsic width. No artwork colors or lettering change. This neutral background keeps the official lettering readable in both HA themes without picture/source HTML. Local Home Assistant brand PNGs are unchanged.
+The root product READMEs use a Markdown image pointing to linak-logo.svg. It reuses the light SVG's original paths with a white rounded background and padding, at a 320-pixel intrinsic width. No artwork colors or lettering change. This neutral background keeps the official lettering readable in both HA themes without picture/source HTML. Local Home Assistant brand PNGs are unchanged.
 
 ## Product name and illustrations
 
-The integration's display name is LINAK in both English and Polish, with current DPG desk-panel support stated in the product description. This does not change the LINAK artwork, manufacturer identity, integration domain or stored device/entity identifiers. The HACS catalog icon uses its own frontend source; see [the rendering reference](hacs-presentation.md#name-and-catalog-icon).
+The integration's display name is LINAK in both English and Polish, with current DPG desk-panel support stated in the product description. This does not change the LINAK artwork, manufacturer identity, integration domain or stored device/entity identifiers. The catalog icon is separate from the README logo; see [the rendering reference](hacs-presentation.md#name-and-catalog-icon).
 
 The illustrative `desk-overview-*.svg` assets are retained only for older README versions. Current product pages do not embed them because they can be mistaken for a supplied dashboard card. Use actual, anonymized HA screenshots for future interface examples.

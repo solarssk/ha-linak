@@ -1,6 +1,6 @@
 # How the integration manages desk state and control
 
-LINAK is a native Home Assistant integration distributed through HACS. Home Assistant owns discovery and adapter selection; one coordinator and one BLE client own each configured desk. The initial hardware target is DPG1C, not every LINAK actuator or product family.
+LINAK is a native Home Assistant integration for HA 2026.11.0 or newer, installed through the built-in Marketplace or copied manually. Home Assistant owns discovery and adapter selection; one coordinator and one BLE client own each configured desk. The initial hardware target is DPG1C, not every LINAK actuator or product family.
 
 ## Component boundaries
 
@@ -172,7 +172,7 @@ stateDiagram-v2
 
 ## Supported environment and evidence
 
-Automated tests run against HA 2026.10.4 with simulated Bluetooth. The [hardware evidence](hardware-results.md) covers one DPG1C on macOS and a Raspberry Pi 4B. Complete target arrival, physical Stop accuracy, fresh unbonded onboarding and mixed-adapter stability remain open validation work. No Home Assistant quality-scale award or HACS default-catalog acceptance is claimed.
+Automated tests run against HA 2026.11.0 with simulated Bluetooth. The [hardware evidence](hardware-results.md) covers one DPG1C on macOS and a Raspberry Pi 4B. Complete target arrival, physical Stop accuracy, fresh unbonded onboarding and mixed-adapter stability remain open validation work. No Home Assistant quality-scale award or HACS default-catalog acceptance is claimed.
 
 ## Proposed state and library contracts
 

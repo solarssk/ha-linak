@@ -6,8 +6,8 @@ Control a height-adjustable desk with a LINAK **DPG1C** panel from Home Assistan
 
 🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 
-[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.11.0%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
+[![Marketplace](https://img.shields.io/badge/Marketplace-Custom-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/blog/2026/11/04/release-202611/#custom-repositories)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
@@ -89,14 +89,14 @@ Signal strength and backend are optional. Enable them under **Settings → Devic
 
 Prepare these before installation:
 
-- **Home Assistant 2026.10.4 or newer**
+- **Home Assistant 2026.11.0 or newer**
 - A **DPG1C** panel within Bluetooth range
 - A local Bluetooth adapter or compatible active **ESPHome Bluetooth proxy** with pairing support
 
 ## 🚀 Install and connect
 
-1. In HACS, add `https://github.com/solarssk/ha-linak` as a custom repository of type **Integration**.
-2. Download **LINAK**, then restart Home Assistant.
+1. Open **Settings → Marketplace → Add from link**, connect your GitHub account when prompted and enter `https://github.com/solarssk/ha-linak`.
+2. Install **LINAK**. A first installation with this config flow does not require a restart. Updating an already loaded integration still requires one.
 3. Disable any IKEA Idasen Desk integration using this same desk. Disconnect another desk app if one is connected.
 4. Enable **Bluetooth pairing** on the panel.
 5. Open **Settings → Devices & services → Add integration**, search for **LINAK** and choose your desk. You can also use its discovery card.
@@ -105,6 +105,10 @@ Prepare these before installation:
 Choose **Monitoring only** in setup if you want readings without preparing movement controls. You can add the measured height range later through **Configure**.
 
 Allow up to **60 seconds** for connection and another **10 seconds** to release a failed attempt. If setup fails, follow the displayed message and retry. [Manual installation](.github/README.md#installation).
+
+Marketplace is built into HA 2026.11 and migrates existing HACS repositories/installations. This project is added from a link; default-catalog acceptance is not claimed. Installed HA and Marketplace views can use the bundled icon/logo, including dark-theme fallbacks. An icon before installation depends on catalog/release branding and is not guaranteed for this custom link. [Branding details](docs/hacs-presentation.md#name-and-catalog-icon).
+
+HA versions below 2026.11.0 are unsupported, including manual installations. The minimum in `hacs.json` is checked for repositories with releases; it is not a runtime guard for every manual or default-branch installation.
 
 ## ⚙️ Adjust the desk settings
 

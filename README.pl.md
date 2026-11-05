@@ -6,8 +6,8 @@ Steruj biurkiem z regulacją wysokości i panelem LINAK **DPG1C** z Home Assista
 
 🇬🇧 [English](README.md) · 🇵🇱 **Polski**
 
-[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.10.4%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.11.0%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
+[![Marketplace](https://img.shields.io/badge/Marketplace-Custom-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/blog/2026/11/04/release-202611/#custom-repositories)
 [![CI](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml/badge.svg)](https://github.com/solarssk/ha-linak/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/solarssk/ha-linak/blob/main/LICENSE)
 
@@ -89,14 +89,14 @@ Siła sygnału i backend są opcjonalne. Włączysz je w **Ustawienia → Urząd
 
 Przed instalacją przygotuj:
 
-- **Home Assistant 2026.10.4 lub nowszy**
+- **Home Assistant 2026.11.0 lub nowszy**
 - Panel **DPG1C** w zasięgu Bluetooth
 - Lokalny adapter Bluetooth albo zgodne aktywne **proxy Bluetooth ESPHome** z obsługą parowania
 
 ## 🚀 Instalacja i połączenie
 
-1. W HACS dodaj `https://github.com/solarssk/ha-linak` jako własne repozytorium typu **Integracja / Integration**.
-2. Pobierz **LINAK**, a następnie uruchom ponownie Home Assistant.
+1. Otwórz **Ustawienia → Marketplace → Dodaj z linku / Add from link**, połącz konto GitHub po wyświetleniu prośby i wpisz `https://github.com/solarssk/ha-linak`.
+2. Zainstaluj **LINAK**. Pierwsza instalacja tej integracji z konfiguracją przez interfejs nie wymaga restartu. Aktualizacja już załadowanej integracji nadal go wymaga.
 3. Wyłącz integrację IKEA Idasen Desk korzystającą z tego samego biurka. Jeśli jest połączona inna aplikacja biurka, rozłącz ją.
 4. Włącz **parowanie Bluetooth** na panelu.
 5. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację**, wyszukaj **LINAK** i wybierz biurko. Możesz też użyć jego karty wykrywania.
@@ -105,6 +105,10 @@ Przed instalacją przygotuj:
 Wybierz **Tylko monitorowanie**, jeśli chcesz korzystać z czujników bez przygotowywania sterowania. Zmierzony zakres wysokości dodasz później przez **Konfiguruj**.
 
 Poczekaj do **60 sekund** na połączenie, a po nieudanej próbie do kolejnych **10 sekund** na jego zwolnienie. W razie błędu wykonaj wskazówki z komunikatu i spróbuj ponownie. [Instalacja ręczna](.github/README.pl.md#installation).
+
+Marketplace jest wbudowany w HA 2026.11 i migruje dotychczasowe repozytoria oraz instalacje HACS. Ten projekt dodaje się z linku; nie deklarujemy akceptacji w domyślnym katalogu. Po instalacji widoki HA i Marketplace mogą korzystać z dołączonej ikony i logo, także przez warianty zastępcze dla ciemnego motywu. Ikona przed instalacją zależy od brandingu katalogu i wydania, więc nie jest gwarantowana dla tego linku. [Szczegóły brandingu](docs/hacs-presentation.md#name-and-catalog-icon).
+
+HA poniżej 2026.11.0 nie jest wspierany, także przy instalacji ręcznej. Minimum w `hacs.json` jest sprawdzane dla repozytoriów z wydaniami; nie blokuje podczas działania każdej instalacji ręcznej ani z domyślnej gałęzi.
 
 ## ⚙️ Zmień ustawienia biurka
 

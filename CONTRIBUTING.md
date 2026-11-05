@@ -74,10 +74,10 @@ On Linux, install the pinned build backend and test environment:
 
 ```sh
 python -m pip install --only-binary :all: --require-hashes -r .github/locks/build.txt
-python -m pip install --only-binary :all: --no-binary mock-open,pyric --no-build-isolation --require-hashes -r .github/locks/test.txt
+python -m pip install --only-binary :all: --no-binary pyric --no-build-isolation --require-hashes -r .github/locks/test.txt
 ```
 
-The `mock-open` and `pyric` source exceptions come from the HA test stack and Linux Bluetooth support. Their builds cannot download unpinned build dependencies.
+The `pyric` source exception comes from Linux Bluetooth support. Its build cannot download unpinned build dependencies. The retired test plugin's `mock-open` dependency and exception are no longer needed.
 
 On macOS, install the development requirements instead:
 
@@ -117,7 +117,7 @@ CI also cold-boots and restarts Home Assistant in an official container, without
 | Check | Role |
 | --- | --- |
 | Supported-version smoke | Part of the required Tests job |
-| Pinned preview smoke | Advisory; does not expand the supported HA range |
+| Pinned preview smoke | Advisory; temporarily repeats stable 2026.11.0 because no newer preview exists; does not validate a future HA version |
 | Target definitions | `.github/ha-smoke-targets.json`, including immutable image digests |
 
 Update the supported target together with the HA test plugin, HACS minimum and generated component requirements. Upgrade the preview deliberately.
@@ -146,7 +146,7 @@ CI retains only synthetic reports and logs for seven days, never the configurati
 
 ### State validation limits honestly
 
-HACS validation and hassfest check packaging, not physical behavior. Only HA 2026.10.4 is currently validated.
+HACS validation and hassfest check packaging, not physical behavior. The simulated test stack targets HA 2026.11.0. Linux installed-package and cold-boot/restart results require CI evidence; the documented macOS checks do not replace them. Earlier hardware observations retain their recorded HA versions.
 
 | Feature | Evidence | Still unverified |
 | --- | --- | --- |
@@ -212,8 +212,8 @@ Use the existing dependency owners rather than adding competing pins:
 
 | File or package | Owns |
 | --- | --- |
-| `requirements-tools.txt` | Independent tools |
-| `pytest-homeassistant-custom-component` in `requirements-dev.txt` | HA, pytest and pytest-asyncio; do not pin these separately |
+| `requirements-tools.txt` | Independent tools, including `pytest-cov` for CI coverage reports |
+| `pytest-homeassistant[bluetooth]` in `requirements-dev.txt` | HA, pytest, pytest-asyncio and optional Bluetooth helpers; do not pin these separately |
 | `.github/ha-requirements.txt` | Generated requirements from installed HA Bluetooth/USB manifests |
 | `.github/requirements-locker.txt` | The deliberately chosen resolver version |
 
@@ -225,12 +225,14 @@ For an independent tool update:
 
 For a HA test-plugin upgrade:
 
-1. Install the new plugin and its component requirements.
+1. Install the matching official `pytest-homeassistant[bluetooth]` release and its component requirements. Do not co-install the retired `pytest-homeassistant-custom-component`.
 2. Update `hacs.json`.
 3. Run `python scripts/check_dependencies.py --update`.
 4. Regenerate all locks and pass installed-package checks on Linux.
 
 On macOS, add `--metadata-only` when generating dependency files. It skips installed-platform validation and is not a substitute for Linux CI.
+
+The official plugin loads automatically and enables custom integrations by default. Import helpers from `pytest_homeassistant`, without a duplicate `pytest_plugins` registration or wrapper fixture. Keep `-p no:respx` in pytest options so HA installs its HTTPX alias before the separate respx plugin can import it. The plugin's socket/DNS guards stay enabled; brand-handler tests call the real HA views with in-memory requests rather than starting an HTTP server.
 
 Lock freshness checks preserve existing transitive pins. To deliberately update them, remove only the relevant lock and regenerate it in a reviewed PR. Upgrade the resolver together with its lock and audit scope.
 

@@ -297,7 +297,7 @@ async def test_measurement_page_reports_connection_loss_instead_of_bad_measureme
 
 
 async def test_offline_entry_can_be_renamed_without_bluetooth(hass, desk_transport):
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     entry = MockConfigEntry(
         domain="ha_linak", title="Old name", data={"address": "AA:BB:CC:DD:EE:FF"}

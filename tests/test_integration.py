@@ -8,7 +8,7 @@ from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.setup import async_setup_component
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.ha_linak.client import (
     DeskAuthenticationError,
@@ -657,7 +657,7 @@ async def test_first_refresh_deadline_defers_setup_and_releases_resources(hass, 
 
     from datetime import timedelta
     from homeassistant.util import dt as dt_util
-    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from pytest_homeassistant.common import async_fire_time_changed
 
     fake.start_notify = original_subscribe
     with patch(

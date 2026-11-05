@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from pytest_homeassistant.common import async_fire_time_changed
 
 from custom_components.ha_linak.protocol import DPG_UUID, HEIGHT_UUID
 from test_native_controls import connected_desk, setup_entry, OPTIONS

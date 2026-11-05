@@ -347,6 +347,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="name",
             data_schema=_name_schema(self._name, monitoring_option=True),
             errors=errors,
+            description_placeholders=_reading_placeholders(
+                self._validated_state, self._desk
+            ),
         )
 
     async def async_step_height(self, user_input=None) -> ConfigFlowResult:
@@ -389,7 +392,9 @@ class LinakConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="finish",
             data_schema=_range_schema(options),
             errors=errors,
-            description_placeholders=_height_placeholders(self._validated_state),
+            description_placeholders=_reading_placeholders(
+                self._validated_state, self._desk
+            ),
         )
 
     def _prepare_finish(self, user_input: dict[str, Any]) -> str | None:
@@ -602,7 +607,10 @@ class LinakOptionsFlow(OptionsFlowWithReload):
             step_id="range",
             data_schema=_range_schema(options),
             errors=errors,
-            description_placeholders=_height_placeholders(self._current_state()),
+            description_placeholders=_reading_placeholders(
+                self._current_state(),
+                getattr(getattr(self.config_entry, "runtime_data", None), "desk", None),
+            ),
         )
 
     def _current_state(self) -> DeskState | None:
@@ -712,6 +720,34 @@ def _height_placeholders(state: DeskState | None) -> dict[str, str]:
     return {"height": str(whole_centimeters(height)) if height is not None else "?"}
 
 
+def _reading_placeholders(
+    state: DeskState | None, desk: DeskClient | None
+) -> dict[str, str]:
+    """Present last-read slots only while their complete group is valid."""
+    if desk is None or not desk.connected:
+        state = None
+    placeholders = _height_placeholders(state)
+    for index in range(4):
+        value = "?"
+        if state is not None and state.capabilities is not None:
+            if index >= state.capabilities.memory_slots:
+                value = "n/a"
+            elif (
+                desk is not None
+                and desk.settings_health["memories"].valid
+                and state.offset_raw is not None
+                and len(state.memories) == state.capabilities.memory_slots
+            ):
+                position = state.memories[index].position_raw
+                value = (
+                    "-"
+                    if position is None
+                    else f"{(position + state.offset_raw) / 100:.2f} cm"
+                )
+        placeholders[f"memory_{index + 1}"] = value
+    return placeholders
+
+
 def _calibration_placeholders(
     proposal: HeightCalibration,
     bounds: dict[str, Any] | None = None,
@@ -744,11 +780,9 @@ def _validate_range(options: dict[str, Any], state: DeskState | None) -> None:
 def _range_schema(options) -> vol.Schema:
     schema: dict[Any, Any] = {}
     for key in (MINIMUM_HEIGHT, MAXIMUM_HEIGHT):
-        field = (
-            vol.Required(key, default=options[key])
-            if key in options
-            else vol.Required(key)
-        )
+        # HA initializes required number selectors without a default to zero.
+        # An explicit null keeps an unmeasured bound blank, not inferred.
+        field = vol.Required(key, default=options.get(key))
         schema[field] = selector.NumberSelector(
             selector.NumberSelectorConfig(
                 mode=selector.NumberSelectorMode.BOX, step=0.1, unit_of_measurement="cm"

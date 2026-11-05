@@ -19,7 +19,7 @@
       },
       "finish": {
         "title": "2. Ustaw zakres ruchu",
-        "description": "Wpisz najniższą i najwyższą wysokość blatu, zmierzone od podłogi. W razie potrzeby użyj fizycznego panelu, aby sprawdzić oba końce zakresu, a następnie pozostaw biurko nieruchomo. Te granice ograniczą polecenia z HA. Zachowaj dokładność pomiaru; nie zaokrąglaj granic na zewnątrz zakresu.",
+        "description": "Wpisz najniższą i najwyższą wysokość blatu, zmierzone od podłogi. Puste pola oznaczają brak skonfigurowanego zakresu, a nie 0 cm. To granice poleceń HA, nie limity sterownika. Zachowaj dokładność pomiaru; nie zaokrąglaj granic na zewnątrz zakresu. W razie potrzeby użyj fizycznego panelu, aby sprawdzić oba końce zakresu, a następnie pozostaw biurko nieruchomo.\n\nOstatnio odczytane pozycje pamięci, przeliczone według ustawienia wysokości panelu:\n\n| Pamięć | Wysokość |\n| --- | --- |\n| 1 | {memory_1} |\n| 2 | {memory_2} |\n| 3 | {memory_3} |\n| 4 | {memory_4} |\n\n`-` = pusta, `?` = niedostępna, `n/a` = nieobsługiwana pamięć. Zapisane pozycje nie są limitami ruchu. Nie wypełniają tych pól ani nie odblokowują ruchu.",
         "data": {
           "minimum_height": "Najniższa wysokość blatu",
           "maximum_height": "Najwyższa wysokość blatu"
@@ -38,7 +38,7 @@
       },
       "name": {
         "title": "1. Nazwij i połącz biurko",
-        "description": "Wybierz nazwę widoczną w Home Assistant. Kontynuując, przygotujesz panel do sterowania przez HA. Może to zapisać ustawienie połączenia w pamięci panelu. Biurko się nie poruszy. Aplikacja telefonu nie jest potrzebna. Aby tylko obserwować biurko, włącz tryb samego monitorowania: nic nie jest zapisywane w panelu i nie pytamy o zakres wysokości.",
+        "description": "Aktualny odczyt: {height} cm. Ostatnio odczytane pozycje pamięci, przeliczone według ustawienia wysokości panelu:\n\n| Pamięć | Wysokość |\n| --- | --- |\n| 1 | {memory_1} |\n| 2 | {memory_2} |\n| 3 | {memory_3} |\n| 4 | {memory_4} |\n\n`-` = pusta, `?` = niedostępna, `n/a` = nieobsługiwana pamięć. To zapisane pozycje, nie limity ruchu ani potwierdzone pomiary miarką. Nie ustawiają granic i nie odblokowują ruchu.\n\nWybierz nazwę widoczną w Home Assistant. Kontynuując, przygotujesz panel do sterowania przez HA. Może to zapisać ustawienie połączenia w pamięci panelu. Biurko się nie poruszy. Aplikacja telefonu nie jest potrzebna. Aby tylko obserwować biurko, włącz tryb samego monitorowania: nic nie jest zapisywane w panelu i nie pytamy o zakres wysokości.",
         "data": {
           "name": "Nazwa w Home Assistant",
           "monitoring_only": "Tylko monitorowanie"
@@ -318,7 +318,7 @@
       },
       "range": {
         "title": "Zakres ruchu",
-        "description": "Wpisz najniższą i najwyższą wysokość blatu, zmierzone od podłogi. W razie potrzeby użyj fizycznego panelu, aby sprawdzić oba końce zakresu, a następnie pozostaw biurko nieruchomo. Te granice ograniczą polecenia z HA. Zachowaj dokładność pomiaru; nie zaokrąglaj granic na zewnątrz zakresu.",
+        "description": "Wpisz najniższą i najwyższą wysokość blatu, zmierzone od podłogi. Puste pola oznaczają brak skonfigurowanego zakresu, a nie 0 cm. To granice poleceń HA, nie limity sterownika. Zachowaj dokładność pomiaru; nie zaokrąglaj granic na zewnątrz zakresu. W razie potrzeby użyj fizycznego panelu, aby sprawdzić oba końce zakresu, a następnie pozostaw biurko nieruchomo.\n\nOstatnio odczytane pozycje pamięci, przeliczone według ustawienia wysokości panelu:\n\n| Pamięć | Wysokość |\n| --- | --- |\n| 1 | {memory_1} |\n| 2 | {memory_2} |\n| 3 | {memory_3} |\n| 4 | {memory_4} |\n\n`-` = pusta, `?` = niedostępna, `n/a` = nieobsługiwana pamięć. Zapisane pozycje nie są limitami ruchu. Nie wypełniają tych pól ani nie odblokowują ruchu.",
         "data": {
           "minimum_height": "Najniższa wysokość blatu",
           "maximum_height": "Najwyższa wysokość blatu"

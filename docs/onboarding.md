@@ -37,8 +37,8 @@ flowchart TD
 | --- | --- | --- |
 | Selection | Choose an HA-discovered connectable device | Reserve its unique address; reject duplicates |
 | Validation | Connect, pair when needed, subscribe, read settings and position | Show progress and a stage-specific failure if validation fails |
-| Name/preparation | Choose a name in HA and confirm panel preparation | Preserve the client identifier; skip an already active client |
-| Range | Enter measured minimum and maximum desktop heights | Store proposed host-side command bounds; do not move or program firmware limits |
+| Name/preparation | Review current height and last-read saved positions, choose a name in HA and confirm panel preparation | Preserve slot numbering and the client identifier; skip an already active client |
+| Range | Review last-read saved positions and enter measured minimum and maximum desktop heights | Leave missing bounds blank; store only owner-entered host-side command bounds; do not move or program firmware limits |
 | Height check | Refresh the reading after measuring the range | Use a current stationary baseline for any correction |
 | Correction | Enter current tape measurement and review a separate confirmation | Write once, verify the reference and refresh dependent heights |
 | Final validation | Re-read on the height-correct path or use verified calibration results | Save only bounds compatible with the current reference and position |
@@ -47,6 +47,23 @@ flowchart TD
 An unchanged height correction sends no offset write. Calibration inputs are transient and are not replayed after restart. Failed preparation returns to its form instead of silently creating an unprepared entry.
 
 The height-correct confirmation starts off and must be enabled deliberately after checking the measurement. An unavailable position word (`ffff`) fails the read with a specific setup error, not a large centimeter value or an inferred unit conversion. Setup can retry a read, but never substitutes an unavailable position into a calibration proposal.
+
+### Saved positions and missing bounds
+
+Initial validation already reads the reported memory slots with the existing serialized `89`–`8c` requests and capabilities barriers. The name step displays that snapshot before any preparation or calibration, including when the owner later chooses Monitoring only. The setup range form and Configure's Travel range show the same last-read information without adding queries, writes or a reconnect. Saved heights use `(position_raw + offset_raw) / 100` and retain two decimal places. They reflect the panel reference, not a verified tape measurement.
+
+| Display | Meaning |
+| --- | --- |
+| Height in cm | Populated slot in a complete valid memory group on a ready connection |
+| `-` | Explicit valid empty-slot reply |
+| `?` | Unavailable group, incomplete data or no current connection |
+| `n/a` | Slot not supported by the reported capabilities |
+
+Equal heights remain separate slots. Optional timeouts and malformed replies never become empty slots or partial lists. Calibration can invalidate the group until its next successful read; cached values are not presented as current. The protocol's [late-copy correlation limit](protocol.md#the-case-a-barrier-cannot-detect) still applies.
+
+The verified read protocol does not supply mechanical travel limits. Saved/favorite positions are not those limits and never populate bounds, define their minimum/maximum or authorize movement. Both measured bounds remain required for target and memory travel. New bounds serialize with explicit null defaults so HA leaves them blank: required number selectors without defaults otherwise initialize to zero in the frontend. Existing saved bounds and rejected submitted values stay visible without rounding or replacement.
+
+🇵🇱 Kreator pokazuje odczytane pozycje pamięci już przy wyborze nazwy, a także w formularzu zakresu ruchu. `-` oznacza pustą pamięć, `?` brak dostępnego odczytu, a `n/a` nieobsługiwany numer pamięci. Zapisane pozycje nie są fizycznymi limitami ani pomiarami miarką. Nie wyliczamy z nich zakresu i nie odblokowujemy ruchu. Brak zmierzonych granic jest pokazywany jako puste pola, nie 0 cm; istniejące pomiary pozostają bez zmian.
 
 ## Monitoring only
 

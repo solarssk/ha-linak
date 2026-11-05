@@ -1,16 +1,18 @@
 """Regression checks for dependency ownership, CI gates and documentation policy."""
 
 import json
+from fnmatch import fnmatchcase
 from pathlib import Path
 import re
 import yaml
 import pytest
+from packaging.requirements import Requirement
 from scripts.check_pr_docs import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_plugin_owns_pytest_stack_and_generated_pins_are_excluded():
+def test_plugin_owns_pytest_stack_and_dependabot_only_updates_tools():
     source = (ROOT / "requirements-dev.txt").read_text()
     assert "pytest-homeassistant[bluetooth]==" in source
     assert not re.search(
@@ -23,10 +25,110 @@ def test_plugin_owns_pytest_stack_and_generated_pins_are_excluded():
         update for update in policy["updates"] if update["package-ecosystem"] == "pip"
     )
     assert ".github/locks/**" in pip["exclude-paths"]
-    assert ".github/ha-requirements.txt" in pip["exclude-paths"]
+    allowed = {item["dependency-name"] for item in pip["allow"]}
+    tools = {
+        Requirement(line).name
+        for name in ("requirements-tools.txt", "requirements-build.txt")
+        for line in (ROOT / name).read_text().splitlines()
+        if line and not line.startswith(("#", "-"))
+    }
+    assert allowed == tools
+    assert all(set(item) == {"dependency-name"} for item in pip["allow"])
+    protected = {
+        Requirement(line).name
+        for name in (".github/ha-requirements.txt", ".github/requirements-locker.txt")
+        for line in (ROOT / name).read_text().splitlines()
+        if line and not line.startswith("#")
+    } | {"homeassistant", "pytest-homeassistant", "pytest", "pytest-asyncio"}
+    assert allowed.isdisjoint(protected)
+    assert set(pip["groups"]["tooling"]["patterns"]) == tools
     assert pip["cooldown"]["default-days"] >= 7
-    assert any(
-        item["dependency-name"] == "pytest-homeassistant" for item in pip["ignore"]
+    assert {"homeassistant", "pytest-homeassistant", "uv"} <= {
+        item["dependency-name"] for item in pip["ignore"]
+    }
+    assert not any(
+        fnmatchcase(name, item["dependency-name"])
+        for name in allowed
+        for item in pip["ignore"]
+    )
+
+
+def assert_requirement_inputs_fetchable(root, sources, excludes):
+    """Follow local -r/-c inputs before applying package-level update filters."""
+    visited = set()
+    pending = list(sources)
+    while pending:
+        source = pending.pop()
+        if source in visited:
+            continue
+        visited.add(source)
+        for child in re.findall(
+            r"^-[rc]\s*(.+\.(?:txt|in))\s*$", source.read_text(), re.MULTILINE
+        ):
+            target = (source.parent / child).resolve()
+            relative = target.relative_to(root).as_posix()
+            assert not any(
+                fnmatchcase(relative, pattern.lstrip("/")) for pattern in excludes
+            ), f"{source.relative_to(root)} references excluded file {relative}"
+            assert target.is_file(), f"Missing requirements input: {relative}"
+            pending.append(target)
+    return visited
+
+
+def test_dependabot_can_fetch_all_referenced_requirements():
+    policy = yaml.safe_load((ROOT / ".github/dependabot.yml").read_text())
+    pip = next(
+        update for update in policy["updates"] if update["package-ecosystem"] == "pip"
+    )
+    excludes = pip.get("exclude-paths", [])
+    sources = [
+        path
+        for directory in (ROOT, ROOT / ".github")
+        for path in directory.glob("*.txt")
+        if not any(
+            fnmatchcase(path.relative_to(ROOT).as_posix(), pattern.lstrip("/"))
+            for pattern in excludes
+        )
+    ]
+    visited = assert_requirement_inputs_fetchable(ROOT, sources, excludes)
+    assert {
+        ROOT / ".github/ha-requirements.txt",
+        ROOT / ".github/requirements-locker.txt",
+        ROOT / "requirements-build.txt",
+    } <= visited
+
+
+@pytest.mark.parametrize(
+    "excluded", [".github/ha-requirements.txt", ".github/requirements-locker.txt"]
+)
+def test_requirement_input_check_rejects_original_exclusions(excluded):
+    with pytest.raises(AssertionError, match="references excluded file"):
+        assert_requirement_inputs_fetchable(
+            ROOT,
+            [ROOT / "requirements-dev.txt", ROOT / ".github/audit-direct.txt"],
+            [excluded],
+        )
+
+
+def test_requirement_input_check_follows_nested_constraints_and_cycles(tmp_path):
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (tmp_path / "requirements.txt").write_text("-r nested/tools.in\n")
+    (nested / "tools.in").write_text("-c ../constraints.txt\n")
+    (tmp_path / "constraints.txt").write_text("-r requirements.txt\n")
+    with pytest.raises(
+        AssertionError, match="references excluded file constraints.txt"
+    ):
+        assert_requirement_inputs_fetchable(
+            tmp_path, [tmp_path / "requirements.txt"], ["constraints.*"]
+        )
+    assert (
+        len(
+            assert_requirement_inputs_fetchable(
+                tmp_path, [tmp_path / "requirements.txt"], []
+            )
+        )
+        == 3
     )
 
 

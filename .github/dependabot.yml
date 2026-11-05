@@ -11,18 +11,23 @@ updates:
     assignees: ["solarssk"]
     # GitHub milestone number, not the version. Update before closing the release.
     milestone: 1
-    # Generated pins/locks belong to an intentional HA/test-stack upgrade, not separate bumps.
+    # Referenced inputs must remain fetchable. Filter updates by package, not file.
     exclude-paths:
       - ".github/locks/**"
-      - ".github/ha-requirements.txt"
-      - ".github/audit-direct.txt"
-      - ".github/requirements-locker.txt"
+    allow:
+      - dependency-name: ruff
+      - dependency-name: mypy
+      - dependency-name: pip-audit
+      - dependency-name: pytest-cov
+      - dependency-name: setuptools
+      - dependency-name: wheel
     groups:
       tooling:
         patterns: ["ruff", "mypy", "pip-audit", "pytest-cov", "setuptools", "wheel"]
     ignore:
       - dependency-name: homeassistant
       - dependency-name: pytest-homeassistant
+      - dependency-name: uv
   - package-ecosystem: github-actions
     directory: /
     schedule:

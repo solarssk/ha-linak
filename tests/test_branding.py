@@ -97,8 +97,9 @@ async def test_brand_handler_requires_authentication(hass, view_type):
     hass.data["brands"] = deque(["test-brand-token"], maxlen=2)
     request = make_mocked_request("GET", "/?placeholder=no")
     request[KEY_AUTHENTICATED] = False
+    view = view_type(hass)
     with pytest.raises(web.HTTPForbidden):
-        await view_type(hass).get(request, "ha_linak", "icon.png")
+        await view.get(request, "ha_linak", "icon.png")
 
 
 @pytest.mark.parametrize("image", IMAGES)

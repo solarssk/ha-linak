@@ -2,6 +2,44 @@
 
 Use this manual to locate the failing layer before changing pairing, bounds or panel settings. A visible desk, a connected BLE client and a desk ready to move are different conditions. Start with the symptom table, then collect the evidence required for that branch.
 
+## Prepare a bug report
+
+Start here when opening an [issue](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml). You do not need to identify the root cause. Write “unknown” for missing details and report what you already observed; never repeat unexpected movement, induce a disconnect during travel or reset pairing just to obtain a log.
+
+1. Record the exact LINAK version (or commit for a development copy), HA Core version, HA installation type, panel model/known firmware and whether Bluetooth uses a local adapter, a proxy or both. The diagnostic download does not include the integration/HA versions, so supply them separately.
+2. Describe the expected and actual result, exact error text, time with timezone and sequence of actions. Include physical-panel use, recent updates/restarts and whether the desk was stationary. State whether it recovered by itself, how long you waited and what you changed afterward.
+3. Record **Connection**, **Operation** and its `reason`/`last_result` when available. For unavailable entities, include Keep connected intent (`connection_wanted` in diagnostics); an absent/disabled switch does not establish that the intent is on.
+4. On the LINAK device page under **Settings → Devices & services**, open its menu and download diagnostics. If safely available, retain before/after downloads. They contain cached readings, connection intent, stages, settings validity/ages and operation results, not a radio trace or a new connection attempt. First-time setup failures may have no device/download: include the setup error and stage instead.
+5. If more timing detail is needed, collect the narrow debug log described below. Attach only the reviewed LINAK diagnostic JSON and relevant log interval, not a full HA backup, configuration, `.storage`, raw protocol inventory or Bluetooth capture.
+
+### Collect a narrow debug log
+
+On the LINAK integration card, use **Enable debug logging**, observe one safe occurrence, then **Disable debug logging** to finish and download the log. If the menu is unavailable, the HA `logger.set_level` action can enable the integration logger without restarting HA:
+
+```yaml
+action: logger.set_level
+data:
+  custom_components.ha_linak: debug
+```
+
+After the observation, run the same action with the logger's previous level, or `info` if that was its ordinary level. This action changes logging, not the desk, and does not download a file; retrieve the relevant interval from **Settings → System → Logs**. Do not leave debug logging on indefinitely. A startup-only problem can be reported with existing startup logs first; do not restart or move the desk solely for this procedure.
+
+Include the first error and preceding setup/query stages, not just the final unavailable message. Keep timestamps, stage names, exception classes, reason codes, durations and timeout command names. Remove device/user names, Bluetooth/IP addresses, adapter/proxy/client identifiers, locations and credentials. Use consistent placeholders such as `DESK_A` and `PROXY_A` so the sequence remains understandable. Review screenshots and attachments too. The diagnostic export deliberately omits entry names/addresses, but **debug logs are not automatically anonymized**. Do not enable global debug logging or lower-level Bleak/connector traces unless the maintainer agrees a specific private scope.
+
+Suspected vulnerabilities or sensitive raw evidence belong in [private reporting](../SECURITY.md), not public issues. A log proves only the recorded software events; an Operation result or successful Stop write does not independently prove the physical result.
+
+### Zgłoszenie i logi po polsku
+
+Nie musisz ustalać przyczyny. W [formularzu błędu](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml) możesz pisać po polsku, a brakujące informacje oznaczyć „nie wiem”. Nie powtarzaj nieoczekiwanego ruchu, nie zrywaj połączenia podczas jazdy i nie resetuj parowania dla zebrania logów.
+
+1. Podaj dokładne wersje LINAK i HA Core, sposób instalacji HA/integracji, model i znany firmware panelu oraz adapter lokalny/proxy lub oba. Wersje podaj osobno: plik diagnostyczny ich nie zawiera.
+2. Opisz oczekiwany i rzeczywisty wynik, dokładny błąd, czas ze strefą i kolejność działań, także użycie panelu lub restart/aktualizację. Podaj stan Połączenie, Operacja i jej przyczynę, zamiar Utrzymuj połączenie oraz czy i po jakim czasie nastąpił samoczynny powrót.
+3. Pobierz diagnostykę z menu urządzenia LINAK w **Ustawienia → Urządzenia i usługi**, jeśli to możliwe przed i po błędzie. To odczyt danych z pamięci integracji, nie nowa próba Bluetooth. Jeśli pierwsza konfiguracja się nie zakończyła, podaj jej błąd i etap zamiast pliku.
+4. Na karcie integracji wybierz **Włącz rejestrowanie debugowania / Enable debug logging**, zaobserwuj jedno bezpieczne zdarzenie, następnie **Wyłącz / Disable debug logging** i pobierz log. Gdy menu jest niedostępne, powyższa akcja `logger.set_level` włącza wyłącznie logger integracji bez restartu. Potem przywróć poprzedni poziom, np. `info`; log pobierz z **Ustawienia → System → Dzienniki**. Nie restartuj ani nie poruszaj biurkiem tylko dla tego zgłoszenia.
+5. Zachowaj pierwszy błąd i poprzedzające etapy, czasy, kody i nazwy poleceń. Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i dane dostępowe; używaj stałych zastępników `DESK_A`/`PROXY_A`. **Logi debugowania nie są automatycznie anonimizowane.** Nie dołączaj kopii HA, konfiguracji, `.storage`, surowego inwentarza protokołu ani przechwyconych ramek. Nie włączaj globalnego debugowania ani dodatkowych loggerów bez uzgodnienia.
+
+Podatności i wrażliwe dowody zgłaszaj [prywatnie](../SECURITY.md). Wynik Operacji lub udany zapis Stop nie jest niezależnym dowodem fizycznego zatrzymania.
+
 ## Optional settings validity
 
 Downloaded diagnostics include `settings.memories` and `settings.reminders`, each with `valid`, `age_seconds` and `error`. Age measures time since the last successful group read in this process, not BLE latency or a persisted timestamp. `null` age means no successful read. The stable `invalid_response` reason means a completed matching reply could not be decoded. `timeout` means an optional query expired, not that the slot is empty; no backend payload or identifier is exposed.

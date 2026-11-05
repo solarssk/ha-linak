@@ -19,7 +19,7 @@ Choose the kind of help you'd like to give:
 
 Tell us what happened in your own words. A screenshot can help; you don't need to diagnose the cause.
 
-1. Check the [troubleshooting guide](docs/diagnostics.md) and [existing issues](https://github.com/solarssk/ha-linak/issues) for the same problem.
+1. Check the [bug-report and debug-log guide](docs/diagnostics.md#prepare-a-bug-report) and [existing issues](https://github.com/solarssk/ha-linak/issues) for the same problem.
 2. Open a [bug report](https://github.com/solarssk/ha-linak/issues/new?template=bug.yml).
 3. Describe what you expected, what happened instead and the steps that led to it.
 
@@ -30,7 +30,8 @@ The form also asks for a few details:
 | Versions | Your Home Assistant and LINAK integration versions |
 | Desk | Panel model, if you know it |
 | Connection | A Bluetooth adapter or proxy, if you know which one |
-| Screenshot or log | The error message or behavior you want to show |
+| Timeline and recovery | Time with timezone, action, first error, whether readings returned by themselves and how long you waited |
+| Diagnostics and log | Reviewed LINAK diagnostic JSON and a narrow debug interval, collected with [these steps](docs/diagnostics.md#collect-a-narrow-debug-log) |
 
 Write “not sure” if you can't find a detail. You can add it later if the maintainer needs it.
 

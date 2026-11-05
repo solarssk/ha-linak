@@ -1,26 +1,46 @@
 name: Bug report
-description: Report a reproducible problem with the integration.
+description: Report a problem with diagnostic context. Możesz pisać po polsku.
 labels: ["type: bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Follow the [diagnostic guide](https://github.com/solarssk/ha-linak/blob/main/docs/diagnostics.md#prepare-a-bug-report). Do not repeat unsafe movement to collect evidence. Report vulnerabilities [privately](https://github.com/solarssk/ha-linak/security/advisories/new).
+
+        Możesz pisać po polsku. Nie powtarzaj niebezpiecznego ruchu dla zebrania dowodów. Usuń nazwy, adresy Bluetooth/IP, lokalizacje, identyfikatory i tokeny z załączników. Jeśli czegoś nie wiesz, wpisz „nie wiem”.
   - type: input
     id: versions
     attributes:
-      label: Integration and Home Assistant versions
+      label: Integration and Home Assistant versions / Wersje
+      description: Exact LINAK version or commit, HA Core version, installation method (Marketplace/manual) and HA OS/Container environment. Wersja LINAK lub commit, HA Core, sposób instalacji i środowisko HA.
+      placeholder: "LINAK 0.1.0; HA Core 2026.11.0; Marketplace; HA OS"
     validations:
       required: true
   - type: textarea
     id: behavior
     attributes:
-      label: Expected behavior and reproduction steps
+      label: Expected and actual behavior / Oczekiwane i rzeczywiste zachowanie
+      description: What did you do, what should happen and what happened instead? Include the exact error text. Co zrobiono, co miało się stać i co się stało? Podaj treść błędu.
     validations:
       required: true
   - type: textarea
     id: hardware
     attributes:
-      label: Panel model and Bluetooth adapter or proxy
-      description: Do not include names, addresses or location identifiers.
+      label: Panel and Bluetooth path / Panel i połączenie
+      description: Panel model/firmware if known, local adapter or ESPHome proxy, and backend reported by diagnostics. List competing desk apps/integrations without identifiers. Model/firmware, adapter lub proxy, backend i inne aplikacje biurka. Bez nazw, adresów i lokalizacji.
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline and recovery / Przebieg i odzyskanie połączenia
+      description: Time with timezone, action or stationary state, Connection/Operation state and reason, Keep connected intent, duration and whether it recovered by itself. Mention recent HA restart/update or physical-panel use. Czas ze strefą, działanie lub postój, stan Połączenie/Operacja i przyczyna, zamiar Utrzymuj połączenie, czas trwania i samoczynny powrót. Wspomnij restart/aktualizację HA lub użycie panelu.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics / Diagnostyka
+      description: Attach reviewed LINAK diagnostic JSON from the device page, ideally before and after the failure. If setup never completed, say so and provide its error/stage instead. Dołącz sprawdzony JSON diagnostyczny, najlepiej przed i po błędzie. Jeśli konfiguracja się nie zakończyła, podaj jej błąd/etap. Never attach full HA configuration, backups or raw protocol inventory.
   - type: textarea
     id: logs
     attributes:
-      label: Redacted logs
+      label: Redacted debug logs / Zanonimizowane logi debugowania
+      description: Follow the guide to capture one safe attempt, including the first error and preceding stages, then turn debugging off. Keep timestamps and error codes; redact private identifiers consistently. Zbierz jedną bezpieczną próbę z pierwszym błędem i wcześniejszymi etapami, potem wyłącz debugowanie. Zachowaj czasy i kody błędów; usuń prywatne identyfikatory.
       render: text

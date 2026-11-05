@@ -28,7 +28,7 @@ Evidence labels mean manufacturer-documented product behavior, community protoco
 | Existing client readiness | Foreground preparation | Preserved-identifier activation and verification | Status lifetime and behavior across firmware/restart conditions |
 | HA device name | Name option and device registry | Implemented without BLE writes/reload | Radio/app-name writing is separate and unverified |
 | Active reminder profile | Configuration select plus the existing ordinary sensor | Fresh masked assignment, ACK and independent readback; Off/Profile 3 hardware evidence at status 1 | Hardware acceptance of profiles 1/2, reconnect persistence and other variants |
-| Sitting/standing durations | Three read-only profile pairs | Read configuration durations in minutes | Verify write bounds, encoding and persistence |
+| Sitting/standing durations | Three profile-pair sensors; configuration input/button for profile 1 sitting only | Shared protected setter; 50/55 in inactive profile 1 observed on one panel | Full input range, active-profile editing, other fields, countdown and persistence |
 | Reminder light/presentation | Capability and raw reminder data only | Manufacturer feature and community bit candidates | Confirm exact state bits; a light capability is not on/off state |
 | Display units | No setter | Manufacturer/community evidence | Verify encoding while preserving the HA centimeter contract |
 | Automatic up/down | Capability flags only | Manufacturer/community evidence | Distinguish panel automatic drive from host-driven target keepalives |
@@ -65,7 +65,7 @@ HA can already add automations, integration diagnostics and host-side command bo
 | Candidate | Manufacturer/app evidence | Current HA behavior | Next proof needed |
 | --- | --- | --- | --- |
 | Favorite management | Product/app descriptions document favorites | Read and drive; no save/delete setter | Exact slot-safe write, acknowledgement, readback and persistence |
-| Reminder intervals | App/product descriptions document configurable intervals | Read three configured profile pairs | Duration write encoding, bounds and readback |
+| Reminder intervals | App/product descriptions document configurable intervals | Read three pairs; edit inactive profile 1 sitting time with preserved-field readback | Hardware input bounds, other fields, countdown and persistence |
 | Units and height reference | Panel documentation describes presentation and correction | Protected measured-height calibration; HA stays in cm | Unit-setting protocol and variant behavior |
 | Automatic drive | Full variants document optional automatic drive | Read capability flags; no firmware toggle | Permission, semantics and independent control behavior |
 | Lock, wake preference and display logo | Physical/product features or community candidates | No remote setters | Demonstrate a supported BLE command, not just a UI label or raw bit |
@@ -125,6 +125,26 @@ The setter changes only the low two flags bits with `(flags & ~0x03) | profile`,
 Busy operations are refused without queuing. Timeout, cancellation, link/generation loss, malformed data, rejected ACK or mismatching readback discards the session. A possibly delivered write is never automatically retried or restored. Check the actual panel profile after normal read recovery before requesting another change. Setup, reconnect and polling only read settings; selecting a profile sends no wake, activation or movement.
 
 Hardware evidence is limited to Profile 3 → Off → Profile 3 at observed client status 1 on one DPG1C. Profiles 1/2, status-0 write permissions, long-term stability and persistence are unverified. See the [evidence register](hardware-results.md#reminder-profile-setting) and [wire contract](protocol.md#protected-setting-exchanges). Tests of all four options use simulated BLE.
+
+## Edit profile 1 sitting time
+
+The device page's Configuration section contains **Profile 1 sitting time**, a typed number box in whole minutes, and **Profile 1: use standard 55 minutes**, an explicit single-field assignment. They are configuration entities, not diagnostics, movement controls or fields in the integration's Configure wizard. The existing duration sensors retain their identities. Standing duration and profiles 2/3 remain read-only.
+
+| Input rule | Meaning |
+| --- | --- |
+| Whole minutes, 1–60 inclusive | Product input policy in this integration, not a medical recommendation or measured firmware limit |
+| No zero | Use the separate Off profile to disable reminders; zero-duration semantics are unverified |
+| Existing value outside 1–60 | Keep and display the actual value, such as 90; do not clip, invalidate its read or automatically overwrite it |
+| Explicit replacement | A user may replace an existing 90 with 50; an attempted edit to 90 is refused before I/O |
+| Profile 1 inactive | Refuse an actual duration change while profile 1 is selected; never switch profiles automatically |
+| Already requested value | Fresh-state no-op, without a setter, identity query or activation |
+| Standard-time button | Assign only 55 minutes; no full-profile restore, saved-value backup or factory reset |
+
+LINAK's [DPG manual](https://assets.linak.com/asset/590184044899/document_hub5bdnb5l13pc4ebsja0cc702?content-disposition=inline), page 31, documents sitting-reminder presets 55, 50 and 45 minutes, default 55, and custom intervals through the app. It does not specify their minimum/maximum there. A minute duration is not a clock's minute component; the display does not establish a maximum of 59. The pinned community application uses 1–255 spinboxes, not a measured firmware acceptance range. [HSE's work-routine guidance](https://www.hse.gov.uk/msd/dse/work-routine.htm) favors short, frequent breaks and gives 5–10 minutes every hour as an example; it does not prescribe universal medical timer bounds. The integration does not claim that 60 minutes is a safe sitting threshold.
+
+Profile selection, interval editing and the standard-time button share one fresh read-modify-write transaction and foreground reservation. It validates the existing connection and reminder group, capabilities, stationary position and client status 1. The interval encoder changes exactly one byte, preserving all flags, the selected profile and the other five durations. The pair is not forced to sum to 60. The raw counter is omitted from the write and may change. Exact ACK, a capabilities barrier and independent full-body readback are required before the new value is published. Timeout, cancellation, lost generation or mismatching verification discards the session without retry or rollback. The same 1–60 whole-minute validation applies to HA services and the button.
+
+The standard-time button uses the documented 55-minute sitting preset; it does not issue the separate physical reminder-reset procedure described on manual page 32. No restore runs on setup, polling, reconnect, failure or restart. The only hardware interval evidence is 55 → 50 → 55 in inactive profile 1 at status 1 on one DPG1C. Actual countdown behavior, other values/fields, active-profile edits and persistence remain unverified. See the [interval evidence](hardware-results.md#single-reminder-interval) and the [owner procedure](controls.md#edit-one-reminder-duration).
 
 ## Client activation contract
 

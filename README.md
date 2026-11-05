@@ -62,6 +62,8 @@ The slider uses 1 cm steps within your measured range. It updates after a move f
 ### Configuration
 
 - 🔔 **Reminder profile** (`select`): choose Off or Profile 1/2/3, preserving the intervals
+- ⏱️ **Profile 1 sitting time** (`number`): type 1–60 whole minutes for an inactive profile
+- ↩️ **Profile 1: use standard 55 minutes** (`button`): change only that duration, not a factory reset
 - 🔌 **Keep connected** (`switch`): release the Bluetooth connection on purpose, then reconnect when needed
 
 **Keep connected** is disabled by default. Enable it in the entity settings to show the switch. Turning the switch off stops polling and reconnecting until you turn it on, including after a restart. During movement, it stops the desk first.
@@ -104,7 +106,9 @@ Open **Settings → Devices & services → LINAK → Configure** to change the n
 
 If the panel shows the wrong height, measure from the floor to the top of the desktop. Enter that value in **Height measured with a tape**, then review and confirm the correction. Saving the correction doesn't move the desk.
 
-Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Editing intervals and saved positions is unavailable.
+Height displays use whole centimeters. Enter your measurements at their measured precision; calibration keeps that precision. Choose Off or Profile 1/2/3 with Reminder profile. Selection preserves the intervals and other panel settings, does not move the desk and never activates the client. A write requires an active client and valid reminder readings. Profiles 1/2 still need hardware acceptance. Saved-position editing remains unavailable.
+
+On the device page under **Configuration**, type **1–60 whole minutes** into **Profile 1 sitting time**, or explicitly choose its standard **55 minutes** with the button. Select Off or another profile first; changing an active profile's duration is refused. Only this sitting duration changes, with no adjustment of standing time or automatic profile change. Existing values outside the input range stay visible and are not overwritten. The range is integration policy, not medical or firmware limits. Hardware evidence covers 50/55 in inactive profile 1 only; other durations remain read-only. Neither action is a factory reset or an automatic restore. [Interval details](docs/settings-reference.md#edit-profile-1-sitting-time).
 
 Unused memory slots do not need to be filled before setup. If saved positions or reminders cannot be read, height can remain available while the affected settings are unavailable. A timed-out group is retried after five minutes; stored-position buttons require a complete valid memory read.
 

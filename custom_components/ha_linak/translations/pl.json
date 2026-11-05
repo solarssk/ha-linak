@@ -220,6 +220,9 @@
     "number": {
       "target_height": {
         "name": "Wysokość zadana"
+      },
+      "reminder_1_sitting_time": {
+        "name": "Profil 1: czas siedzenia"
       }
     },
     "button": {
@@ -237,6 +240,9 @@
       },
       "go_to_memory_4": {
         "name": "Przejdź do zapisanej pozycji 4"
+      },
+      "reminder_1_standard_time": {
+        "name": "Profil 1: ustaw standardowe 55 minut"
       }
     },
     "switch": {
@@ -395,7 +401,13 @@
       "message": "Klient panelu jest nieaktywny. Zmiana przypomnień wymaga statusu 1; ta czynność nie aktywuje klienta. Użyj jawnego przygotowania sterowania w Konfiguruj, a następnie odczytaj bieżący profil przed kolejną próbą."
     },
     "reminder_failed": {
-      "message": "Nie udało się potwierdzić zmiany przypomnień. Ustawienie mogło się zmienić. Po ponownym połączeniu sprawdź bieżący profil panelu przed kolejną próbą. Zapis ani przywrócenie nie są ponawiane automatycznie."
+      "message": "Nie udało się potwierdzić zmiany przypomnień. Ustawienie mogło się zmienić. Po ponownym połączeniu sprawdź bieżący profil i czasy panelu przed kolejną próbą. Zapis ani przywrócenie nie są ponawiane automatycznie."
+    },
+    "reminder_interval_invalid": {
+      "message": "Wpisz pełną liczbę minut od 1 do 60. To ograniczenie edycji w integracji, nie limit sterownika ani zalecenie medyczne. Istniejące wartości poza tym zakresem pozostają bez zmian. Aby wyłączyć przypomnienia, wybierz Wyłączone."
+    },
+    "reminder_profile_active": {
+      "message": "Profil 1 jest aktywny. Na sprzęcie sprawdzono tylko edycję czasu nieaktywnego profilu. Przed zmianą czasu siedzenia wybierz jawnie Wyłączone lub inny profil. Czas nie został zapisany."
     }
   }
 }

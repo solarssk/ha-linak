@@ -280,8 +280,8 @@ async def test_reminder_reservation_excludes_motion_calibration_polling_and_anot
         await task
 
 
-async def setup_select(hass):
-    fake = ReminderBleak()
+async def setup_select(hass, fake=None):
+    fake = fake or ReminderBleak()
     entry = MockConfigEntry(
         domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
     )

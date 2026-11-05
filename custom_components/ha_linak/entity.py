@@ -39,6 +39,21 @@ class LinakEntity(CoordinatorEntity[LinakCoordinator]):
         )
 
 
+class LinakReminderEntity(LinakEntity):
+    """Reminder configuration requires a ready link and a valid last-read group."""
+
+    @property
+    def available(self) -> bool:
+        desk = self.coordinator.desk
+        return (
+            super().available
+            and desk is not None
+            and desk.connected
+            and desk.settings_health["reminders"].valid
+            and self.coordinator.data.reminders is not None
+        )
+
+
 def whole_centimeters(value: float | None) -> int | None:
     """Round only HA-facing heights; protocol and movement retain exact values."""
     return math.floor(value + 0.5) if value is not None else None

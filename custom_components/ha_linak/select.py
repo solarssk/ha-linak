@@ -6,7 +6,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity import LinakEntity
+from .entity import LinakReminderEntity
 
 OPTIONS = ["off", "profile_1", "profile_2", "profile_3"]
 
@@ -19,23 +19,12 @@ async def async_setup_entry(  # NOSONAR(S7503) HA coroutine contract
     )
 
 
-class LinakReminderProfileSelect(LinakEntity, SelectEntity):
+class LinakReminderProfileSelect(LinakReminderEntity, SelectEntity):
     """Assign a profile; the existing profile sensor retains its identity."""
 
     _attr_options = OPTIONS
     _attr_icon = "mdi:bell-cog"
     _attr_entity_category = EntityCategory.CONFIG
-
-    @property
-    def available(self) -> bool:
-        desk = self.coordinator.desk
-        return (
-            super().available
-            and desk is not None
-            and desk.connected
-            and desk.settings_health["reminders"].valid
-            and self.coordinator.data.reminders is not None
-        )
 
     @property
     def current_option(self) -> str | None:

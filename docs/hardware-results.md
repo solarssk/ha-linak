@@ -161,9 +161,21 @@ Offset, name and stored-position settings were not written. This evidence suppor
 
 **Conclusion:** this is hardware evidence for Off/Profile 3 selection at observed status 1 on one DPG1C. It supports preserving the fresh seven-byte setting body and ignoring the read-only counter in setter verification. The software select additionally exercises profiles 1/2 in simulation.
 
-**Limits:** profiles 1/2 and status-0 writes were not hardware tested. Later native reads show recovery, not long-term stability, persistence across reconnect/power loss or validation of the current implementation installed in HA. No interval, other-flag or unit setter is established.
+**Limits:** profiles 1/2 and status-0 writes were not hardware tested. Later native reads show recovery, not long-term stability, persistence across reconnect/power loss or validation of the current implementation installed in HA. This trial did not test interval, other-flag or unit setters; the separate interval result follows below.
 
 For owner acceptance, explicitly agree one supervised sequence covering Profile 1 and Profile 2 with independently observed panel behavior, fresh readback and restoration to the recorded original profile. Keep all interval bytes and unrelated flags unchanged, use one BLE owner and stop on uncertain delivery without blind restoration. Separately confirm that a status-0 software request is refused without a setter or activation. Testing whether the device itself accepts writes at status 0 needs a new scoped research experiment; it is outside this software feature.
+
+## Single reminder interval
+
+**Question:** can one sitting duration be changed independently of the selected profile, standing duration and unrelated settings?
+
+**Method:** in a separately authorized stationary trial, the research owner changed inactive profile 1 sitting duration 55 → 50 → 55 minutes. Each write used the fresh complete reminder body, strict application acknowledgement and an independent `88` query. Immediate checks covered the reminder body, position, reference and capabilities; subsequent independent native HA reads checked the full saved-position/name/configuration state. Captures and identifiers remain private.
+
+**Observation:** both writes returned `01 00`, and independent replies matched the requested seven-byte bodies. Profile 3 stayed selected; all flags and the other five durations were unchanged. In particular, 50 minutes sitting with 5 minutes standing was accepted without normalization to 60. No activation, wake or motion was sent. The raw reminder counter changed and remains uninterpreted. Final native checks confirmed connected/ready/idle, preserved four favorites, name, geometry, offset and capabilities.
+
+**Conclusion:** 50 and 55 are accepted values for this one inactive-profile field on the tested DPG1C at client status 1. This supports a protected single-field setter, not a requirement for each sitting/standing pair to total one hour.
+
+**Limits:** the trial did not validate every value from 1 to 60, the source application's 1–255 bounds, zero, other fields, active-profile edits, actual countdown timing or persistence. The new HA input and standard-time button are software implementations tested with synthetic BLE, not deployed or hardware-accepted by this trial. Their 1–60 range is an integration input policy, not medical or firmware limits. Any further physical test needs its own approved scope and must stop on uncertain delivery without retry or blind restoration.
 
 ## Hardware acceptance matrix
 

@@ -67,7 +67,7 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         entries = er.async_entries_for_config_entry(registry, entry.entry_id)
-        assert len(entries) == 25
+        assert len(entries) == 27
         reminder_select = next(item for item in entries if item.domain == "select")
         assert reminder_select.entity_category == EntityCategory.CONFIG
         assert reminder_select.disabled_by is None
@@ -100,6 +100,9 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         # Keep connected is a configuration control the owner enables on purpose.
         assert by_key["keep_connected"].entity_category == EntityCategory.CONFIG
         assert by_key["keep_connected"].disabled_by is not None
+        for key in ("reminder_1_sitting_time", "reminder_1_standard_time"):
+            assert by_key[key].entity_category == EntityCategory.CONFIG
+            assert by_key[key].disabled_by is None
         assert hass.states.get("switch.desk_keep_connected") is None
         for key in ["offset", "connection", "signal_strength", "bluetooth_backend"]:
             assert by_key[key].entity_category == EntityCategory.DIAGNOSTIC

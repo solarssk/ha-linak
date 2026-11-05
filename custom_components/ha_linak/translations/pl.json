@@ -224,6 +224,21 @@
       },
       "reminder_1_sitting_time": {
         "name": "Profil 1: czas siedzenia"
+      },
+      "reminder_1_standing_time": {
+        "name": "Profil 1: czas stania"
+      },
+      "reminder_2_sitting_time": {
+        "name": "Profil 2: czas siedzenia"
+      },
+      "reminder_2_standing_time": {
+        "name": "Profil 2: czas stania"
+      },
+      "reminder_3_sitting_time": {
+        "name": "Profil 3: czas siedzenia"
+      },
+      "reminder_3_standing_time": {
+        "name": "Profil 3: czas stania"
       }
     },
     "button": {
@@ -243,7 +258,7 @@
         "name": "Przejdź do zapisanej pozycji 4"
       },
       "reminder_1_standard_time": {
-        "name": "Profil 1: ustaw standardowe 55 minut"
+        "name": "Profil 1: ustaw standardowy czas"
       }
     },
     "switch": {
@@ -415,7 +430,7 @@
       "message": "Wpisz pełną liczbę minut od 1 do 60. To ograniczenie edycji w integracji, nie limit sterownika ani zalecenie medyczne. Istniejące wartości poza tym zakresem pozostają bez zmian. Aby wyłączyć przypomnienia, wybierz Wyłączone."
     },
     "reminder_profile_active": {
-      "message": "Profil 1 jest aktywny. Na sprzęcie sprawdzono tylko edycję czasu nieaktywnego profilu. Przed zmianą czasu siedzenia wybierz jawnie Wyłączone lub inny profil. Czas nie został zapisany."
+      "message": "Edytowany profil jest aktywny. Edycja czasu aktywnego profilu nie jest obsługiwana. Przed zmianą czasu siedzenia lub stania wybierz jawnie Wyłączone lub inny profil. Czas nie został zapisany."
     }
   }
 }

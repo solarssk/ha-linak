@@ -224,6 +224,21 @@
       },
       "reminder_1_sitting_time": {
         "name": "Profile 1 sitting time"
+      },
+      "reminder_1_standing_time": {
+        "name": "Profile 1 standing time"
+      },
+      "reminder_2_sitting_time": {
+        "name": "Profile 2 sitting time"
+      },
+      "reminder_2_standing_time": {
+        "name": "Profile 2 standing time"
+      },
+      "reminder_3_sitting_time": {
+        "name": "Profile 3 sitting time"
+      },
+      "reminder_3_standing_time": {
+        "name": "Profile 3 standing time"
       }
     },
     "button": {
@@ -243,7 +258,7 @@
         "name": "Go to stored position 4"
       },
       "reminder_1_standard_time": {
-        "name": "Profile 1: use standard 55 minutes"
+        "name": "Profile 1: use standard time"
       }
     },
     "switch": {
@@ -415,7 +430,7 @@
       "message": "Enter a whole number of minutes from 1 to 60. These are integration edit limits, not firmware or medical limits. Existing panel values outside this range are preserved. Use Off to disable reminders."
     },
     "reminder_profile_active": {
-      "message": "Profile 1 is active. Only inactive-profile interval editing has been observed on hardware. Select Off or another profile explicitly before changing its sitting time. No duration was written."
+      "message": "The profile being edited is active. Active-profile interval editing is not supported. Select Off or another profile explicitly before changing its sitting or standing time. No duration was written."
     }
   }
 }

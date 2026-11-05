@@ -189,11 +189,28 @@ def reminder_profile_request(settings: ReminderSettings, profile: int) -> bytes:
 
 
 def reminder_sitting_request(settings: ReminderSettings, minutes: int) -> bytes:
-    """Replace only profile 1 sitting duration; host input policy is separate."""
+    """Keep the original profile 1 sitting assignment."""
+    return reminder_interval_request(settings, 1, False, minutes)
+
+
+def reminder_interval_index(profile: int, standing: bool) -> int:
+    """Validate a field address and return its zero-based duration byte index."""
+    if type(profile) is not int or profile not in range(1, 4):
+        raise ValueError("Reminder interval profile must be 1, 2 or 3")
+    if type(standing) is not bool:
+        raise ValueError("Reminder standing selector must be a boolean")
+    return (profile - 1) * 2 + int(standing)
+
+
+def reminder_interval_request(
+    settings: ReminderSettings, profile: int, standing: bool, minutes: int
+) -> bytes:
+    """Replace one duration byte; host input policy is separate."""
+    index = reminder_interval_index(profile, standing)
     if type(minutes) is not int or not 0 <= minutes <= 255:
         raise ValueError("Reminder duration must fit one byte")
     request = bytearray(reminder_request(settings))
-    request[4] = minutes
+    request[4 + index] = minutes
     return bytes(request)
 
 

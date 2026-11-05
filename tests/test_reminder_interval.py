@@ -1,12 +1,16 @@
 """Single-field reminder edits with synthetic BLE and actual HA services."""
 
 import asyncio
+import json
 from dataclasses import replace
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers import entity_registry as er
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_linak.calibration import HeightCalibration
 from custom_components.ha_linak.client import DeskLinkLost
@@ -20,6 +24,7 @@ from custom_components.ha_linak.protocol import (
     ReminderSettings,
     reminder_request,
     reminder_sitting_request,
+    reminder_interval_request,
 )
 from custom_components.ha_linak.reminder_settings import (
     InvalidReminderInterval,
@@ -27,6 +32,13 @@ from custom_components.ha_linak.reminder_settings import (
 )
 from test_native_controls import ADDRESS, OPTIONS, connected_desk
 from test_reminder_profile import ReminderBleak, settings_writes, setup_select
+
+
+@pytest.fixture(
+    params=range(6), ids=lambda i: f"profile-{i // 2 + 1}-{'stand' if i % 2 else 'sit'}"
+)
+def field(request):
+    return request.param // 2 + 1, bool(request.param % 2)
 
 
 class IntervalBleak(ReminderBleak):
@@ -37,14 +49,34 @@ class IntervalBleak(ReminderBleak):
 
 
 @pytest.mark.parametrize("flags", range(256))
-def test_codec_changes_only_one_byte_and_never_normalizes_pairs(flags):
+def test_codec_changes_only_one_byte_and_never_normalizes_pairs(flags, field):
     settings = ReminderSettings(flags, ((90, 0), (0, 255), (255, 0)), 0xFFFFFFFF)
+    profile, standing = field
+    index = (profile - 1) * 2 + int(standing)
     for minutes in (0, 1, 50, 55, 60, 255):
-        request = reminder_sitting_request(settings, minutes)
-        assert request == b"\x7f\x88\x80" + bytes((flags, minutes, 0, 0, 255, 255, 0))
+        request = reminder_interval_request(settings, profile, standing, minutes)
+        expected = bytearray((flags, 90, 0, 0, 255, 255, 0))
+        expected[1 + index] = minutes
+        assert request == b"\x7f\x88\x80" + expected
         assert len(request) == 10
     assert settings.profiles_raw[0][0] == 90
     assert reminder_request(settings)[4] == 90
+
+
+@pytest.mark.parametrize(
+    "profile,standing",
+    [(0, False), (4, False), (True, False), (1.0, False), (1, 1), (1, None)],
+)
+async def test_invalid_field_address_is_refused_before_io(profile, standing):
+    desk, fake = await connected_desk(IntervalBleak())
+    fake.writes.clear()
+    with pytest.raises(ValueError):
+        reminder_interval_request(desk.state.reminders, profile, standing, 50)
+    with pytest.raises(ValueError):
+        await desk.set_reminder_interval_minutes(profile, standing, 50)
+    assert fake.writes == []
+    assert desk.connected
+    await desk.disconnect()
 
 
 @pytest.mark.parametrize("pairs", [(), ((1, 2),), ((1,), (2, 3), (4, 5, 6))])
@@ -64,11 +96,11 @@ def test_codec_rejects_non_byte_input(value):
 @pytest.mark.parametrize(
     "value", [0, -1, 61, 255, 50.5, True, "50", None, float("nan"), float("inf")]
 )
-async def test_invalid_input_is_refused_before_any_io(value):
+async def test_invalid_input_is_refused_before_any_io(value, field):
     desk, fake = await connected_desk(IntervalBleak())
     fake.writes.clear()
     with pytest.raises(InvalidReminderInterval):
-        await desk.set_reminder_sitting_minutes(value)
+        await desk.set_reminder_interval_minutes(*field, value)
     assert fake.writes == []
     assert desk.connected
     await desk.disconnect()
@@ -76,8 +108,13 @@ async def test_invalid_input_is_refused_before_any_io(value):
 
 @pytest.mark.parametrize("minutes", [1, 50, 55.0, 60])
 @pytest.mark.parametrize("profile", [0, 2, 3])
-async def test_fresh_single_field_transaction_and_returned_state(minutes, profile):
+async def test_fresh_single_field_transaction_and_returned_state(
+    minutes, profile, field
+):
     fake = IntervalBleak()
+    edited_profile, standing = field
+    # Exercise all inactive selected profiles for each of the six fields.
+    profile = (profile + edited_profile - 1) % 4
     fake.body = bytes(((fake.body[0] & ~3) | profile,)) + fake.body[1:]
     desk, fake = await connected_desk(fake)
     before = desk.state
@@ -85,8 +122,9 @@ async def test_fresh_single_field_transaction_and_returned_state(minutes, profil
     desk.state.reminders = ReminderSettings(1, ((55, 5), (10, 20), (30, 40)), 99)
     fake.echo = True
     fake.writes.clear()
-    result = await desk.set_reminder_sitting_minutes(minutes)
-    expected = fake.body[:1] + bytes((int(minutes),)) + bytes((0, 0, 255, 255, 0))
+    expected = bytearray(fake.body)
+    expected[1 + (edited_profile - 1) * 2 + int(standing)] = int(minutes)
+    result = await desk.set_reminder_interval_minutes(*field, minutes)
     assert settings_writes(fake) == [b"\x7f\x88\x80" + expected]
     assert reminder_request(result.reminders) == b"\x7f\x88\x80" + expected
     assert result.reminders.counter_raw == 165
@@ -112,26 +150,32 @@ async def test_pair_50_5_is_not_changed_to_total_60():
     await desk.disconnect()
 
 
-async def test_noop_uses_fresh_value_without_status_check_even_if_profile_is_active():
+async def test_noop_uses_fresh_value_without_status_check_even_if_profile_is_active(
+    field,
+):
     fake = IntervalBleak()
-    fake.body = bytes((0xED, 50)) + fake.body[2:]
+    profile, standing = field
+    body = bytearray(fake.body)
+    body[0] = (body[0] & ~3) | profile
+    body[1 + (profile - 1) * 2 + int(standing)] = 50
+    fake.body = bytes(body)
     desk, fake = await connected_desk(fake)
     desk.state.reminders = replace(desk.state.reminders, profiles_raw=((55, 0),) * 3)
     fake.activation = 0
     fake.writes.clear()
-    await desk.set_reminder_sitting_minutes(50)
+    await desk.set_reminder_interval_minutes(*field, 50)
     assert not settings_writes(fake)
     assert b"\x7f\x86\x00" not in [data for _, data in fake.writes]
-    assert desk.state.reminders.profiles_raw[0] == (50, 0)
+    assert desk.state.reminders.profiles_raw[profile - 1][int(standing)] == 50
     assert desk.connected
     await desk.disconnect()
 
 
-async def test_active_profile_is_refused_from_fresh_state_without_disconnecting():
+async def test_active_profile_is_refused_from_fresh_state_without_disconnecting(field):
     desk, fake = await connected_desk(IntervalBleak())
-    fake.body = bytes(((fake.body[0] & ~3) | 1,)) + fake.body[1:]
+    fake.body = bytes(((fake.body[0] & ~3) | field[0],)) + fake.body[1:]
     with pytest.raises(ReminderProfileActive):
-        await desk.set_reminder_sitting_minutes(50)
+        await desk.set_reminder_interval_minutes(*field, 50)
     assert not settings_writes(fake)
     assert desk.connected
     assert not desk.control_busy
@@ -165,11 +209,12 @@ async def test_profile_selection_preserves_out_of_policy_duration():
 
 
 @pytest.mark.parametrize("status", [0, 2])
-async def test_inactive_or_unknown_identity_never_activates(status):
+async def test_inactive_or_unknown_identity_never_activates(status, field):
     desk, fake = await connected_desk(IntervalBleak())
+    fake.body = bytes((fake.body[0] & ~3,)) + fake.body[1:]
     fake.activation = status
     with pytest.raises(ReminderClientInactive if status == 0 else ValueError):
-        await desk.set_reminder_sitting_minutes(50)
+        await desk.set_reminder_interval_minutes(*field, 50)
     assert not settings_writes(fake)
     assert desk.connected == (status == 0)
     await desk.disconnect()
@@ -178,23 +223,25 @@ async def test_inactive_or_unknown_identity_never_activates(status):
 @pytest.mark.parametrize(
     "ack", [b"\x0b\x00", b"\x01\x01", b"\x01\x00\x01", b"\x00\x00"]
 )
-async def test_bad_ack_discards_session_without_restoration(ack):
+async def test_bad_ack_discards_session_without_restoration(ack, field):
     desk, fake = await connected_desk(IntervalBleak())
+    fake.body = bytes((fake.body[0] & ~3,)) + fake.body[1:]
     fake.ack = ack
     with patch("custom_components.ha_linak.client.QUERY_TIMEOUT", 0.02):
         with pytest.raises((ValueError, TimeoutError)):
-            await desk.set_reminder_sitting_minutes(50)
+            await desk.set_reminder_interval_minutes(*field, 50)
     assert len(settings_writes(fake)) == 1
     assert not desk.connected
     assert not desk.settings_health["reminders"].valid
 
 
 @pytest.mark.parametrize("byte", range(7))
-async def test_each_body_byte_must_match_independent_readback(byte):
+async def test_each_body_byte_must_match_independent_readback(byte, field):
     desk, fake = await connected_desk(IntervalBleak())
+    fake.body = bytes((fake.body[0] & ~3,)) + fake.body[1:]
     fake.mismatch = byte
     with pytest.raises(ValueError, match="readback mismatch"):
-        await desk.set_reminder_sitting_minutes(50)
+        await desk.set_reminder_interval_minutes(*field, 50)
     assert len(settings_writes(fake)) == 1
     assert not desk.connected
 
@@ -487,3 +534,149 @@ async def test_standard_button_is_explicit_and_never_switches_an_active_profile(
     assert hass.states.get(select).state == "off"
     assert len(settings_writes(fake)) == 2
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def setup_interval(hass, field):
+    profile, standing = field
+    kind = "standing" if standing else "sitting"
+    key = f"reminder_{profile}_{kind}_time"
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    # Simulate the owner explicitly enabling this configuration entity.
+    item = registry.async_get_or_create(
+        "number", DOMAIN, f"{ADDRESS}_{key}", config_entry=entry
+    )
+    fake = IntervalBleak()
+    fake.body = bytes((0xEC,)) + fake.body[1:]
+    await setup_select(hass, fake, entry=entry)
+    sensor = registry.async_get_entity_id(
+        "sensor",
+        DOMAIN,
+        f"{ADDRESS}_reminder_{profile}_{'stand' if standing else 'sit'}",
+    )
+    return entry, fake, item.entity_id, sensor
+
+
+async def test_all_six_numbers_use_actual_ha_services_and_group_availability(
+    hass, field
+):
+    entry, fake, number, sensor = await setup_interval(hass, field)
+    before = bytes(fake.body)
+    index = 1 + (field[0] - 1) * 2 + int(field[1])
+    assert hass.states.get(number).state == str(before[index])
+    assert not settings_writes(fake)
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": number, "value": 50}, blocking=True
+    )
+    await hass.async_block_till_done()
+    expected = bytearray(before)
+    expected[index] = 50
+    assert settings_writes(fake) == [b"\x7f\x88\x80" + expected]
+    assert hass.states.get(number).state == "50"
+    assert hass.states.get(sensor).state == "50"
+    assert hass.states.get(number).attributes["min"] == 1
+    assert hass.states.get(number).attributes["max"] == 60
+    entry.runtime_data.desk.settings_health["reminders"].valid = False
+    entry.runtime_data._changed()
+    await hass.async_block_till_done()
+    assert hass.states.get(number).state == "unavailable"
+    assert hass.states.get(sensor).state == "unavailable"
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("failure", ["ack", "readback", "active", "inactive"])
+async def test_each_ha_field_reports_refusal_or_failure_without_optimistic_state(
+    hass, field, failure
+):
+    entry, fake, number, sensor = await setup_interval(hass, field)
+    before = entry.runtime_data.data.reminders
+    if failure == "ack":
+        fake.ack = b"\x0b\x00"
+    elif failure == "readback":
+        fake.mismatch = 6
+    elif failure == "active":
+        fake.body = bytes(((fake.body[0] & ~3) | field[0],)) + fake.body[1:]
+    else:
+        fake.activation = 0
+    with pytest.raises(HomeAssistantError) as exc:
+        await hass.services.async_call(
+            "number", "set_value", {"entity_id": number, "value": 50}, blocking=True
+        )
+    await hass.async_block_till_done()
+    if failure in ("ack", "readback"):
+        assert exc.value.translation_key == "reminder_failed"
+        assert hass.states.get(number).state == "unavailable"
+        assert hass.states.get(sensor).state == "unavailable"
+        assert len(settings_writes(fake)) == 1
+    else:
+        assert exc.value.translation_key == (
+            "reminder_profile_active"
+            if failure == "active"
+            else "reminder_client_inactive"
+        )
+        assert entry.runtime_data.desk.connected
+        assert not settings_writes(fake)
+    assert entry.runtime_data.data.reminders == before
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize("disabled_by", [None, er.RegistryEntryDisabler.USER])
+async def test_existing_interval_registry_choices_and_identity_survive_setup(
+    hass, disabled_by
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Desk", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    number = registry.async_get_or_create(
+        "number",
+        DOMAIN,
+        f"{ADDRESS}_reminder_1_sitting_time",
+        config_entry=entry,
+        suggested_object_id="my_reminder",
+    )
+    number = registry.async_update_entity(
+        number.entity_id,
+        name="My duration",
+        icon="mdi:timer",
+        disabled_by=disabled_by,
+    )
+    button = registry.async_get_or_create(
+        "button",
+        DOMAIN,
+        f"{ADDRESS}_reminder_1_standard_time",
+        config_entry=entry,
+        suggested_object_id="my_standard_time",
+    )
+    registry.async_update_entity(button.entity_id, name="My standard")
+    await setup_select(hass, IntervalBleak(), entry=entry)
+    actual = registry.async_get(number.entity_id)
+    assert actual.unique_id == number.unique_id
+    assert actual.entity_id == number.entity_id
+    assert actual.name == "My duration"
+    assert actual.icon == "mdi:timer"
+    assert actual.disabled_by == disabled_by
+    assert registry.async_get(button.entity_id).name == "My standard"
+    assert registry.async_get(button.entity_id).unique_id == button.unique_id
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+def test_reminder_translation_keys_and_legacy_names_are_preserved():
+    root = Path(__file__).parents[1] / "custom_components/ha_linak"
+    strings, english, polish = (
+        json.loads((root / path).read_text())
+        for path in ("strings.json", "translations/en.json", "translations/pl.json")
+    )
+    assert strings == english
+    for domain in ("number", "button", "select"):
+        assert strings["entity"][domain].keys() == polish["entity"][domain].keys()
+    assert (
+        strings["entity"]["number"]["reminder_1_sitting_time"]["name"]
+        == "Profile 1 sitting time"
+    )
+    assert "55" not in strings["entity"]["button"]["reminder_1_standard_time"]["name"]
+    assert "55" not in polish["entity"]["button"]["reminder_1_standard_time"]["name"]

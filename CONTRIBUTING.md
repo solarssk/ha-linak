@@ -153,7 +153,7 @@ HACS validation and hassfest check packaging, not physical behavior. Only HA 202
 | Movement and Stop | Simulated tests and a bounded hardware observation | Complete target arrival and physical Stop accuracy |
 | Client activation and height calibration | Protected setters; activation/reference readback and one reconnect on one DPG1C | Permanent readiness and power-cycle persistence |
 | Reminder profile | Preserved intervals/flags; Off/Profile 3 at client status 1 | Profiles 1/2 and inactive-client acceptance |
-| Profile 1 sitting time | Protected 1–60-minute input and standard-55-minute button; hardware observation at 50/55 in inactive profile 1 | Full input range, countdown and persistence; input bounds are product policy, not firmware or medical limits |
+| Sitting/standing times, profiles 1–3 | Six protected 1–60-minute inputs and profile 1 standard-55-minute button; hardware observation at 50/55 sitting minutes in inactive profile 1 | Other five fields, full input range, countdown and persistence; input bounds are product policy, not firmware or medical limits |
 | Stored Inch/Metric preference | Protected transaction without wake/movement; readback and one reconnect | Physical CM/MM share the known BLE state; immediate stationary OLED redraw is unconfirmed |
 | Other panel-setting writes | Not implemented | A verified command contract is required |
 

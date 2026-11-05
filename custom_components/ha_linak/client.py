@@ -27,7 +27,7 @@ from .calibration import (
 from .protocol import activation_request
 from .device_profile import DeviceIdentity, MODEL_UUID, FIRMWARE_UUID
 from .control_settings import ControlSettings
-from .reminder_settings import ReminderProfileActive, sitting_minutes
+from .reminder_settings import ReminderProfileActive, interval_minutes
 from .motion import (
     BleakMotionTransport,
     CONTROL_UUID,
@@ -57,7 +57,8 @@ from .protocol import (
     decode_reminders,
     reminder_profile_request,
     reminder_request,
-    reminder_sitting_request,
+    reminder_interval_index,
+    reminder_interval_request,
     reminder_unit_request,
     ReminderClientInactive,
     decode_stored_position,
@@ -1031,16 +1032,23 @@ class DeskClient:
         )
 
     async def set_reminder_sitting_minutes(self, value: float) -> DeskState:
-        """Edit only inactive profile 1, without normalizing its standing duration."""
-        minutes = sitting_minutes(value)
+        """Keep the original profile 1 sitting control and standard button."""
+        return await self.set_reminder_interval_minutes(1, False, value)
+
+    async def set_reminder_interval_minutes(
+        self, profile: int, standing: bool, value: float
+    ) -> DeskState:
+        """Edit one inactive-profile duration without changing its pair or flags."""
+        index = reminder_interval_index(profile, standing)
+        minutes = interval_minutes(value)
 
         def request_for(settings: ReminderSettings) -> bytes:
             if (
-                settings.selected_profile == 1
-                and settings.profiles_raw[0][0] != minutes
+                settings.selected_profile == profile
+                and settings.profiles_raw[index // 2][index % 2] != minutes
             ):
                 raise ReminderProfileActive("Select Off or another profile first")
-            return reminder_sitting_request(settings, minutes)
+            return reminder_interval_request(settings, profile, standing, minutes)
 
         return await self._set_reminders(request_for)
 

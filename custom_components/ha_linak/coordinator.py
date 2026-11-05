@@ -19,6 +19,7 @@ from .connection_intent import remember_connection, wants_connection
 from .const import DOMAIN
 from .control_settings import ControlSettings
 from .motion import MotionError, MotionFailure, MotionStopped
+from .protocol import ReminderClientInactive
 from .operation import OperationStatus
 from .setup_session import take_session
 from .ownership import has_idasen_conflict
@@ -262,6 +263,39 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 registry.async_update_device(
                     device.id, model=identity.model, sw_version=identity.firmware
                 )
+
+    async def async_set_reminder_profile(self, profile: int) -> None:
+        """Configure reminders without travel limits, activation or a new client."""
+        self._require_connection_wanted()
+        if has_idasen_conflict(self.hass, self.address):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="idasen_conflict"
+            )
+        if self.desk is None or not self.desk.connected:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="control_unavailable"
+            )
+        try:
+            await self.desk.set_reminder_profile(profile)
+        except ReminderClientInactive as err:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="reminder_client_inactive"
+            ) from err
+        except MotionError as err:
+            key = (
+                "control_busy"
+                if err.reason == MotionFailure.BUSY
+                else "control_unavailable"
+            )
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key=key
+            ) from err
+        except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="reminder_failed"
+            ) from err
+        finally:
+            self._changed()
 
     async def async_move_to_cm(self, height_cm: float) -> None:
         await self._async_control("target", height_cm)

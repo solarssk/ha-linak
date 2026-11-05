@@ -44,6 +44,7 @@ Centimeters are the primary height interface. A `number` entity supports that in
 | Height sensor | Current position plus panel offset | Ordinary sensor |
 | Stored-height sensors | Saved mechanism positions plus current offset | Ordinary sensors |
 | Active profile and profile-duration sensors | Reminder configuration read from the panel | Ordinary sensors |
+| Reminder profile select | Explicit Off/Profile 1/2/3 assignment; preserves intervals and other flags | Configuration control |
 | Target height number | Whole-centimeter target within measured bounds; state follows actual feedback | Control |
 | Stored-position buttons | Freshly read slot passed to the common movement controller | Controls |
 | Stop button | Interrupt an active operation or send Stop while idle | Control |
@@ -93,6 +94,7 @@ One desk must have one active owner of its BLE connection. The [cross-integratio
 | Confirmed height calibration | Calibration reservation and query lock | Verified activation and one offset correction |
 | Explicit target or stored-position drive | Movement reservation and query lock | Verified client activation if needed, then wake/target/Stop |
 | Stop | Separate shared Stop task; preempts motion | Control Stop and reference release when idle; no activation or height target |
+| Explicit reminder selection | Foreground reservation and existing query lock; valid reminder group and active client required | One masked setting with ACK/barrier/readback; no activation, wake, motion or replay |
 | Explicit protocol inventory | Existing client/query lock; already ready session only | Fixed GATT reads or a single product-info query behind a capabilities barrier, never setting or motion writes |
 | Unload/shutdown | Waits for owned cleanup | Attempts final Stop and releases the link |
 

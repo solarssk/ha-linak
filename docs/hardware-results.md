@@ -151,6 +151,20 @@ Offset, name and stored-position settings were not written. This evidence suppor
 
 **Limits:** equal budgets do not establish the cause of every failed connection, proxy GATT error or idle loss. The proposed startup change has simulated lifecycle/deadline coverage, not a completed cold-start hardware result. It does not pin the local adapter, remove a proxy, change polling cadence or prove the overnight disconnects are fixed.
 
+## Reminder profile setting
+
+**Question:** can a BLE reminder profile change preserve the remaining settings without activation, wake or movement?
+
+**Method:** the owner first correlated physical Profile 3/Off/Profile 3 with the low two reminder flags bits. A separately approved, single-owner BLE trial then wrote Profile 3 → Off → Profile 3 using fresh reminder data, exact application acknowledgements, capabilities barriers and independent reminder readback. Raw captures and device identifiers remain private.
+
+**Observation:** both writes returned `01 00`, and independent `88` replies confirmed the requested profiles, unchanged unrelated flags and all six intervals. Initial client status was 1. No activation, wake or motion was sent. The raw counter changed; its meaning remains unknown. After verified restoration, a later transport check failed. Subsequent independent native HA reads at 09:59 and 10:01 UTC on 2026-11-05 showed ready/idle, Profile 3, all stored positions and the other settings restored apart from that counter.
+
+**Conclusion:** this is hardware evidence for Off/Profile 3 selection at observed status 1 on one DPG1C. It supports preserving the fresh seven-byte setting body and ignoring the read-only counter in setter verification. The software select additionally exercises profiles 1/2 in simulation.
+
+**Limits:** profiles 1/2 and status-0 writes were not hardware tested. Later native reads show recovery, not long-term stability, persistence across reconnect/power loss or validation of the current implementation installed in HA. No interval, other-flag or unit setter is established.
+
+For owner acceptance, explicitly agree one supervised sequence covering Profile 1 and Profile 2 with independently observed panel behavior, fresh readback and restoration to the recorded original profile. Keep all interval bytes and unrelated flags unchanged, use one BLE owner and stop on uncertain delivery without blind restoration. Separately confirm that a status-0 software request is refused without a setter or activation. Testing whether the device itself accepts writes at status 0 needs a new scoped research experiment; it is outside this software feature.
+
 ## Hardware acceptance matrix
 
 This matrix is a test plan and evidence index, not eleven successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.

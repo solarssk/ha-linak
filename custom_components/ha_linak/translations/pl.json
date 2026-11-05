@@ -243,6 +243,17 @@
       "keep_connected": {
         "name": "Utrzymuj połączenie"
       }
+    },
+    "select": {
+      "reminder_profile": {
+        "name": "Profil przypomnień",
+        "state": {
+          "off": "Wyłączone",
+          "profile_1": "Profil 1",
+          "profile_2": "Profil 2",
+          "profile_3": "Profil 3"
+        }
+      }
     }
   },
   "options": {
@@ -379,6 +390,12 @@
     },
     "connection_failed": {
       "message": "Biurko się nie połączyło. Utrzymuj połączenie pozostaje włączone, a Home Assistant ponowi próbę. Sprawdź, czy biurko jest wybudzone i w zasięgu adaptera Bluetooth lub proxy."
+    },
+    "reminder_client_inactive": {
+      "message": "Klient panelu jest nieaktywny. Zmiana przypomnień wymaga statusu 1; ta czynność nie aktywuje klienta. Użyj jawnego przygotowania sterowania w Konfiguruj, a następnie odczytaj bieżący profil przed kolejną próbą."
+    },
+    "reminder_failed": {
+      "message": "Nie udało się potwierdzić zmiany przypomnień. Ustawienie mogło się zmienić. Po ponownym połączeniu sprawdź bieżący profil panelu przed kolejną próbą. Zapis ani przywrócenie nie są ponawiane automatycznie."
     }
   }
 }

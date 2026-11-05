@@ -125,11 +125,12 @@ A refresh that fails never replaces the previously published snapshot. A refresh
 
 ## Protected setting exchanges
 
-Only client activation and height-reference correction have implemented protected setters. There is no generic arbitrary-write service.
+Client activation, height-reference correction and reminder profile selection have implemented protected setters. There is no generic arbitrary-write service.
 
 | Operation | Allowlisted request | Preconditions | Required verification |
 | --- | --- | --- | --- |
 | Existing client activation | `7f 86 80 01 <same 16 identifier bytes>` | Valid `01 11` frame, recognized status, usable identifier; skip status `1` | Application acknowledgement, then status `1` and unchanged identifier |
+| Reminder profile | `7f 88 80 <flags> <sit1> <stand1> <sit2> <stand2> <sit3> <stand3>` | Existing ready DPG session, valid group, fresh reminders, stationary position and status 1; skip unchanged profile | Exact `01 00`, capabilities barrier, independent `88` readback matching masked flags and all six intervals; counter ignored |
 | Height-reference correction | `7f 81 80 01 <offset-low> <offset-high>` | Confirmed stationary calibration proposal and valid unsigned reference | Application acknowledgement, then capabilities, reference and position reads with matching reference and position |
 
 The observed exchanges treat status `0` as inactive and `1` as active. Their complete relationship to app Owner/Guest behavior and persistence is not established.

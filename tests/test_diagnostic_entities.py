@@ -67,8 +67,15 @@ async def test_categories_registry_identity_and_optional_diagnostics(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         entries = er.async_entries_for_config_entry(registry, entry.entry_id)
-        assert len(entries) == 24
-        by_key = {item.unique_id.removeprefix(ADDRESS + "_"): item for item in entries}
+        assert len(entries) == 25
+        reminder_select = next(item for item in entries if item.domain == "select")
+        assert reminder_select.entity_category == EntityCategory.CONFIG
+        assert reminder_select.disabled_by is None
+        by_key = {
+            item.unique_id.removeprefix(ADDRESS + "_"): item
+            for item in entries
+            if item.domain != "select"
+        }
         for key in [
             "height",
             "memory_1",

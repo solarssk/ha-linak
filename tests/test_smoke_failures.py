@@ -86,7 +86,14 @@ async def test_shutdown_failure_is_recorded_and_fails_run(
     integration = SimpleNamespace(
         async_get_component=AsyncMock(
             return_value=SimpleNamespace(
-                PLATFORMS=["sensor", "binary_sensor", "number", "button", "switch"]
+                PLATFORMS=[
+                    "sensor",
+                    "binary_sensor",
+                    "number",
+                    "button",
+                    "switch",
+                    "select",
+                ]
             )
         ),
         async_get_platform=AsyncMock(),

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a native reminder-profile select with fresh masked writes, strict acknowledgement and independent readback. Preserve intervals and unrelated flags; never activate, wake, move or replay. Hardware evidence covers Off/Profile 3 at client status 1 only.
 - Declare config-entry-only setup and report an unsupported `ha_linak:` YAML block through Repairs without changing action registration or starting Bluetooth work.
 - Add an explicit administrator-only protocol inventory action using the existing native connection and query lock on local Bluetooth or a proxy. Fixed reference-output and raw product-info reads never connect, activate the panel, move the desk or write settings; unverified payloads remain research data.
 - Refuse research reads during a query-lock handoff, abort when position feedback becomes invalid, distinguish explicit optional-read denials from transport loss and observe discarded parser errors during failed writes. Cover these paths with synthetic regressions without changing coverage thresholds.

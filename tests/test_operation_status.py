@@ -1217,9 +1217,12 @@ from custom_components.ha_linak.operation import (  # noqa: E402
 )
 
 
-def watcher():
+def watcher(clock=None):
     changes = []
-    tr = OperationTracker(lambda: changes.append(tr.status))
+    if clock is None:
+        tr = OperationTracker(lambda: changes.append(tr.status))
+    else:
+        tr = OperationTracker(lambda: changes.append(tr.status), clock=clock)
     return PanelMovementWatcher(tr), tr
 
 
@@ -1426,16 +1429,29 @@ def test_the_retreat_after_a_desk_error_does_not_replace_the_reported_fault():
     w.observe(9_300, 6)
     assert tr.status.phase is Phase.MOVING
     # The reported fault stays available as the last result.
-    assert tr.last is not None and tr.last.reason is Reason.DESK_ERROR
+    assert tr.last is not None
+    assert tr.last.reason is Reason.DESK_ERROR
 
 
-def test_an_unreported_clear_still_ends_the_hold_when_the_result_returns_to_idle():
-    w, tr = watcher()
+def test_the_fault_hold_survives_the_result_reset_and_ends_after_a_time_limit():
+    from custom_components.ha_linak.operation import FAULT_HOLD_MAX
+
+    now = [100.0]
+    w, tr = watcher(clock=lambda: now[0])
     w.observe(10_000, 0)
     w.observe(10_000, 5)
     tr.desk_error("01005d")
     w.faulted()
     tr.reset()
+    # A retreat resuming after the ten second reset still cannot become a movement,
+    # so it cannot replace the retained fault result.
+    w.observe(9_000, 0)
+    w.observe(9_000, 6)
+    assert tr.status.phase is Phase.IDLE
+    assert tr.last is not None
+    assert tr.last.reason is Reason.DESK_ERROR
+    # A lost "fault cleared" frame is recovered by the time limit.
+    now[0] += FAULT_HOLD_MAX + 1
     w.observe(9_000, 0)
     w.observe(9_000, 6)
     assert tr.status.phase is Phase.MOVING
@@ -1454,8 +1470,12 @@ def test_a_retreat_in_several_runs_never_replaces_a_reported_desk_error():
         w.observe(position, 0)
         w.observe(position + 10, 6)
     assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.DESK_ERROR)
-    # After the result returns to idle, a new movement is followed again.
+    # The result timer does not release the hold; the cleared frame and a stop do.
     tr.reset()
+    w.observe(9_400, 0)
+    w.observe(9_400, 6)
+    assert tr.status.phase is Phase.IDLE
+    w.fault_cleared()
     w.observe(9_400, 0)
     w.observe(9_400, 6)
     assert tr.status.phase is Phase.MOVING
@@ -1491,3 +1511,161 @@ def test_a_fault_cleared_while_already_stationary_releases_at_once():
     w.fault_cleared()
     w.observe(9_500, 400)
     assert tr.status.phase is Phase.MOVING
+
+
+def test_a_timer_cannot_complete_a_request_that_replaced_the_panel_movement():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(10_000, 0)
+    tr.begin(83.0)
+    w._settled()
+    assert (tr.status.phase, tr.status.source) == (
+        Phase.PREPARING,
+        Source.HOME_ASSISTANT,
+    )
+    # The stale follow-up is gone, so the request's residual speed starts nothing.
+    w.observe(10_000, 5)
+    assert tr.status.phase is Phase.PREPARING
+
+
+def test_closing_the_watcher_forgets_an_observed_movement_and_its_timer():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(10_000, 0)
+    w.close()
+    assert tr.status.phase is Phase.IDLE
+    assert w._settle is None
+
+
+def test_closing_the_watcher_never_touches_a_requested_operation():
+    w, tr = watcher()
+    tr.begin(83.0)
+    w.close()
+    assert tr.status.phase is Phase.PREPARING
+
+
+async def test_a_pending_settle_timer_is_cancelled_by_close(hass):
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    with patch("custom_components.ha_linak.operation.PANEL_SETTLE_DELAY", 0.01):
+        w.observe(10_100, 0)
+        w.close()
+        await asyncio.sleep(0.05)
+    assert tr.status.phase is Phase.IDLE
+    assert tr.last is None
+
+
+def test_a_failed_stop_replaces_an_observed_movement_but_not_a_request():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    tr.stop_failed_while_idle()
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.STOP_FAILED)
+    _, other = watcher()
+    other.begin(83.0)
+    other.stop_failed_while_idle()
+    assert other.status.phase is Phase.PREPARING
+
+
+def test_a_fault_during_a_request_keeps_its_outcome_but_holds_the_retreat():
+    w, tr = watcher()
+    tr.begin(83.0)
+    tr.desk_error("01005d")
+    assert tr.status.phase is Phase.PREPARING
+    tr.fail(Reason.REVERSE_MOTION)
+    # After the request failed, the desk's retreat is not a panel movement.
+    w.observe(9_000, 0)
+    w.observe(9_100, 6)
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.REVERSE_MOTION)
+    assert tr.status.source is Source.HOME_ASSISTANT
+
+
+def test_a_stationary_reading_before_readiness_arms_the_next_movement():
+    w, tr = watcher()
+    w.seed(0)
+    w.observe(10_000, 5)
+    assert tr.status.phase is Phase.MOVING
+
+
+def test_a_moving_reading_before_readiness_arms_nothing():
+    w, tr = watcher()
+    w.seed(5)
+    w.observe(10_000, 5)
+    assert tr.status.phase is Phase.IDLE
+
+
+def test_a_seed_never_arms_over_a_requested_operation():
+    w, tr = watcher()
+    tr.begin(83.0)
+    w.seed(0)
+    w.observe(10_000, 5)
+    assert tr.status.phase is Phase.PREPARING
+
+
+async def test_ending_the_session_forgets_an_observed_panel_movement(hass):
+    entry, _ = await setup(hass)
+    desk = entry.runtime_data.desk
+    generation = desk._generation
+
+    def notify(position, speed):
+        desk._position(generation, bytearray(struct.pack("<HH", position, speed)))
+
+    notify(10_000, 0)
+    notify(10_200, 9)
+    assert desk.operation.status.phase is Phase.MOVING
+    await desk._disconnect_link()
+    assert desk.operation.status.phase is Phase.IDLE
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_desk_error_reaches_the_sensor_with_its_whole_frame(hass):
+    entry, _ = await setup(hass)
+    desk = entry.runtime_data.desk
+    generation = desk._generation
+    frame = bytearray(b"\x01\x00\x5d" + bytes(range(10)))
+    desk._error_frame(generation, frame)
+    await hass.async_block_till_done()
+    state = hass.states.get(OPERATION_ID)
+    assert state.state == "failed"
+    assert state.attributes["reason"] == "desk_error"
+    assert state.attributes["source"] == "panel"
+    assert state.attributes["error_code"] == bytes(frame).hex()
+    desk.operation.reset()
+    await hass.async_block_till_done()
+    state = hass.states.get(OPERATION_ID)
+    assert state.state == "idle"
+    assert state.attributes["last_result"] == "failed"
+    assert state.attributes["last_reason"] == "desk_error"
+    assert state.attributes["last_source"] == "panel"
+    assert state.attributes["last_error_code"] == bytes(frame).hex()
+    # A frame from an earlier connection is ignored.
+    desk._error_frame(generation - 1, bytearray(b"\x01\x00\x5d"))
+    assert desk.operation.status.phase is Phase.IDLE
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+def test_a_second_panel_movement_is_not_started_while_one_is_observed():
+    _, tr = watcher()
+    assert tr.begin_panel() is True
+    assert tr.begin_panel() is False
+
+
+async def test_a_second_stationary_sample_keeps_the_one_pending_settle(hass):
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(10_100, 0)
+    pending = w._settle
+    assert pending is not None
+    w.observe(10_100, 0)
+    assert w._settle is pending
+    w.close()
+
+
+def test_a_settle_with_nothing_followed_changes_nothing():
+    w, tr = watcher()
+    w._settled()
+    assert tr.status.phase is Phase.IDLE

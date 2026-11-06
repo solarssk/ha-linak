@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Callable
+import time
 from dataclasses import dataclass
 from enum import StrEnum
 import logging
@@ -11,6 +12,9 @@ _LOGGER = logging.getLogger(__name__)
 # Seconds a settled result stays visible before the status returns to idle. The
 # result itself is kept as the last result, so only the live phase resets.
 OPERATION_RESET_DELAY = 10
+# Seconds a reported desk fault keeps holding back panel observation when the
+# desk's own "fault cleared" frame never arrives.
+FAULT_HOLD_MAX = 30.0
 
 
 class Phase(StrEnum):
@@ -84,11 +88,17 @@ class OperationTracker:
     tracker: a refusal leaves the active operation and the last result untouched.
     """
 
-    def __init__(self, changed: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        changed: Callable[[], None],
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._changed = changed
+        self._clock = clock
         self._origin = Phase.IDLE
         self._fault_hold = False
         self._fault_cleared = False
+        self._fault_at = 0.0
         self.status = OperationStatus()
         # The latest settled result, kept after the live phase returns to idle.
         self.last: OperationStatus | None = None
@@ -118,8 +128,8 @@ class OperationTracker:
     def reset(self) -> None:
         """Return a settled result to idle; the result stays as the last one."""
         if self.status.settled:
-            self._fault_hold = False
-            self._fault_cleared = False
+            # The fault hold is independent of this timer: a retreat that resumes
+            # after the reset must still not replace the retained fault result.
             self._publish(OperationStatus())
 
     def begin(self, requested_height_cm: float | None = None) -> None:
@@ -133,13 +143,22 @@ class OperationTracker:
         """Observe a movement nobody requested here; never displaces a request."""
         if self.status.active:
             return False
-        if self._fault_hold:
-            # The desk backs away by itself after a fault, in several short runs. Its
-            # retreat must not replace the reported fault. The desk's own "fault
-            # cleared" frame ends the hold, so the user's next movement is followed.
+        if self._fault_held():
             return False
         self._publish(OperationStatus(Phase.MOVING, source=Source.PANEL))
         return True
+
+    def _fault_held(self) -> bool:
+        """The desk backs away by itself after a fault, in several short runs.
+
+        Its retreat must not replace the reported fault. The desk's "fault cleared"
+        frame followed by stationary feedback ends the hold; a lost frame is
+        recovered by a time limit.
+        """
+        if self._fault_hold and self._clock() - self._fault_at > FAULT_HOLD_MAX:
+            self._fault_hold = False
+            self._fault_cleared = False
+        return self._fault_hold
 
     def request(self, requested_height_cm: float) -> None:
         """Record a goal that is only known after preparation reads it."""
@@ -171,10 +190,11 @@ class OperationTracker:
         The frame is kept as received; its meaning is not decoded. An explicit
         request keeps its own outcome and is never rewritten from here.
         """
-        if self.status.active and self.status.source is Source.HOME_ASSISTANT:
-            return
         self._fault_hold = True
         self._fault_cleared = False
+        self._fault_at = self._clock()
+        if self.status.active and self.status.source is Source.HOME_ASSISTANT:
+            return
         self._publish(
             OperationStatus(
                 Phase.FAILED,
@@ -195,17 +215,20 @@ class OperationTracker:
             self._fault_hold = False
             self._fault_cleared = False
 
+    def drop_observed(self) -> None:
+        """Forget a movement we only watched; it has no outcome of ours to report."""
+        if self.status.active and self.status.source is Source.PANEL:
+            self._publish(OperationStatus())
+
     def link_lost(self) -> None:
         if self.status.active and self.status.source is Source.PANEL:
-            # A movement we only watched has no outcome we could have caused or
-            # missed; losing sight of it is not a failure of ours. Drop it.
-            self._publish(OperationStatus())
+            self.drop_observed()
             return
         self.fail(Reason.LINK_LOST)
 
     def stop_failed_while_idle(self) -> None:
         """Record a Stop that failed when no operation was active to carry the failure."""
-        if not self.status.active:
+        if not self.status.active or self.status.source is Source.PANEL:
             self._publish(OperationStatus(Phase.FAILED, None, Reason.STOP_FAILED))
 
     def _settle(self, phase: Phase) -> None:
@@ -244,62 +267,86 @@ class PanelMovementWatcher:
 
     def observe(self, position_raw: int, speed_raw: int) -> None:
         self._speed = speed_raw
-        status = self._tracker.status
-        if status.active and status.source is not Source.PANEL:
-            # An explicit request owns the desk; its residual speed is not a new move.
-            self._drop(armed=False)
+        if self._yields_to_request():
             return
-        if self._following and not (status.active and status.source is Source.PANEL):
-            self._drop(armed=False)
         if speed_raw == 0:
-            self._tracker.stationary()
-            self._armed = True
-            if self._following:
-                _LOGGER.debug(
-                    "Panel movement stationary sample: position=%s", position_raw
-                )
-                self._paused = True
-                self._schedule_settle()
+            self._on_stationary(position_raw)
             return
         self._cancel_settle()
-        if self._following and self._paused:
+        if self._following:
+            self._follow(position_raw, speed_raw)
+        else:
+            self._try_start(position_raw, speed_raw)
+
+    def seed(self, speed_raw: int) -> None:
+        """Start from a stationary reading taken before notifications were trusted."""
+        status = self._tracker.status
+        if speed_raw == 0 and not (status.active and status.source is not Source.PANEL):
+            self._armed = True
+
+    def _yields_to_request(self) -> bool:
+        status = self._tracker.status
+        observed = status.active and status.source is Source.PANEL
+        if status.active and not observed:
+            # An explicit request owns the desk; its residual speed is not a new move.
+            self._drop(armed=False)
+            return True
+        if self._following and not observed:
+            self._drop(armed=False)
+        return False
+
+    def _on_stationary(self, position_raw: int) -> None:
+        self._tracker.stationary()
+        self._armed = True
+        if self._following:
+            _LOGGER.debug("Panel movement stationary sample: position=%s", position_raw)
+            self._paused = True
+            self._schedule_settle()
+
+    def _try_start(self, position_raw: int, speed_raw: int) -> None:
+        if not (self._armed and self._tracker.begin_panel()):
+            return
+        _LOGGER.debug(
+            "Panel movement started: position=%s speed=%s", position_raw, speed_raw
+        )
+        self._following = True
+        self._paused = False
+        self._start = self._best = position_raw
+        self._direction = 0
+
+    def _follow(self, position_raw: int, speed_raw: int) -> None:
+        _LOGGER.debug(
+            "Panel movement sample: position=%s speed=%s", position_raw, speed_raw
+        )
+        if self._paused:
             # Feedback went stationary and then moved again. The user may have
             # released the panel button and pressed the other direction, so the
             # direction is learned afresh rather than read as a turn back.
             self._paused = False
             self._start = self._best = position_raw
             self._direction = 0
-        if self._following:
-            _LOGGER.debug(
-                "Panel movement sample: position=%s speed=%s", position_raw, speed_raw
-            )
-        if not self._following:
-            if self._armed and self._tracker.begin_panel():
-                _LOGGER.debug(
-                    "Panel movement started: position=%s speed=%s",
-                    position_raw,
-                    speed_raw,
-                )
-                self._following = True
-                self._paused = False
-                self._start = self._best = position_raw
-                self._direction = 0
-            return
+        delta = position_raw - self._best
         if self._direction == 0:
-            if abs(position_raw - self._start) > PANEL_TOLERANCE_RAW:
-                self._direction = 1 if position_raw > self._start else -1
-                self._best = position_raw
-        elif (position_raw - self._best) * self._direction < -PANEL_TOLERANCE_RAW:
-            _LOGGER.debug(
-                "Panel movement reversed: position=%s best=%s direction=%s",
-                position_raw,
-                self._best,
-                self._direction,
-            )
-            self._tracker.fail(Reason.REVERSE_MOTION)
-            self._drop(armed=False)
-        elif (position_raw - self._best) * self._direction > 0:
+            self._learn_direction(position_raw)
+        elif delta * self._direction < -PANEL_TOLERANCE_RAW:
+            self._reversed(position_raw)
+        elif delta * self._direction > 0:
             self._best = position_raw
+
+    def _learn_direction(self, position_raw: int) -> None:
+        if abs(position_raw - self._start) > PANEL_TOLERANCE_RAW:
+            self._direction = 1 if position_raw > self._start else -1
+            self._best = position_raw
+
+    def _reversed(self, position_raw: int) -> None:
+        _LOGGER.debug(
+            "Panel movement reversed: position=%s best=%s direction=%s",
+            position_raw,
+            self._best,
+            self._direction,
+        )
+        self._tracker.fail(Reason.REVERSE_MOTION)
+        self._drop(armed=False)
 
     def _schedule_settle(self) -> None:
         if self._settle is not None:
@@ -312,10 +359,16 @@ class PanelMovementWatcher:
 
     def _settled(self) -> None:
         self._settle = None
-        if self._following:
+        if not self._following:
+            return
+        status = self._tracker.status
+        if status.active and status.source is Source.PANEL:
             _LOGGER.debug("Panel movement settled after stationary feedback")
             self._tracker.complete()
             self._drop(armed=True)
+        else:
+            # An explicit request took the operation over while the timer ran.
+            self._drop(armed=False)
 
     def _cancel_settle(self) -> None:
         if self._settle is not None:
@@ -343,4 +396,6 @@ class PanelMovementWatcher:
         self._drop(armed=False)
 
     def close(self) -> None:
+        """Stop watching and forget an observed movement, whatever ended the session."""
         self._drop(armed=False)
+        self._tracker.drop_observed()

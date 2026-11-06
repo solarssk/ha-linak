@@ -777,11 +777,9 @@ async def test_error_channel_frames_are_logged_and_a_fault_reaches_operation(cap
         fake.callbacks[ERROR_UUID](None, bytearray(b"\x01\x00\x5d"))
     assert "Desk error channel frame: length=3 hex=01005d" in caplog.text
     status = desk.operation.status
-    assert (status.phase, status.reason, status.error_code) == (
-        Phase.FAILED,
-        Reason.DESK_ERROR,
-        "01005d",
-    )
+    assert status.phase is Phase.FAILED
+    assert status.reason is Reason.DESK_ERROR
+    assert status.error_code == "01005d"
     await desk.disconnect()
 
 
@@ -812,5 +810,28 @@ async def test_a_refused_error_channel_does_not_fail_the_connection():
         "custom_components.ha_linak.client.establish_connection", side_effect=connect
     ):
         state = await desk.refresh()
-    assert desk.connected and state.height_cm == 82.38
+    assert desk.connected
+    assert state.height_cm == 82.38
+    await desk.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_an_error_channel_without_notifications_is_skipped():
+    from custom_components.ha_linak.protocol import ERROR_UUID
+
+    fake = FakeBleak()
+    base = fake.services.get_characteristic
+    fake.services.get_characteristic = lambda uuid: (
+        SimpleNamespace(properties=["read"]) if uuid == ERROR_UUID else base(uuid)
+    )
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", side_effect=connect
+    ):
+        await desk.refresh()
+    assert ERROR_UUID not in fake.callbacks
     await desk.disconnect()

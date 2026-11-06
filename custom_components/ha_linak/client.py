@@ -768,7 +768,7 @@ class DeskClient:
         )
         # An empty frame clears the fault; only a fault is reported.
         if frame:
-            self.operation.desk_error(frame[:8].hex())
+            self.operation.desk_error(frame.hex())
             self._panel_movement.faulted()
         else:
             self._panel_movement.fault_cleared()
@@ -832,6 +832,8 @@ class DeskClient:
         self.state = state
         self.protocol_validated = True
         self._ready = True
+        if state.position is not None:
+            self._panel_movement.seed(state.position.speed_raw)
         self._set_stage("ready")
         return state
 
@@ -1542,6 +1544,8 @@ class DeskClient:
     async def _disconnect_link(self) -> None:
         self._closing = True
         self._link_lost = True
+        # Whatever ends the session, an observed panel movement ends with it.
+        self._panel_movement.close()
         if self._operation is not None:
             self._operation.cancel()
         self._ready = False

@@ -1669,3 +1669,19 @@ def test_a_settle_with_nothing_followed_changes_nothing():
     w, tr = watcher()
     w._settled()
     assert tr.status.phase is Phase.IDLE
+
+
+async def test_an_uninterrupted_movement_is_not_settled_by_the_delay(hass):
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    with patch("custom_components.ha_linak.operation.PANEL_SETTLE_DELAY", 0.01):
+        for position in (10_000, 10_200, 10_400, 10_600):
+            w.observe(position, 5)
+        await asyncio.sleep(0.05)
+        assert w._settle is None
+        assert tr.status.phase is Phase.MOVING
+        for position in (10_800, 11_000):
+            w.observe(position, 5)
+        await asyncio.sleep(0.05)
+    assert tr.status.phase is Phase.MOVING
+    w.close()

@@ -41,10 +41,17 @@ from .motion import (
     _drain_cleanup,
 )
 from .naming import DEFAULT_NAME, desk_name
-from .operation import OPERATION_RESET_DELAY, OperationTracker, Phase, Reason
+from .operation import (
+    OPERATION_RESET_DELAY,
+    OperationTracker,
+    PanelMovementWatcher,
+    Phase,
+    Reason,
+)
 from .pairing import BlueZAgentUnavailable, pair_bluez
 from .protocol import (
     DPG_UUID,
+    ERROR_UUID,
     HEIGHT_UUID,
     Capabilities,
     PositionSample,
@@ -220,6 +227,7 @@ class DeskClient:
         self._operation_reset: asyncio.TimerHandle | None = None
         self._operation_resets_closed = False
         self.operation = OperationTracker(self._operation_changed)
+        self._panel_movement = PanelMovementWatcher(self.operation)
 
     @property
     def released(self) -> bool:
@@ -263,6 +271,7 @@ class DeskClient:
     def close_operation_resets(self) -> None:
         """No timer may outlive this client, even one a closing movement settles."""
         self._operation_resets_closed = True
+        self._panel_movement.close()
         self.cancel_operation_reset()
 
     def _set_stage(self, stage: str) -> None:
@@ -328,6 +337,11 @@ class DeskClient:
             self.state.position = decode_position(bytes(data))
         except ValueError:
             self._ready = False
+        else:
+            if was_ready:
+                self._panel_movement.observe(
+                    self.state.position.position_raw, self.state.position.speed_raw
+                )
         if (
             was_ready
             and self._calibration_task is None
@@ -715,6 +729,49 @@ class DeskClient:
             ),
             IO_TIMEOUT,
         )
+        await self._subscribe_error_channel(generation)
+
+    async def _subscribe_error_channel(self, generation: int) -> None:
+        """Log raw frames of the desk's error characteristic, for research only.
+
+        The payload meaning is unverified, so frames are never decoded, never
+        change any state or operation and never trigger a command. The channel is
+        optional: an absent characteristic or a refusal to notify is not a failure.
+        """
+        assert self.client is not None
+        try:
+            characteristic = self.client.services.get_characteristic(ERROR_UUID)
+            properties = getattr(characteristic, "properties", ())
+            if "notify" not in properties and "indicate" not in properties:
+                _LOGGER.debug("Desk error channel is not notifiable")
+                return
+            await self._io(
+                self.client.start_notify(
+                    ERROR_UUID, lambda _, data: self._error_frame(generation, data)
+                ),
+                IO_TIMEOUT,
+            )
+        except BleakError as err:
+            _LOGGER.debug(
+                "Desk error channel subscription refused: %s", type(err).__name__
+            )
+
+    def _error_frame(self, generation: int, data: bytearray) -> None:
+        if generation != self._generation:
+            return
+        frame = bytes(data)
+        _LOGGER.debug(
+            "Desk error channel frame: length=%d hex=%s position=%s",
+            len(frame),
+            frame[:32].hex(),
+            self.state.position.position_raw if self.state.position else None,
+        )
+        # An empty frame clears the fault; only a fault is reported.
+        if frame:
+            self.operation.desk_error(frame[:8].hex())
+            self._panel_movement.faulted()
+        else:
+            self._panel_movement.fault_cleared()
 
     async def _refresh(
         self,
@@ -1349,9 +1406,11 @@ class DeskClient:
                 await controller.move_to_cm(height_cm)
                 self._set_stage("ready")
             except BaseException as error:
-                if self._can_retain_after_stop(error, controller):
-                    # Explicit Stop completed both channel writes. Its cancelled
-                    # movement can release ownership without dropping a sound link.
+                if self._can_retain_after_stop(
+                    error, controller
+                ) or self._can_retain_after_reverse(error, controller):
+                    # A delivered Stop (explicit, or after the desk reversed on its
+                    # own) leaves a sound link; release ownership without dropping it.
                     self._set_stage("ready")
                     raise
                 # A controller settles its own Stop. Preparation has no controller,
@@ -1372,6 +1431,22 @@ class DeskClient:
             return False
         stop_pending = self._stop_task is not None and not self._stop_task.done()
         return stop_pending and self._motion_stop_sent and self.connected
+
+    def _can_retain_after_reverse(
+        self, error: BaseException, controller: MotionController | None
+    ) -> bool:
+        """The desk turned back by itself, e.g. its anti-collision, and Stop landed.
+
+        The controller already sent the final Stop on both channels and did not
+        discard the session. The failure stays visible; only the link is kept.
+        """
+        return (
+            controller is not None
+            and isinstance(error, MotionError)
+            and error.reason is MotionFailure.REVERSE
+            and self._motion_stop_sent
+            and self.connected
+        )
 
     async def _finish_failed_move(self, before_motion: bool) -> None:
         try:

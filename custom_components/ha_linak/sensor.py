@@ -137,6 +137,10 @@ class LinakOperationSensor(LinakEntity, SensorEntity):
             attributes["requested_height_cm"] = status.requested_height_cm
         if status.reason is not None:
             attributes["reason"] = status.reason.value
+        if status.phase is not Phase.IDLE:
+            attributes["source"] = status.source.value
+        if status.error_code is not None:
+            attributes["error_code"] = status.error_code
         last = self.coordinator.last_operation
         if last is not None and not status.settled:
             # Between operations the result is kept here, so idle loses nothing.
@@ -145,6 +149,9 @@ class LinakOperationSensor(LinakEntity, SensorEntity):
                 attributes["last_requested_height_cm"] = last.requested_height_cm
             if last.reason is not None:
                 attributes["last_reason"] = last.reason.value
+            attributes["last_source"] = last.source.value
+            if last.error_code is not None:
+                attributes["last_error_code"] = last.error_code
         return attributes or None
 
 

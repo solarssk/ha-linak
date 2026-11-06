@@ -160,6 +160,9 @@ It shows what the integration is doing with the desk and how the last request en
 - About 10 seconds after a result it returns to idle, so an automation can notify on the result (`to: completed`, `interrupted` or `failed`).
 - The finished result stays in the `last_result` attribute, with `last_reason` for a failure.
 - A refused request does not change it, and it stays available when the connection drops.
+- A movement started on the desk panel is shown too, with `source: panel` and no `requested_height_cm`. It starts `moving` when height feedback reports speed after a stationary reading, and completes after about one second of zero speed. A request from Home Assistant replaces it. If the Bluetooth link drops during a panel movement, the status returns to idle instead of failing, because the integration only watched that movement.
+- When the desk reports a fault on its error characteristic, for example the collision code E54 on the panel display, the sensor shows `failed` with reason `desk_error` and the raw frame in `error_code`. This is the desk's own report, not an inference. [Observed pairing →](hardware-results.md#desk-error-frames)
+- If a panel movement turns back by more than 1 mm against the direction it first travelled, the result is `failed` with reason `reverse_motion`. That can be the desk's own anti-collision reversal, but it is inferred from position. The integration does not read the panel's error code (for example E54), so the display remains the source for the actual code.
 - It does not show scheduled state reads. They can still refuse a new request with the busy message while it reads idle or completed.
 - It reports the request, not physical arrival.
 

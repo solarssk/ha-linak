@@ -745,3 +745,72 @@ async def test_query_timeout_log_identifies_only_allowlisted_command(caplog):
     ]
     assert messages == ["DPG read timed out: command=REMINDERS"]
     assert not desk.connected
+
+
+@pytest.mark.asyncio
+async def test_error_channel_frames_are_logged_and_a_fault_reaches_operation(caplog):
+    from custom_components.ha_linak.operation import Phase, Reason
+    from custom_components.ha_linak.protocol import ERROR_UUID
+
+    fake = FakeBleak()
+    base = fake.services.get_characteristic
+    fake.services.get_characteristic = lambda uuid: (
+        SimpleNamespace(properties=["read", "notify"])
+        if uuid == ERROR_UUID
+        else base(uuid)
+    )
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", side_effect=connect
+    ):
+        await desk.refresh()
+    assert ERROR_UUID in fake.callbacks
+    before = desk.operation.status
+    with caplog.at_level("DEBUG"):
+        fake.callbacks[ERROR_UUID](None, bytearray())
+    assert desk.operation.status == before
+    with caplog.at_level("DEBUG"):
+        fake.callbacks[ERROR_UUID](None, bytearray(b"\x01\x00\x5d"))
+    assert "Desk error channel frame: length=3 hex=01005d" in caplog.text
+    status = desk.operation.status
+    assert (status.phase, status.reason, status.error_code) == (
+        Phase.FAILED,
+        Reason.DESK_ERROR,
+        "01005d",
+    )
+    await desk.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_a_refused_error_channel_does_not_fail_the_connection():
+    from bleak.exc import BleakError
+    from custom_components.ha_linak.protocol import ERROR_UUID
+
+    fake = FakeBleak()
+    base = fake.services.get_characteristic
+    fake.services.get_characteristic = lambda uuid: (
+        SimpleNamespace(properties=["notify"]) if uuid == ERROR_UUID else base(uuid)
+    )
+    original = fake.start_notify
+
+    async def start_notify(uuid, callback):
+        if uuid == ERROR_UUID:
+            raise BleakError("not permitted")
+        await original(uuid, callback)
+
+    fake.start_notify = start_notify
+    desk = DeskClient(BLEDevice("AA:BB:CC:DD:EE:FF", "Desk", {}), lambda: None)
+
+    async def connect(*args, **kwargs):
+        return fake
+
+    with patch(
+        "custom_components.ha_linak.client.establish_connection", side_effect=connect
+    ):
+        state = await desk.refresh()
+    assert desk.connected and state.height_cm == 82.38
+    await desk.disconnect()

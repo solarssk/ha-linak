@@ -106,7 +106,7 @@ Software can confirm that the transport call returned, not that the physical des
 
 ## Operation status
 
-The `Operation` sensor reports the explicit request that owns the client and, afterwards, how it ended. It is software state: it names the request and its cleanup, and it is not evidence that the desk reached the height or stopped. Measured height, the settled slider value and the Bluetooth connection keep their own entities, and the sensor never records feedback ticks.
+The `Operation` sensor reports the explicit request that owns the client and, afterwards, how it ended. It is software state: it names the request and its cleanup, and it is not evidence that the desk reached the height or stopped. A movement started on the desk panel is observed from height feedback and reported with `source: panel`; it has no requested height and no Stop of its own. Measured height, the settled slider value and the Bluetooth connection keep their own entities, and the sensor never records feedback ticks.
 
 ```mermaid
 stateDiagram-v2
@@ -129,6 +129,9 @@ stateDiagram-v2
     completed --> preparing: next request
     interrupted --> preparing: next request
     failed --> preparing: next request
+    idle --> moving: speed seen on the desk panel
+    moving --> completed: about one second of zero speed (panel)
+    moving --> failed: turned back against the first direction (panel)
 ```
 
 | State | Meaning |

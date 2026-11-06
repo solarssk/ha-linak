@@ -210,6 +210,20 @@ For owner acceptance, explicitly agree one supervised sequence covering Profile 
 
 **Limits:** immediate stationary OLED redraw is unconfirmed. The manual height operation confounds the wake trial; `FE 00` alone is not shown to cause, be necessary for or be sufficient for the visual change. The implementation therefore sends no wake, movement or forced reconnect. Power-cycle persistence, exact CM/MM encoding, other variants and preservation of panel-local MM across unrelated whole-body `88` writes remain unverified. The select is covered by synthetic protocol/native-client/real-HA tests, not a deployment or new physical acceptance run. The owner's separate Core update during the metric observation does not expand the integration's supported-version claim.
 
+## Desk error frames
+
+**Question:** does the desk report a fault such as a collision over Bluetooth, or only on its display?
+
+**Method:** the client subscribes to the error characteristic `99fa0003` and logs each raw frame with the last position, without decoding it. During panel movement the owner stopped the desk against an obstruction and read the code on the display. No collision was induced by an agent.
+
+| Evidence | Observation | Interpretation |
+| --- | --- | --- |
+| Frame on a fault | Twice, the desk stopped, a three-byte frame `01 00 5d` arrived while the position was near 3300 and 3647, and the display showed E54 | On this DPG1C the error characteristic notifies, and this frame coincided with E54 in both events |
+| Frame on clearing | About 1.5 seconds later an empty frame arrived. The position had risen by about 3 cm, which is a retreat | An empty frame marks the fault as cleared, and the desk retreated by itself |
+| Scope | One desk, one panel firmware, one displayed code, two events | The meaning of other frames and the encoding of other E-codes are not established. The integration reports the raw frame and does not name it |
+
+The Operation sensor reports a non-empty frame as `failed` with reason `desk_error` and the frame in `error_code`.
+
 ## Hardware acceptance matrix
 
 This matrix is a test plan and evidence index, not twelve successful hardware tests. Existing observations retain their limited scope. For each execution record revision, HA/backend versions, known model/firmware, initial conditions, expected result, actual result and sanitized trace/physical observation. A failing or incomplete run stays recorded as such.

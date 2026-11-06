@@ -262,6 +262,7 @@ A warning records action, phase, reason and the backend captured before cleanup.
 | --- | --- | --- |
 | `no_progress` | Position did not advance toward the target before the stall deadline | Check client readiness, feedback and command cadence; do not extend deadlines blindly |
 | `reverse_motion` | Retreat from the best position exceeded tolerance | Stop the test; compare direction and raw target conversion |
+| `desk_error` | The desk sent a non-empty frame on its error characteristic (`99fa0003`); the frame is in `error_code` | Compare the frame with the code on the panel display; see the [observed pairing](hardware-results.md#desk-error-frames) |
 | `overshoot` | Feedback passed the target beyond tolerance | Compare raw feedback and target; do not treat the requested target as measured height |
 | `outside_limits` | Feedback is outside configured relative bounds | Verify calibration and real bounds before another command |
 | `link_lost` | The transport was disconnected during movement | Capture the actual link-loss event and backend evidence |

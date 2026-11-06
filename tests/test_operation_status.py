@@ -1174,3 +1174,320 @@ async def test_diagnostics_report_the_operation_without_identifiers(hass):
     }
     assert ADDRESS not in json.dumps(result)
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+class ReversingBleak(MotionBleak):
+    """Moves toward the target once, then retreats like an anti-collision reversal."""
+
+    def __init__(self):
+        super().__init__()
+        self.reversed = False
+
+    async def write_gatt_char(self, uuid, data, response):
+        if uuid == TARGET_UUID and data != REFERENCE_STOP:
+            self.writes.append((uuid, bytes(data)))
+            self.target_written.set()
+            self.position += -100 if self.reversed else 0
+            self.reversed = True
+            return
+        await super().write_gatt_char(uuid, data, response)
+
+
+async def test_a_reversal_with_a_delivered_stop_fails_without_dropping_the_link(hass):
+    fake = ReversingBleak()
+    entry, _ = await setup(hass, fake)
+    coordinator = entry.runtime_data
+    journal = Journal(hass)
+    with patch(FAST, 0.001), pytest.raises(HomeAssistantError) as error:
+        await coordinator.async_move_to_cm(83)
+    assert error.value.translation_key == "movement_reversed"
+    assert journal.phases == ["preparing", "moving", "stopping", "failed"]
+    assert journal.entries[-1][1]["reason"] == "reverse_motion"
+    assert fake.writes[-2:] == [(CONTROL_UUID, STOP), (TARGET_UUID, REFERENCE_STOP)]
+    assert coordinator.desk.connected
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+# --- movement started on the desk panel -------------------------------------
+
+from custom_components.ha_linak.operation import (  # noqa: E402
+    PANEL_SETTLE_DELAY,
+    PanelMovementWatcher,
+    Source,
+)
+
+
+def watcher():
+    changes = []
+    tr = OperationTracker(lambda: changes.append(tr.status))
+    return PanelMovementWatcher(tr), tr
+
+
+def test_a_panel_movement_is_reported_and_settles_after_a_pause():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    assert tr.status.phase is Phase.IDLE
+    w.observe(10_000, 5)
+    assert (tr.status.phase, tr.status.source) == (Phase.MOVING, Source.PANEL)
+    assert tr.status.requested_height_cm is None
+    w.observe(10_500, 5)
+    w._settled()
+    assert tr.status.phase is Phase.COMPLETED
+    assert tr.status.source is Source.PANEL
+
+
+def test_residual_speed_before_a_stationary_sample_is_not_a_movement():
+    w, tr = watcher()
+    w.observe(10_000, 7)
+    assert tr.status.phase is Phase.IDLE
+
+
+def test_a_turn_back_during_a_panel_movement_is_a_possible_obstruction():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(9_500, 5)
+    w.observe(9_300, 5)
+    w.observe(9_600, 5)
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.REVERSE_MOTION)
+    # The retreat itself must not start another operation.
+    w.observe(9_900, 5)
+    assert tr.status.phase is Phase.FAILED
+
+
+def test_small_jitter_is_not_a_reversal():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(10_400, 5)
+    w.observe(10_395, 5)
+    assert tr.status.phase is Phase.MOVING
+
+
+def test_a_panel_movement_never_displaces_or_joins_an_explicit_request():
+    w, tr = watcher()
+    tr.begin(83.0)
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    assert (tr.status.phase, tr.status.source) == (
+        Phase.PREPARING,
+        Source.HOME_ASSISTANT,
+    )
+    tr.complete()
+    # Residual speed right after the request must not look like a new movement.
+    w.observe(10_000, 3)
+    assert tr.status.phase is Phase.COMPLETED
+
+
+def test_an_explicit_request_replaces_an_observed_panel_movement():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    tr.begin(83.0)
+    assert (tr.status.phase, tr.status.source) == (
+        Phase.PREPARING,
+        Source.HOME_ASSISTANT,
+    )
+    assert tr.status.requested_height_cm == 83.0
+
+
+def test_the_settle_delay_is_a_real_pause():
+    assert PANEL_SETTLE_DELAY >= 1.0
+
+
+async def test_a_stationary_pause_settles_a_panel_movement_by_timer(hass):
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    with patch("custom_components.ha_linak.operation.PANEL_SETTLE_DELAY", 0.01):
+        w.observe(10_300, 0)
+        assert tr.status.phase is Phase.MOVING
+        await asyncio.sleep(0.05)
+    assert tr.status.phase is Phase.COMPLETED
+
+
+async def test_speed_resuming_cancels_the_pending_settle(hass):
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    with patch("custom_components.ha_linak.operation.PANEL_SETTLE_DELAY", 0.05):
+        w.observe(10_300, 0)
+        w.observe(10_400, 5)
+        await asyncio.sleep(0.1)
+    assert tr.status.phase is Phase.MOVING
+    w.close()
+
+
+async def test_a_movement_on_the_panel_reaches_the_operation_sensor(hass):
+    entry, _ = await setup(hass)
+    desk = entry.runtime_data.desk
+    generation = desk._generation
+
+    def notify(position, speed):
+        desk._position(generation, bytearray(struct.pack("<HH", position, speed)))
+
+    notify(10_000, 0)
+    notify(10_200, 9)
+    await hass.async_block_till_done()
+    state = hass.states.get(OPERATION_ID)
+    assert (state.state, state.attributes["source"]) == ("moving", "panel")
+    assert "requested_height_cm" not in state.attributes
+    notify(10_600, 9)
+    notify(10_900, 9)
+    notify(10_500, 9)
+    await hass.async_block_till_done()
+    state = hass.states.get(OPERATION_ID)
+    assert (state.state, state.attributes["reason"]) == ("failed", "reverse_motion")
+    assert desk.connected
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+def test_a_new_direction_after_a_stationary_sample_is_not_a_turn_back():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(9_500, 5)
+    w.observe(9_000, 5)
+    w.observe(9_000, 0)
+    w.observe(9_200, 5)
+    w.observe(9_700, 5)
+    assert tr.status.phase is Phase.MOVING
+    # A turn back without any stationary feedback in between is still reported.
+    w.observe(9_300, 5)
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.REVERSE_MOTION)
+
+
+def test_losing_the_link_during_a_panel_movement_is_not_a_failure():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    tr.link_lost()
+    assert tr.status.phase is Phase.IDLE
+    assert tr.last is None
+    # The next sample cannot resurrect it until feedback is stationary again.
+    w.observe(9_000, 5)
+    assert tr.status.phase is Phase.IDLE
+
+
+def test_losing_the_link_during_a_requested_movement_still_fails():
+    _, tr = watcher()
+    tr.begin(83.0)
+    tr.link_lost()
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.LINK_LOST)
+
+
+def test_a_desk_error_fails_a_panel_movement_but_never_rewrites_a_request():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    tr.desk_error("01005d")
+    assert (tr.status.phase, tr.status.reason, tr.status.error_code) == (
+        Phase.FAILED,
+        Reason.DESK_ERROR,
+        "01005d",
+    )
+    assert tr.status.source is Source.PANEL
+    # Speed after the fault must not revive the movement.
+    w.observe(9_000, 5)
+    assert tr.status.phase is Phase.FAILED
+    _, other = watcher()
+    other.begin(83.0)
+    other.desk_error("01005d")
+    assert other.status.phase is Phase.PREPARING
+
+
+def test_a_desk_error_while_idle_is_still_reported():
+    _, tr = watcher()
+    tr.desk_error("01005d")
+    assert tr.status.phase is Phase.FAILED
+
+
+def test_the_retreat_after_a_desk_error_does_not_replace_the_reported_fault():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(9_000, 5)
+    w.observe(9_000, 0)
+    tr.desk_error("01005d")
+    w.faulted()
+    # The desk backs away by itself right after the fault.
+    w.observe(9_050, 5)
+    w.observe(9_300, 5)
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.DESK_ERROR)
+    # The fault is held while the desk retreats, until it reports the fault cleared
+    # and has stopped.
+    w.observe(9_300, 0)
+    w.observe(9_300, 6)
+    assert tr.status.phase is Phase.FAILED
+    w.fault_cleared()
+    w.observe(9_300, 6)
+    assert tr.status.phase is Phase.FAILED
+    w.observe(9_300, 0)
+    w.observe(9_300, 6)
+    assert tr.status.phase is Phase.MOVING
+    # The reported fault stays available as the last result.
+    assert tr.last is not None and tr.last.reason is Reason.DESK_ERROR
+
+
+def test_an_unreported_clear_still_ends_the_hold_when_the_result_returns_to_idle():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    tr.desk_error("01005d")
+    w.faulted()
+    tr.reset()
+    w.observe(9_000, 0)
+    w.observe(9_000, 6)
+    assert tr.status.phase is Phase.MOVING
+
+
+def test_a_retreat_in_several_runs_never_replaces_a_reported_desk_error():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(9_000, 5)
+    w.observe(9_000, 0)
+    tr.desk_error("01005d")
+    w.faulted()
+    for position in (9_100, 9_300):
+        w.observe(position, 5)
+        w.observe(position, 0)
+        w.observe(position + 10, 6)
+    assert (tr.status.phase, tr.status.reason) == (Phase.FAILED, Reason.DESK_ERROR)
+    # After the result returns to idle, a new movement is followed again.
+    tr.reset()
+    w.observe(9_400, 0)
+    w.observe(9_400, 6)
+    assert tr.status.phase is Phase.MOVING
+
+
+def test_the_end_of_the_retreat_after_the_cleared_frame_is_not_a_new_movement():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    w.observe(9_000, 5)
+    tr.desk_error("01005d")
+    w.faulted()
+    # The desk stops, backs away, and reports the fault over while still moving.
+    w.observe(9_000, 0)
+    w.observe(9_100, 6_208)
+    w.fault_cleared()
+    for position, speed in ((9_300, 5_168), (9_330, 3_808), (9_360, 2_016)):
+        w.observe(position, speed)
+        assert tr.status.phase is Phase.FAILED
+    w.observe(9_370, 0)
+    assert tr.status.phase is Phase.FAILED
+    w.observe(9_370, 400)
+    assert tr.status.phase is Phase.MOVING
+
+
+def test_a_fault_cleared_while_already_stationary_releases_at_once():
+    w, tr = watcher()
+    w.observe(10_000, 0)
+    w.observe(10_000, 5)
+    tr.desk_error("01005d")
+    w.faulted()
+    w.observe(9_500, 0)
+    w.fault_cleared()
+    w.observe(9_500, 400)
+    assert tr.status.phase is Phase.MOVING

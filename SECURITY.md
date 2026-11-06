@@ -16,7 +16,7 @@ Security fixes are maintained for the latest public release, not every older ver
 | Current `main` | Development fixes only; not a substitute for a published, validated release |
 | Any installation on HA below 2026.11.0 | Unsupported |
 
-At this preparation stage, 0.1.0 is not yet published and there are no public releases. Until publication, fixes are available on `main` after review and merge. Check [GitHub Releases](https://github.com/solarssk/ha-linak/releases) for publication and [the changelog](CHANGELOG.md) for requirements and limitations.
+0.1.0 is the first public release. Fixes made after the latest published release are available on `main` after review and merge until the next release is published. Check [GitHub Releases](https://github.com/solarssk/ha-linak/releases) for the latest release and [the changelog](CHANGELOG.md) for requirements and limitations.
 
 ### Report a vulnerability privately
 
@@ -63,7 +63,7 @@ Poprawki bezpieczeństwa obejmują najnowsze publiczne wydanie, a nie każdą st
 | Bieżące `main` | Poprawki rozwojowe; nie zastępuje opublikowanego, zweryfikowanego wydania |
 | Dowolna instalacja na HA poniżej 2026.11.0 | Niewspierana |
 
-Na etapie przygotowania 0.1.0 nie jest jeszcze opublikowane i nie ma publicznych wydań. Do publikacji poprawki są dostępne na `main` po przeglądzie i scaleniu. Publikację sprawdzisz w [GitHub Releases](https://github.com/solarssk/ha-linak/releases), a wymagania i ograniczenia w angielskim [changelogu](CHANGELOG.md).
+0.1.0 jest pierwszym publicznym wydaniem. Poprawki wprowadzone po ostatnim opublikowanym wydaniu są dostępne na `main` po przeglądzie i scaleniu, do czasu opublikowania kolejnego wydania. Najnowsze wydanie sprawdzisz w [GitHub Releases](https://github.com/solarssk/ha-linak/releases), a wymagania i ograniczenia w angielskim [changelogu](CHANGELOG.md).
 
 ### Zgłoś podatność prywatnie
 

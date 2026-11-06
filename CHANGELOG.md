@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Close the Bluetooth client the desk dropped, so its private D-Bus connection and notification registrations no longer pile up until Home Assistant restarts.
+- Explain an unreachable desk in the log with Home Assistant's own Bluetooth reachability diagnostics, once per outage, and in the setup retry message. It names causes such as a scanner that cannot connect or a proxy without free connection slots.
 - Keep the Bluetooth link after a movement from Home Assistant ends with `reverse_motion` and the final Stop was delivered. The desk's own reversal, such as anti-collision, no longer causes a disconnect and reconnect.
 - Give a movement from Home Assistant that ends in `reverse_motion` its own error message, which names a possible obstruction and points to the panel display instead of the generic failure text.
 - Do not report a failure when the Bluetooth link drops during a movement that was only observed from the desk panel; a requested movement still fails with `link_lost`.

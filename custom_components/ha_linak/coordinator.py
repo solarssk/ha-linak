@@ -27,6 +27,9 @@ from .setup_session import take_session
 from .ownership import has_idasen_conflict
 
 _LOGGER = logging.getLogger(__name__)
+# Addresses already explained during the current outage. Kept in hass.data because a
+# failed setup builds a new coordinator for every retry.
+_UNREACHABLE_WARNED = "ha_linak_unreachable_warned"
 SETTINGS_REFRESH_INTERVAL = 300
 
 
@@ -184,6 +187,33 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             except ValueError:
                 self.controls = None
 
+    def reachability_hint(self) -> str:
+        """Home Assistant's own explanation of why no connection path to the desk exists.
+
+        Never raises: it only decorates a failure that is already being reported.
+        """
+        try:
+            if bluetooth.async_scanner_count(self.hass, connectable=True) == 0:
+                return "No connectable Bluetooth adapter or proxy is available"
+            return bluetooth.async_address_reachability_diagnostics(
+                self.hass,
+                self.address,
+                bluetooth.BluetoothReachabilityIntent.CONNECTION,
+            )
+        except Exception:  # noqa: BLE001
+            return "Reachability diagnostics are unavailable"
+
+    def _warn_unreachable_once(self) -> None:
+        """Explain an outage once; Home Assistant itself logs the failure only once."""
+        warned = self.hass.data.setdefault(_UNREACHABLE_WARNED, set())
+        if self.address in warned:
+            return
+        warned.add(self.address)
+        _LOGGER.warning(
+            "LINAK desk cannot be reached for a connection: %s",
+            self.reachability_hint(),
+        )
+
     def _device(self) -> BLEDevice:
         device = bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True
@@ -229,6 +259,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         if device is None:
             if self.desk is not None:
                 await self.desk.disconnect()
+            self._warn_unreachable_once()
             raise UpdateFailed("Desk is not reachable through Bluetooth")
         if self.desk is None:
             self.desk = DeskClient(device, self._changed, self._device)
@@ -242,8 +273,11 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             await self._discard_if_released(self.desk)
             self._validate_control_reference(state)
             self._update_device_identity()
+            self.hass.data.get(_UNREACHABLE_WARNED, set()).discard(self.address)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
+            if self.desk.stage == "connection":
+                self._warn_unreachable_once()
             raise UpdateFailed(
                 f"Unable to read LINAK desk (stage={self.desk.stage}, "
                 f"reason={_failure_reason(err)})"

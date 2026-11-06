@@ -161,12 +161,13 @@
               "link_lost": "Bluetooth link lost",
               "timeout": "Timed out",
               "no_progress": "No progress",
-              "reverse_motion": "Moved the wrong way",
+              "reverse_motion": "Reversed, possible obstruction",
               "overshoot": "Passed the target",
               "outside_limits": "Outside the configured range",
               "stop_failed": "Stop not confirmed",
               "preparation_failed": "Preparation failed",
-              "unknown": "Unknown"
+              "unknown": "Unknown",
+              "desk_error": "Desk reported an error"
             }
           },
           "last_result": {
@@ -186,13 +187,34 @@
               "link_lost": "Bluetooth link lost",
               "timeout": "Timed out",
               "no_progress": "No progress",
-              "reverse_motion": "Moved the wrong way",
+              "reverse_motion": "Reversed, possible obstruction",
               "overshoot": "Passed the target",
               "outside_limits": "Outside the configured range",
               "stop_failed": "Stop not confirmed",
               "preparation_failed": "Preparation failed",
-              "unknown": "Unknown"
+              "unknown": "Unknown",
+              "desk_error": "Desk reported an error"
             }
+          },
+          "source": {
+            "name": "Source",
+            "state": {
+              "home_assistant": "Home Assistant",
+              "panel": "Desk panel"
+            }
+          },
+          "last_source": {
+            "name": "Last source",
+            "state": {
+              "home_assistant": "Home Assistant",
+              "panel": "Desk panel"
+            }
+          },
+          "error_code": {
+            "name": "Error code"
+          },
+          "last_error_code": {
+            "name": "Last error code"
           }
         }
       },
@@ -431,6 +453,9 @@
     },
     "reminder_profile_active": {
       "message": "The profile being edited is active. Active-profile interval editing is not supported. Select Off or another profile explicitly before changing its sitting or standing time. No duration was written."
+    },
+    "movement_reversed": {
+      "message": "The desk turned back during the movement and Stop was sent. It may have met an obstruction and used its own collision protection. Check the desk and the panel display for an error code. Commands are not queued or resumed."
     }
   }
 }

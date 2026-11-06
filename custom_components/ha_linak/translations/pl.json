@@ -161,12 +161,13 @@
               "link_lost": "Utracono połączenie Bluetooth",
               "timeout": "Przekroczono czas",
               "no_progress": "Brak postępu",
-              "reverse_motion": "Ruch w złą stronę",
+              "reverse_motion": "Cofnięcie, możliwa przeszkoda",
               "overshoot": "Przekroczono cel",
               "outside_limits": "Poza skonfigurowanym zakresem",
               "stop_failed": "Stop niepotwierdzony",
               "preparation_failed": "Przygotowanie nie powiodło się",
-              "unknown": "Nieznany"
+              "unknown": "Nieznany",
+              "desk_error": "Biurko zgłosiło błąd"
             }
           },
           "last_result": {
@@ -186,13 +187,34 @@
               "link_lost": "Utracono połączenie Bluetooth",
               "timeout": "Przekroczono czas",
               "no_progress": "Brak postępu",
-              "reverse_motion": "Ruch w złą stronę",
+              "reverse_motion": "Cofnięcie, możliwa przeszkoda",
               "overshoot": "Przekroczono cel",
               "outside_limits": "Poza skonfigurowanym zakresem",
               "stop_failed": "Stop niepotwierdzony",
               "preparation_failed": "Przygotowanie nie powiodło się",
-              "unknown": "Nieznany"
+              "unknown": "Nieznany",
+              "desk_error": "Biurko zgłosiło błąd"
             }
+          },
+          "source": {
+            "name": "Źródło",
+            "state": {
+              "home_assistant": "Home Assistant",
+              "panel": "Panel biurka"
+            }
+          },
+          "last_source": {
+            "name": "Ostatnie źródło",
+            "state": {
+              "home_assistant": "Home Assistant",
+              "panel": "Panel biurka"
+            }
+          },
+          "error_code": {
+            "name": "Kod błędu"
+          },
+          "last_error_code": {
+            "name": "Ostatni kod błędu"
           }
         }
       },
@@ -431,6 +453,9 @@
     },
     "reminder_profile_active": {
       "message": "Edytowany profil jest aktywny. Edycja czasu aktywnego profilu nie jest obsługiwana. Przed zmianą czasu siedzenia lub stania wybierz jawnie Wyłączone lub inny profil. Czas nie został zapisany."
+    },
+    "movement_reversed": {
+      "message": "Biurko zawróciło w trakcie ruchu i wysłano Stop. Mogło trafić na przeszkodę i użyć własnej ochrony antykolizyjnej. Sprawdź biurko i kod błędu na wyświetlaczu panelu. Polecenia nie są kolejkowane ani wznawiane."
     }
   }
 }

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Keep the Bluetooth link after a movement from Home Assistant ends with `reverse_motion` and the final Stop was delivered. The desk's own reversal, such as anti-collision, no longer causes a disconnect and reconnect.
+- Give a movement from Home Assistant that ends in `reverse_motion` its own error message, which names a possible obstruction and points to the panel display instead of the generic failure text.
+- Do not report a failure when the Bluetooth link drops during a movement that was only observed from the desk panel; a requested movement still fails with `link_lost`.
+- Subscribe to the desk's error characteristic and report a non-empty frame as a failed Operation with reason `desk_error` and the raw frame in `error_code`. The frame is not decoded and is not named a collision until its meaning is verified against the panel display. The desk's own retreat after the fault does not replace the reported failure. An explicit request keeps its own outcome. An empty frame does not erase the reported failure, but it releases the hold on panel observation once the desk is stationary, and the hold also ends after 30 seconds if that frame is lost. A missing or refused channel does not affect the connection.
+- Show movements started on the desk panel in the Operation sensor with a `source` attribute (`home_assistant` or `panel`). A panel movement that turns back reports `failed` with reason `reverse_motion`, worded as a possible obstruction. The integration infers this from position and does not read the panel error code.
+
 ## 0.1.0
 
 LINAK brings DPG1C desk readings, centimeter controls and selected panel settings directly into Home Assistant over Bluetooth. No phone app or separate bridge is needed.

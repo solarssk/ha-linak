@@ -392,10 +392,17 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             _failure_reason(error),
             backend,
         )
-        return HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="stop_failed" if action == "stop" else "movement_failed",
-        )
+        if (
+            action != "stop"
+            and isinstance(error, MotionError)
+            and error.reason == MotionFailure.REVERSE
+        ):
+            # The desk turned back by itself, which its anti-collision can do. The
+            # cause is inferred from position, not read from a panel error code.
+            key = "movement_reversed"
+        else:
+            key = "stop_failed" if action == "stop" else "movement_failed"
+        return HomeAssistantError(translation_domain=DOMAIN, translation_key=key)
 
     async def async_close(self) -> None:
         await self.async_shutdown()

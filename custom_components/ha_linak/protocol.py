@@ -5,6 +5,7 @@ from enum import IntEnum, StrEnum
 import struct
 
 SERVICE_UUID = "99fa0001-338a-1024-8a49-009c0215f78a"
+ERROR_UUID = "99fa0003-338a-1024-8a49-009c0215f78a"
 DPG_UUID = "99fa0011-338a-1024-8a49-009c0215f78a"
 HEIGHT_UUID = "99fa0021-338a-1024-8a49-009c0215f78a"
 DISPLAY_HALF_STEP_RAW = 5  # Half a 1 mm display step, in 0.1 mm wire units.

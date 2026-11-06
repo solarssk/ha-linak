@@ -27,6 +27,9 @@ from .setup_session import take_session
 from .ownership import has_idasen_conflict
 
 _LOGGER = logging.getLogger(__name__)
+# Addresses already explained during the current outage. Kept in hass.data because a
+# failed setup builds a new coordinator for every retry.
+_UNREACHABLE_WARNED = "ha_linak_unreachable_warned"
 SETTINGS_REFRESH_INTERVAL = 300
 
 
@@ -50,7 +53,6 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         self.controls = ControlSettings.from_options(dict(entry.options))
         self.address = entry.data[CONF_ADDRESS]
         self._ownership = asyncio.Lock()
-        self._unreachable_warned = False
         self.desk = take_session(hass, self.address)
         if self.desk is not None:
             self.desk.changed = self._changed
@@ -203,9 +205,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
 
     def _warn_unreachable_once(self) -> None:
         """Explain an outage once; Home Assistant itself logs the failure only once."""
-        if self._unreachable_warned:
+        warned = self.hass.data.setdefault(_UNREACHABLE_WARNED, set())
+        if self.address in warned:
             return
-        self._unreachable_warned = True
+        warned.add(self.address)
         _LOGGER.warning(
             "LINAK desk cannot be reached for a connection: %s",
             self.reachability_hint(),
@@ -270,7 +273,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             await self._discard_if_released(self.desk)
             self._validate_control_reference(state)
             self._update_device_identity()
-            self._unreachable_warned = False
+            self.hass.data.get(_UNREACHABLE_WARNED, set()).discard(self.address)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
             if self.desk.stage == "connection":

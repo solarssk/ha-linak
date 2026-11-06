@@ -8,7 +8,10 @@ from bleak.backends.device import BLEDevice
 import pytest
 
 from custom_components.ha_linak.client import DeskClient, _close_dropped_client
-from custom_components.ha_linak.coordinator import LinakCoordinator
+from custom_components.ha_linak.coordinator import (
+    _UNREACHABLE_WARNED,
+    LinakCoordinator,
+)
 
 from test_client import FakeBleak
 
@@ -113,12 +116,8 @@ def test_a_disconnect_outside_a_loop_does_not_raise():
     assert not desk._cleanup_tasks
 
 
-def coordinator_stub(warned=False):
-    return SimpleNamespace(
-        hass=object(),
-        address="CA:C6:27:40:EA:93",
-        _unreachable_warned=warned,
-    )
+def coordinator_stub():
+    return SimpleNamespace(hass=SimpleNamespace(data={}), address="CA:C6:27:40:EA:93")
 
 
 def test_reachability_hint_names_a_missing_connectable_scanner():
@@ -167,7 +166,21 @@ def test_an_outage_is_explained_once(caplog):
         LinakCoordinator._warn_unreachable_once(stub)
         LinakCoordinator._warn_unreachable_once(stub)
     assert caplog.text.count("all scanners busy") == 1
-    assert stub._unreachable_warned
+    assert stub.address in stub.hass.data[_UNREACHABLE_WARNED]
+
+
+def test_the_explanation_survives_a_new_coordinator_for_a_setup_retry(caplog):
+    first = coordinator_stub()
+    first.reachability_hint = lambda: "adapter busy"
+    retry = SimpleNamespace(
+        hass=first.hass,
+        address=first.address,
+        reachability_hint=first.reachability_hint,
+    )
+    with caplog.at_level("WARNING"):
+        LinakCoordinator._warn_unreachable_once(first)
+        LinakCoordinator._warn_unreachable_once(retry)
+    assert caplog.text.count("adapter busy") == 1
 
 
 async def test_an_unreachable_desk_is_explained_once_and_rearmed_on_recovery(
@@ -188,7 +201,7 @@ async def test_an_unreachable_desk_is_explained_once_and_rearmed_on_recovery(
         await coordinator.async_refresh()
         await coordinator.async_refresh()
     assert caplog.text.count("no connectable path") == 1
-    assert coordinator._unreachable_warned
+    assert coordinator.address in hass.data[_UNREACHABLE_WARNED]
     with (
         patch(
             "custom_components.ha_linak.coordinator.bluetooth.async_ble_device_from_address",
@@ -200,5 +213,5 @@ async def test_an_unreachable_desk_is_explained_once_and_rearmed_on_recovery(
         ),
     ):
         await coordinator.async_refresh()
-    assert not coordinator._unreachable_warned
+    assert coordinator.address not in hass.data[_UNREACHABLE_WARNED]
     await hass.config_entries.async_unload(entry.entry_id)

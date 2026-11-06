@@ -2,13 +2,36 @@
 
 ## Unreleased
 
-- Close the Bluetooth client the desk dropped, so its private D-Bus connection and notification registrations no longer pile up until Home Assistant restarts.
+## 0.1.1
+
+LINAK 0.1.1 shows desk faults and panel movements in Home Assistant and keeps the Bluetooth link when the desk reverses on its own.
+
+### ⚠️ Before you update
+
+- Restart Home Assistant after updating an already loaded integration. The desk reconnects with fresh reads and no movement is replayed.
+- The Operation sensor now also changes state for movements started on the desk panel, not only for requests from Home Assistant. Automations that trigger on `moving`, `completed` or `failed` can now fire for panel movements and desk faults. Check the new `source` attribute (`home_assistant` or `panel`) to tell them apart.
+
+### ✨ New
+
+- Movements started on the desk panel appear in the Operation sensor with `source: panel` and no requested height. They end as `completed` after about one second without movement.
+- When the desk reports a fault on its error characteristic, Operation shows `failed` with reason `desk_error` and the raw frame in `error_code`. On the tested DPG1C the frame `01 00 5d` appeared with the panel code E54 when the desk stopped against an obstruction, and the desk then backed away by itself. The frame is not decoded or named a collision; [see the observed pairing](docs/hardware-results.md#desk-error-frames).
+
+### 🔧 Improvements
+
+- A movement requested from Home Assistant that the desk reverses on its own, for example with its own collision protection, now returns an error that names a possible obstruction and points you to the panel display. The generic failure text stays for other failures.
+- The desk's own retreat after a fault no longer replaces the reported fault in the Operation sensor, and the next panel movement is followed once the desk has stopped.
 - Explain an unreachable desk in the log with Home Assistant's own Bluetooth reachability diagnostics, once per outage, and in the setup retry message. It names causes such as a scanner that cannot connect or a proxy without free connection slots.
-- Keep the Bluetooth link after a movement from Home Assistant ends with `reverse_motion` and the final Stop was delivered. The desk's own reversal, such as anti-collision, no longer causes a disconnect and reconnect.
-- Give a movement from Home Assistant that ends in `reverse_motion` its own error message, which names a possible obstruction and points to the panel display instead of the generic failure text.
-- Do not report a failure when the Bluetooth link drops during a movement that was only observed from the desk panel; a requested movement still fails with `link_lost`.
-- Subscribe to the desk's error characteristic and report a non-empty frame as a failed Operation with reason `desk_error` and the raw frame in `error_code`. The frame is not decoded and is not named a collision until its meaning is verified against the panel display. The desk's own retreat after the fault does not replace the reported failure. An explicit request keeps its own outcome. An empty frame does not erase the reported failure, but it releases the hold on panel observation once the desk is stationary, and the hold also ends after 30 seconds if that frame is lost. A missing or refused channel does not affect the connection.
-- Show movements started on the desk panel in the Operation sensor with a `source` attribute (`home_assistant` or `panel`). A panel movement that turns back reports `failed` with reason `reverse_motion`, worded as a possible obstruction. The integration infers this from position and does not read the panel error code.
+
+### 🐛 Fixes
+
+- Keep the Bluetooth link after a requested movement ends with `reverse_motion` and the final Stop was delivered. Before, the integration closed the session and reconnected.
+- Do not report a failure when the Bluetooth link drops during a movement that was only observed from the desk panel. A requested movement still fails with `link_lost`.
+- Close the Bluetooth client the desk dropped, so its private D-Bus connection and notification registrations no longer pile up until Home Assistant restarts.
+
+### 📌 Known limitations
+
+- Panel movements are inferred from height feedback. Stopping and then moving the other way counts as a new movement, so a reversal that comes with a stop is reported only through the desk's error frame. The meaning of other error frames is not established.
+- Evidence covers one DPG1C and one displayed code (E54). In the author's setup connecting to the desk after a Home Assistant restart took from about a minute to more than ten minutes, with a signal of about -70 dBm, and the link dropped more often through a local BlueZ adapter than through an ESPHome proxy. This release adds log diagnostics but does not change it. An ESPHome Bluetooth proxy close to the desk is the best-supported remedy, and Shelly gateways cannot carry a connection. See the [0.1.0 limitations](#010) for startup, recovery and hardware acceptance.
 
 ## 0.1.0
 

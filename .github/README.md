@@ -60,7 +60,7 @@
 
 \* DPG1C was checked on one panel within the [documented test scope](../docs/hardware-results.md). This does not mean every function and device version has been fully validated.
 
-**0.1.0 is for supervised use on DPG1C.** Hardware acceptance is not complete:
+**0.1.1 is for supervised use on DPG1C.** Hardware acceptance is not complete:
 
 - Full-range arrival, physical stopping accuracy and repeatable panel handback remain unverified.
 - Long-term Bluetooth reliability remains unverified. Startup and recovery can be slow or fail, including after enabling Keep connected.

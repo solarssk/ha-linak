@@ -181,7 +181,7 @@ Find the closest symptom and collect the next missing evidence. The [shared glos
 | --- | --- | --- |
 | IKEA ownership conflict | Another enabled `idasen_desk` entry claims the same normalized address | Disable that desk entry in IKEA Idasen Desk, then retry/reload LINAK; do not remove pairing or reset the panel |
 | Desk is not discovered | HA has no usable discovery record | Panel pairing indication, HA Bluetooth advertisements and connectable adapter availability |
-| Discovery works, connection times out | An advertisement was seen; no usable GATT session completed | `connection` stage, actual backend, competing desk clients and fresh advertisements |
+| Discovery works, connection times out | An advertisement was seen; no usable GATT session completed | `connection` stage, actual backend, competing desk clients and fresh advertisements. Read the log warning `LINAK desk cannot be reached for a connection`, which repeats Home Assistant's own explanation (for example a scanner that cannot connect, such as a Shelly gateway, or a proxy without free connection slots) once per outage, and the same text in the setup retry message |
 | Pairing or subscription fails | Connection progressed beyond discovery | Authentication result and the specific subscription stage |
 | Height reads work, movement does not | The read path works | Fresh bounds, client readiness, requested memory and movement failure reason |
 | A request was refused or its outcome is unclear | The `Operation` sensor holds the active phase or the last result and its reason | Read its state and `reason` first; `Connection` reports only the session, and a refused request changes neither |

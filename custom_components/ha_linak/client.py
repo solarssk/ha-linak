@@ -184,6 +184,22 @@ class SettingsHealth:
     retry_after: float = 0
 
 
+async def _close_dropped_client(client: BleakClient) -> None:
+    """Close the private D-Bus connection of a client the desk already dropped.
+
+    bleak closes that connection only inside ``disconnect()``. A disconnect that the
+    desk starts runs ``_cleanup_all()``, which leaves it open. It then lives until the
+    process exits, and BlueZ keeps its ``StartNotify`` registrations alive and re-arms
+    them on the next connect. On an already dropped client ``disconnect()`` is a fast
+    no-op that only closes the bus. Best effort: a failure must never block a reconnect.
+    """
+    try:
+        async with asyncio.timeout(IO_TIMEOUT):
+            await client.disconnect()
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Closing a dropped client raised %s", type(err).__name__)
+
+
 class DeskClient:
     """One serialized query channel, discarded after any ambiguous failure."""
 
@@ -226,6 +242,7 @@ class DeskClient:
         self._released = False
         self._operation_reset: asyncio.TimerHandle | None = None
         self._operation_resets_closed = False
+        self._cleanup_tasks: set[asyncio.Task[None]] = set()
         self.operation = OperationTracker(self._operation_changed)
         self._panel_movement = PanelMovementWatcher(self.operation)
 
@@ -292,6 +309,7 @@ class DeskClient:
     def _disconnected(self, client: BleakClient) -> None:
         if client is not self.client:
             return
+        self._close_in_background(client)
         self._ready = False
         for health in self.settings_health.values():
             health.valid = False
@@ -307,6 +325,15 @@ class DeskClient:
         if not self._closing:
             self.operation.link_lost()
             self.changed()
+
+    def _close_in_background(self, client: BleakClient) -> None:
+        """Close a dropped client at once instead of leaving its bus open until reconnect."""
+        try:
+            task = asyncio.get_running_loop().create_task(_close_dropped_client(client))
+        except RuntimeError:
+            return
+        self._cleanup_tasks.add(task)
+        task.add_done_callback(self._cleanup_tasks.discard)
 
     def _notification(self, generation: int, data: bytearray) -> None:
         if generation != self._generation:
@@ -1556,9 +1583,13 @@ class DeskClient:
             self._pending.cancel()
         if self._product_pending is not None and not self._product_pending.done():
             self._product_pending.cancel()
-        if client is not None and client.is_connected:
+        if client is None:
+            return
+        if client.is_connected:
             async with asyncio.timeout(IO_TIMEOUT):
                 await client.disconnect()
+        else:
+            await _close_dropped_client(client)
 
 
 class _LiveMotionTransport(BleakMotionTransport):

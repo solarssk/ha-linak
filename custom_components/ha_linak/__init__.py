@@ -43,7 +43,8 @@ async def _async_first_refresh(coordinator: LinakCoordinator) -> None:
             await coordinator.async_config_entry_first_refresh()
     except TimeoutError as error:
         raise ConfigEntryNotReady(
-            "Initial Bluetooth connection/read timed out; setup will retry",
+            "Initial Bluetooth connection/read timed out; setup will retry. "
+            + coordinator.reachability_hint(),
             translation_domain=DOMAIN,
             translation_key="startup_timeout",
         ) from error

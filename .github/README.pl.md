@@ -60,7 +60,7 @@
 
 \* DPG1C sprawdzono na jednym panelu, w [opisanym zakresie testów](../docs/hardware-results.md). Nie oznacza to pełnej weryfikacji każdej funkcji i wersji urządzenia.
 
-**0.1.0 jest do użycia pod nadzorem na DPG1C.** Akceptacja sprzętowa nie jest zakończona:
+**0.1.1 jest do użycia pod nadzorem na DPG1C.** Akceptacja sprzętowa nie jest zakończona:
 
 - Dojazd w pełnym zakresie, dokładność zatrzymania i powtarzalny powrót do obsługi panelu pozostają niezweryfikowane.
 - Długotrwała niezawodność Bluetooth pozostaje niezweryfikowana. Uruchomienie i odzyskanie połączenia mogą trwać długo albo się nie udać, także po włączeniu Utrzymuj połączenie.

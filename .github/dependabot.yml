@@ -10,7 +10,7 @@ updates:
     labels: ["type: chore", "dependencies"]
     assignees: ["solarssk"]
     # GitHub milestone number, not the version. Update before closing the release.
-    milestone: 1
+    milestone: 3
     # Referenced inputs must remain fetchable. Filter updates by package, not file.
     exclude-paths:
       - ".github/locks/**"
@@ -39,4 +39,4 @@ updates:
     labels: ["type: chore", "dependencies"]
     assignees: ["solarssk"]
     # GitHub milestone number, not the version. Update before closing the release.
-    milestone: 1
+    milestone: 3

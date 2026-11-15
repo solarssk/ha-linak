@@ -29,9 +29,17 @@ These differences are research questions, not instructions to copy behavior into
 | Initial control ordering | Wake before control Stop | Control Stop before wake | Compare ordering only in a bounded experiment |
 | Stop frames | Control `ff 00` and reference-input `01 80` | Control `ff 00` followed by reference-input `01 80` | Shared bounded cleanup; physical-panel handback still needs observation |
 | Target loop | Version-specific keepalive/feedback policy | Serialized target, 0.2-second wait and fresh read | Compare effective latency, not only the configured wait |
-| Recovery | Connection manager schedules retries and closes stale links | Coordinator refresh retries; ambiguous query/control failures discard the session | Never resume an old target after recovery |
+| Recovery | Connection manager schedules retries and closes stale links | One HA refresh requested on unexpected disconnect, then normal polling; discovery metadata is needed only for new links | Never resume an old target after recovery |
 
 The [pinned idasen implementation](https://github.com/newAM/idasen/blob/db7cdd246d4ccb6e09ee3dfe83d192d9a5623b5b/idasen/__init__.py) and [connection manager](https://github.com/abmantis/idasen-ha/blob/3.0.1/idasen_ha/connection_manager.py) are the comparison sources. Upstream's DPG1C initialization is also discussed in [issue 32](https://github.com/rhyst/linak-controller/issues/32#issuecomment-1784055470). Neither source replaces the [hardware evidence](hardware-results.md).
+
+## Automatic reconnection evidence
+
+Other implementations provide useful recovery evidence, but their host stacks and panel variants must remain explicit. In [macOS controller PR 2](https://github.com/marcobazzani/idasen-desk-controller-mac/pull/2), inspected at [8edaad2](https://github.com/marcobazzani/idasen-desk-controller-mac/commit/8edaad295232918a03266a122f111b6242e20aa7), the author reports that a DPG1C/IDASEN reconnects after panel power is removed and restored. The patch retains the last peripheral, queues CoreBluetooth reconnection after a drop and restarts discovery after failures. It was an open third-party patch when inspected, not physical validation of this HA integration or a whole-house outage test.
+
+The older [ESPHome controller issue 29](https://github.com/j5lien/esphome-idasen-desk-controller/issues/29) includes error `133`, recovery requiring the pairing button and reports that the earlier direct BLE implementation restored reconnect behavior. Those historical reports show that connection implementation can matter; they do not justify downgrading a current proxy or establish the cause of our panel's unavailable state. A nonconnectable advertising capture is evidence about that interval, not proof that automatic recovery is impossible.
+
+HA's [Idasen recovery fix](https://github.com/home-assistant/core/pull/115939) also reacts to device reappearance. Our configured-device Bluetooth flow already uses HA's equivalent setup-retry behavior. The remaining software changes keep healthy sessions independent of discovery-cache lifetime and request recovery promptly after a backend drop, through the existing coordinator. Startup-order and power-loss behavior still need separate physical acceptance with no movement replay.
 
 ## Extended configuration differences
 

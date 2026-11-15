@@ -72,6 +72,8 @@ Encja **Utrzymuj połączenie** jest domyślnie wyłączona w rejestrze. Po jej 
 
 Zwolnienie połączenia nie dowodzi uśpienia panelu ani wyłączenia jego wyświetlacza.
 
+Po nieoczekiwanym zerwaniu aktywnej sesji integracja zleca jeden odczyt odzyskujący połączenie, bez czekania na następny cykl odświeżania. Czeka na zakończenie sprzątania trwającego sterowania i nie wznawia ruchu. Gdy próba się nie powiedzie, wraca do zwykłego harmonogramu ponawiania. Działająca sesja nie jest rozłączana tylko dlatego, że biurko zniknęło z danych wykrywania HA. Automatyczny powrót po zaniku zasilania nadal wymaga potwierdzenia na sprzęcie.
+
 ## Problem ze sterowaniem
 
 Zacznij od [polskiej instrukcji diagnostycznej](diagnostics.pl.md). Nie powtarzaj nieoczekiwanego ruchu dla zebrania logów. [Rejestr dowodów sprzętowych po angielsku](hardware-results.md) odróżnia zaobserwowane zachowanie od nieukończonych testów.

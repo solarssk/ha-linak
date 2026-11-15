@@ -183,6 +183,8 @@ It is your choice to hold the desk's Bluetooth link. Use it to release the link 
 
 Releasing the link is not evidence that the panel sleeps or that its display turns off.
 
+After an unexpected disconnect, a loaded entry requests one read-only recovery refresh without waiting for the next poll. It waits for control cleanup and never resumes movement. If recovery fails, normal polling continues. A healthy session is not disconnected just because its discovery record disappears from HA. Automatic recovery after power loss still needs physical acceptance.
+
 [How ownership works →](architecture.md#deliberate-connection-ownership)
 
 ## Test native controls at the panel

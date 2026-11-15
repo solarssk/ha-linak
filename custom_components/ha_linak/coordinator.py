@@ -8,7 +8,7 @@ import logging
 from bleak.exc import BleakError
 from bleak.backends.device import BLEDevice
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
@@ -53,6 +53,9 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         self.controls = ControlSettings.from_options(dict(entry.options))
         self.address = entry.data[CONF_ADDRESS]
         self._ownership = asyncio.Lock()
+        self._closed = False
+        self._recovery_needed = False
+        self._recovery_task: asyncio.Task[None] | None = None
         self.desk = take_session(hass, self.address)
         if self.desk is not None:
             self.desk.changed = self._changed
@@ -162,6 +165,7 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
     @callback
     def _changed(self) -> None:
         if self.desk is not None and self.desk.connected:
+            self._recovery_needed = False
             self._validate_control_reference(self.desk.state)
             if self.last_update_success and self.data is not None:
                 # Notification ticks must not postpone the scheduled reference read.
@@ -171,6 +175,12 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 self.async_set_updated_data(self.desk.state)
         else:
             already_failed = not self.last_update_success
+            if (
+                not already_failed
+                and self.desk is not None
+                and self.desk.unexpectedly_disconnected
+            ):
+                self._recovery_needed = True
             self.async_set_update_error(
                 UpdateFailed("Desk disconnected or invalid position")
             )
@@ -178,6 +188,47 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 # HA notifies listeners only on the first error; the always
                 # available Operation sensor must still follow later changes.
                 self.async_update_listeners()
+            self._schedule_recovery()
+
+    @callback
+    def _schedule_recovery(self) -> None:
+        """Request one HA refresh after an outage, once control cleanup yields."""
+        entry = self.config_entry
+        if (
+            not self._recovery_needed
+            or self._closed
+            or self.hass.is_stopping
+            or self._recovery_task is not None
+            or entry is None
+            or entry.state is not ConfigEntryState.LOADED
+            or not self.connection_wanted
+            or self.desk is None
+            or self.desk.control_busy
+        ):
+            return
+        self._recovery_needed = False
+        self._recovery_task = entry.async_create_background_task(
+            self.hass,
+            self._async_recover(),
+            "LINAK connection recovery",
+            eager_start=False,
+        )
+
+    async def _async_recover(self) -> None:
+        """Use the coordinator's serialized refresh, never replay a control."""
+        try:
+            if (
+                not self._closed
+                and not self.hass.is_stopping
+                and self.connection_wanted
+                and self.config_entry is not None
+                and self.config_entry.state is ConfigEntryState.LOADED
+                and self.desk is not None
+                and not self.desk.connected
+            ):
+                await self.async_request_refresh()
+        finally:
+            self._recovery_task = None
 
     def _validate_control_reference(self, state: DeskState) -> None:
         """A changed calibration can invalidate previously configured bounds."""
@@ -253,18 +304,21 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key="idasen_conflict"
             )
-        device = bluetooth.async_ble_device_from_address(
-            self.hass, self.address, connectable=True
-        )
-        if device is None:
-            if self.desk is not None:
-                await self.desk.disconnect()
-            self._warn_unreachable_once()
-            raise UpdateFailed("Desk is not reachable through Bluetooth")
-        if self.desk is None:
-            self.desk = DeskClient(device, self._changed, self._device)
-        else:
-            self.desk.device = device
+        # Discovery is needed for a new link, not for reads on a live session.
+        # A peripheral may stop advertising while it remains connected.
+        if self.desk is None or not self.desk.connected:
+            device = bluetooth.async_ble_device_from_address(
+                self.hass, self.address, connectable=True
+            )
+            if device is None:
+                if self.desk is not None:
+                    await self.desk.disconnect()
+                self._warn_unreachable_once()
+                raise UpdateFailed("Desk is not reachable through Bluetooth")
+            if self.desk is None:
+                self.desk = DeskClient(device, self._changed, self._device)
+            else:
+                self.desk.device = device
         try:
             state = await self.desk.refresh(
                 allow_partial_settings=True,
@@ -439,6 +493,11 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
         return HomeAssistantError(translation_domain=DOMAIN, translation_key=key)
 
     async def async_close(self) -> None:
+        self._closed = True
+        self._recovery_needed = False
+        if (task := self._recovery_task) is not None:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
         await self.async_shutdown()
         if self.desk is not None:
             self.desk.close_operation_resets()

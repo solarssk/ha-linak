@@ -144,6 +144,8 @@ All connection retries and validation share **one 60-second refresh deadline**, 
 
 HA reevaluates paths using current adapter metadata, previous failures and available slots. LINAK keeps the installed connector's retry policy: a stronger local path can fail twice before HA prefers a working proxy. One progress task owns the attempt; revisiting a step does not start a second connection.
 
+A loaded entry requests one read-only refresh when its backend unexpectedly disconnects, after any control cleanup finishes. It does not wait for the next periodic poll. A failed attempt returns to the normal refresh schedule. A healthy session does not need a current discovery record to keep reading; new connections still resolve current HA Bluetooth metadata. Deliberate release, unload and shutdown suppress recovery, and movement is never replayed.
+
 | Boundary | Budget or behavior |
 | --- | --- |
 | Config-entry setup before HA reaches running | No radio work; HA retries on its started event |
@@ -162,6 +164,8 @@ Startup follows this sequence:
 1. Before HA is running, raise `ConfigEntryNotReady` without creating a client. Retry on `HOMEASSISTANT_STARTED`; unloading the waiting entry removes that retry.
 2. After startup, allow the connector's 20-second attempts and validation within the shared budget, plus up to 10 seconds of cleanup.
 3. Forward entities only after a successful read. Validate a transferred wizard session without forcing a reconnect; failed attempts use HA's normal retry policy.
+
+HA's existing Bluetooth discovery flow also schedules an earlier setup retry when it rediscovers an already configured entry in `SETUP_RETRY`. LINAK retains that mechanism instead of registering a second setup-retry manager. Simulated lifecycle tests cover HA starting before the desk, device reappearance, live-session discovery loss and unexpected disconnect recovery. They do not establish unattended recovery after household power loss; physical acceptance must include different HA/adapter/desk startup orders.
 
 If Keep connected intent is off, skip the first read and load without waiting for discovery or the desk. Release any wizard session and connect only when the owner turns the switch on. See [deliberate connection ownership](architecture.md#deliberate-connection-ownership).
 

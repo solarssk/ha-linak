@@ -191,6 +191,8 @@ async def test_an_unreachable_desk_is_explained_once_and_rearmed_on_recovery(
     entry, fake = await setup_entry(hass)
     coordinator = entry.runtime_data
     coordinator.reachability_hint = lambda: "no connectable path"
+    # Missing discovery is an outage only when there is no live session to read.
+    fake.is_connected = False
     with (
         caplog.at_level("WARNING"),
         patch(

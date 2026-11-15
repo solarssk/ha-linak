@@ -306,6 +306,11 @@ class DeskClient:
     def connected(self) -> bool:
         return self.client is not None and self.client.is_connected and self._ready
 
+    @property
+    def unexpectedly_disconnected(self) -> bool:
+        """A backend drop, rather than a session deliberately closed by this client."""
+        return self._link_lost and not self._closing
+
     def _disconnected(self, client: BleakClient) -> None:
         if client is not self.client:
             return

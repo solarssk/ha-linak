@@ -226,7 +226,10 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
                 and self.desk is not None
                 and not self.desk.connected
             ):
-                await self.async_request_refresh()
+                # The debounced request API may return before a delayed refresh
+                # starts. Own the serialized refresh until it finishes so unload
+                # can cancel and drain the actual connector work.
+                await self.async_refresh()
         finally:
             self._recovery_task = None
 
@@ -304,38 +307,44 @@ class LinakCoordinator(DataUpdateCoordinator[DeskState]):
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key="idasen_conflict"
             )
-        # Discovery is needed for a new link, not for reads on a live session.
-        # A peripheral may stop advertising while it remains connected.
-        if self.desk is None or not self.desk.connected:
-            device = bluetooth.async_ble_device_from_address(
-                self.hass, self.address, connectable=True
-            )
-            if device is None:
-                if self.desk is not None:
-                    await self.desk.disconnect()
-                self._warn_unreachable_once()
-                raise UpdateFailed("Desk is not reachable through Bluetooth")
-            if self.desk is None:
-                self.desk = DeskClient(device, self._changed, self._device)
-            else:
-                self.desk.device = device
+        desk = await self._async_resolve_desk()
         try:
-            state = await self.desk.refresh(
+            state = await desk.refresh(
                 allow_partial_settings=True,
                 settings_interval=SETTINGS_REFRESH_INTERVAL,
             )
-            await self._discard_if_released(self.desk)
+            await self._discard_if_released(desk)
             self._validate_control_reference(state)
             self._update_device_identity()
             self.hass.data.get(_UNREACHABLE_WARNED, set()).discard(self.address)
             return state
         except (BleakError, ConnectionError, TimeoutError, ValueError) as err:
-            if self.desk.stage == "connection":
+            if desk.stage == "connection":
                 self._warn_unreachable_once()
             raise UpdateFailed(
-                f"Unable to read LINAK desk (stage={self.desk.stage}, "
+                f"Unable to read LINAK desk (stage={desk.stage}, "
                 f"reason={_failure_reason(err)})"
             ) from err
+
+    async def _async_resolve_desk(self) -> DeskClient:
+        """Reuse a live session or resolve current metadata for a new link."""
+        # Discovery is needed for a new link, not for reads on a live session.
+        # A peripheral may stop advertising while it remains connected.
+        if self.desk is not None and self.desk.connected:
+            return self.desk
+        device = bluetooth.async_ble_device_from_address(
+            self.hass, self.address, connectable=True
+        )
+        if device is None:
+            if self.desk is not None:
+                await self.desk.disconnect()
+            self._warn_unreachable_once()
+            raise UpdateFailed("Desk is not reachable through Bluetooth")
+        if self.desk is None:
+            self.desk = DeskClient(device, self._changed, self._device)
+        else:
+            self.desk.device = device
+        return self.desk
 
     @callback
     def _update_device_identity(self) -> None:

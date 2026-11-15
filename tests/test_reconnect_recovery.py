@@ -1,12 +1,15 @@
 """Recovery through real HA lifecycle with synthetic radio and no panel writes."""
 
 import asyncio
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState, SOURCE_BLUETOOTH
 from homeassistant.core import CoreState
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant.common import async_fire_time_changed
 
 from test_connection_ownership import (
     CONNECTION,
@@ -137,6 +140,50 @@ async def test_unload_drains_an_in_progress_reconnect(hass):
         assert not fake.is_connected
 
 
+async def test_unload_owns_reconnect_during_ha_debounce_cooldown(hass):
+    """A second outage must not leave a delayed HA refresh outside our task."""
+    fake = MotionBleak()
+    entry = await add_entry(hass)
+    entered, cancelled, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    replacement = MotionBleak()
+    replacement.is_connected = False
+
+    async def blocked_connect(*args, **kwargs):
+        entered.set()
+        try:
+            await release.wait()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+        return replacement.reconnect()
+
+    with radio(fake) as (_, connect):
+        await start(hass, entry)
+        coordinator = entry.runtime_data
+        first_replacement = MotionBleak()
+        connect.side_effect = first_replacement.reconnect
+        fake.is_connected = False
+        coordinator.desk._disconnected(fake)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert coordinator.desk.connected
+        # Prime HA's real debounce cooldown, including when recovery bypasses it.
+        await coordinator.async_request_refresh()
+        connect.side_effect = blocked_connect
+        first_replacement.is_connected = False
+        coordinator.desk._disconnected(first_replacement)
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=11))
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            await hass.config_entries.async_unload(entry.entry_id)
+            assert cancelled.is_set()
+            assert coordinator._recovery_task is None
+            assert not replacement.is_connected
+        finally:
+            release.set()
+            await hass.async_block_till_done(wait_background_tasks=True)
+            await coordinator.desk.disconnect()
+
+
 async def test_separate_outages_each_get_one_recovery(hass):
     fake = MotionBleak()
     entry = await add_entry(hass)
@@ -149,9 +196,6 @@ async def test_separate_outages_each_get_one_recovery(hass):
             old.is_connected = False
             entry.runtime_data.desk._disconnected(old)
             await hass.async_block_till_done(wait_background_tasks=True)
-            # A second request can be debounced by HA after the first refresh.
-            if not entry.runtime_data.desk.connected:
-                await tick(hass, 11)
             assert entry.runtime_data.desk.client is replacement
             assert entry.runtime_data.desk.connected
             assert connect.call_count == attempt + 2

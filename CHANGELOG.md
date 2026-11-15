@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### 🐛 Fixes
+
+- Keep a healthy Bluetooth session when the desk disappears from Home Assistant's discovery cache. Reads still validate the live connection; missing advertisements alone no longer disconnect it.
+- Run a read-only refresh after an unexpected Bluetooth disconnect instead of waiting for the next poll. Recovery waits for control cleanup and remains owned until its read finishes, including after rapid repeated drops, so release and unload can stop it; it never resumes movement. These lifecycle fixes do not establish recovery after a power loss on physical hardware.
+
 ## 0.1.1
 
 LINAK 0.1.1 shows desk faults and panel movements in Home Assistant and keeps the Bluetooth link when the desk reverses on its own.

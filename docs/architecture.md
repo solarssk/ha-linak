@@ -108,7 +108,9 @@ A second target or calibration cannot compete with an active operation. Cancella
 
 The [connection lifecycle](onboarding.md) defines authentication, setup transfer and retry. HA supplies current connectable device metadata; the integration does not force `hci0`, clear unrelated bonds or choose a proxy by name.
 
-A backend disconnect cancels pending I/O. Ambiguous query failures invalidate the session because some DPG replies do not identify their request. The coordinator attempts recovery through its normal refresh schedule and reports stale readings unavailable. Reconnection performs reads only; a later explicit control request must validate its own readiness and bounds.
+A backend disconnect cancels pending I/O. For a loaded entry that still wants a connection, the coordinator runs one read-only recovery refresh without waiting for the next poll. It waits for foreground control cleanup, coalesces repeated disconnect notifications and awaits HA's serialized `async_refresh()` until the read finishes. It does not use `async_request_refresh()` for recovery because that method may return after queuing a delayed refresh during HA's debounce cooldown. The owned recovery task must still exist when unload needs to cancel and drain connector work. A failed recovery returns to normal polling; it does not start a separate retry loop. Release, unload and shutdown suppress pending recovery. Ambiguous query failures still invalidate the session because some DPG replies do not identify their request. Reconnection never resumes movement; a later explicit control request must validate its own readiness and bounds.
+
+Discovery metadata is required when establishing a new link. A ready connected client keeps reading on its existing transport even if HA no longer has an advertisement record. Those reads must still succeed; missing discovery alone neither proves a dead session nor justifies disconnecting it. No cached reading substitutes for a failed live read.
 
 ### Deliberate connection ownership
 
@@ -122,7 +124,7 @@ The **Keep connected** switch holds the owner's intent. It is kept apart from th
 | State | Intent | Radio activity | Readings |
 | --- | --- | --- | --- |
 | Connected | On | Normal polling and reads | Live |
-| Recovering | On | Normal retry schedule after a failed connection | Unavailable until a read succeeds |
+| Recovering | On | One requested refresh after an unexpected drop, then normal polling on failure | Unavailable until a read succeeds |
 | Released | Off | None: no device lookup, connection or poll | Unavailable; the cached values are not shown as live |
 
 ```mermaid

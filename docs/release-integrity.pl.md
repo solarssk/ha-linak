@@ -25,6 +25,8 @@ Opiekun projektu osobno tworzy tag i GitHub Release. Ręczny [workflow artefaktu
 
 Aby opublikować artefakty, najpierw utwórz wydanie dla tego tagu, a następnie uruchom workflow na tagu z włączoną opcją `Upload signed assets to an existing GitHub Release for this tag`. Zadanie publikujące weryfikuje atestację i dołącza do istniejącego wydania plik ZIP, sumę SHA-256 i pakiet atestacji. Workflow nie tworzy ani tagu, ani wydania i nie nadpisuje istniejących artefaktów. Archiwa źródłowe generowane przez GitHuba nie są podpisywane przez ten workflow.
 
+Wersje stabilne mają format `x.y.z` i tag `vx.y.z`. Wersje testowe mogą używać `x.y.z-beta.N` albo `x.y.z-rc.N`, gdzie `N` jest dodatnią liczbą całkowitą; po prefiksie `v` tag musi zawierać dokładnie tę samą wersję. Manifest, nagłówek changeloga i tag muszą być zgodne, także w części oznaczającej wersję testową. Oznacz GitHub Release jako prerelease i pozostaw wersję stabilną jako najnowsze wydanie. Wersja robocza prerelease może otrzymać zweryfikowane artefakty przed publikacją; prerelease nie potwierdza zakończenia testów sprzętu.
+
 Zbuduj lokalnie tę samą paczkę instalacyjną poleceniem:
 
 ```sh

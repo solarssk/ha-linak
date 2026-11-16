@@ -11,8 +11,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPONENT_PATH = Path("custom_components/ha_linak")
-VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
-TAG_PATTERN = re.compile(r"v(?P<version>\d+\.\d+\.\d+)")
+VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:-(?:beta|rc)\.[1-9]\d*)?")
+TAG_PATTERN = re.compile(rf"v(?P<version>{VERSION_PATTERN.pattern})")
 SKIPPED_NAMES = {"__pycache__", ".DS_Store"}
 SKIPPED_SUFFIXES = {".pyc", ".pyo"}
 
@@ -62,7 +62,9 @@ def build_release_artifact(
     manifest = json.loads((component / "manifest.json").read_text())
     version = manifest.get("version")
     if not isinstance(version, str) or VERSION_PATTERN.fullmatch(version) is None:
-        raise ValueError("Integration manifest must contain a stable x.y.z version")
+        raise ValueError(
+            "Integration manifest must contain x.y.z, x.y.z-beta.N or x.y.z-rc.N"
+        )
     changelog = (root / "CHANGELOG.md").read_text()
     if re.search(rf"^## {re.escape(version)}$", changelog, re.MULTILINE) is None:
         raise ValueError(

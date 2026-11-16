@@ -2,10 +2,23 @@
 
 ## Unreleased
 
+## 0.2.0-beta.1
+
+This prerelease improves Bluetooth session retention and read-only reconnect recovery. It is intended for supervised testing before 0.2.0.
+
+### ⚠️ Before you update
+
+- This is a beta, not the stable 0.2.0 release. Restart Home Assistant after installing it. No movement or panel-setting write is replayed after restart.
+- Automatic recovery after a power loss remains unverified. Keep existing pairing and measured travel bounds; do not delete/re-add the desk or reset the panel as part of the update.
+
 ### 🐛 Fixes
 
 - Keep a healthy Bluetooth session when the desk disappears from Home Assistant's discovery cache. Reads still validate the live connection; missing advertisements alone no longer disconnect it.
 - Run a read-only refresh after an unexpected Bluetooth disconnect instead of waiting for the next poll. Recovery waits for control cleanup and remains owned until its read finishes, including after rapid repeated drops, so release and unload can stop it; it never resumes movement. These lifecycle fixes do not establish recovery after a power loss on physical hardware.
+
+### 📌 Known limitations
+
+- Connection establishment timeouts and ESPHome GATT error 133 observed on one DPG1C are not established as fixed by this beta. Software tests cover the lifecycle changes; physical reconnect and startup-order acceptance remain pending. See [connection evidence](docs/hardware-results.md#local-and-proxy-connection-establishment).
 
 ## 0.1.1
 
